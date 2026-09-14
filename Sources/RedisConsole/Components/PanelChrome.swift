@@ -28,8 +28,8 @@ struct PanelFooterBar<Content: View>: View {
             content
         }
         .font(.caption)
-        .controlSize(.regular)
-        .imageScale(.medium)
+        .controlSize(.small)
+        .imageScale(.small)
         .padding(.horizontal, AppSpacing.small)
         .frame(minHeight: AppSize.footerHeight)
         .frame(maxWidth: .infinity)
@@ -80,6 +80,7 @@ struct StatusFooterView: View {
         }
         .font(.caption)
         .foregroundStyle(.secondary)
-        .lineLimit(nil)
+        .lineLimit(1)
+        .truncationMode(.tail)
     }
 }

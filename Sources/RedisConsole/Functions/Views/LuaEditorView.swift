@@ -182,15 +182,19 @@ struct LuaEditorView: View {
     // MARK: Status bar
 
     private var statusBar: some View {
-        HStack(spacing: AppSpacing.medium) {
+        HStack(spacing: AppSpacing.small) {
             Text("\(code.count) chars")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
             dryRunIndicator
         }
-        .padding(.horizontal, AppSpacing.large)
-        .frame(minHeight: AppSize.refreshControlHeight)
+        .font(.caption)
+        .controlSize(.small)
+        .imageScale(.small)
+        .padding(.horizontal, AppSpacing.small)
+        .frame(minHeight: AppSize.footerHeight)
+        .frame(maxWidth: .infinity)
         .background(.bar)
     }
 

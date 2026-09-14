@@ -42,7 +42,9 @@ enum AppSize {
     /// Compact width for short leading labels (e.g. Key / Type / Value rows in Add New Key sheet).
     /// Sized to fit the longest label ("Value") with a small margin.
     static let formLabelWidthCompact: CGFloat = 40
-    static let footerHeight: CGFloat = 34
+    /// Unified height for bottom status bars, matching `refreshControlHeight`
+    /// so text-only and control footers stay the same size.
+    static let footerHeight: CGFloat = 28
     /// Unified minimum height for panel toolbars/headers (Keys, Shell, Profiler, Slow Log, Analysis, Server Info).
     /// Applied as a `minHeight` so headers stay consistent while still growing to fit taller content.
     static let toolbarHeight: CGFloat = 44
