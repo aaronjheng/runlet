@@ -2,7 +2,7 @@ set dotenv-load := true
 
 derived_data := ".build/xcode-derived"
 build_configuration := "Release"
-app_bundle := derived_data / "Build/Products" / build_configuration / "RedisConsole.app"
+app_bundle := derived_data / "Build/Products" / build_configuration / "Runlet.app"
 
 lint:
     swiftlint lint Sources
@@ -17,8 +17,8 @@ format-check:
     swift format lint --recursive Sources
 
 build:
-    xcodebuild -project RedisConsole.xcodeproj \
-        -scheme RedisConsole \
+    xcodebuild -project Runlet.xcodeproj \
+        -scheme Runlet \
         -configuration '{{ build_configuration }}' \
         -derivedDataPath '{{ derived_data }}' \
         -allowProvisioningUpdates \
@@ -31,11 +31,11 @@ clean:
     rm -rf .build
 
 run: build
-    @osascript -e 'quit app "RedisConsole"' 2>/dev/null || true
-    @n=0; while pgrep -x RedisConsole >/dev/null 2>&1 && [ $n -lt 50 ]; do sleep 0.1; n=$((n+1)); done
+    @osascript -e 'quit app "Runlet"' 2>/dev/null || true
+    @n=0; while pgrep -x Runlet >/dev/null 2>&1 && [ $n -lt 50 ]; do sleep 0.1; n=$((n+1)); done
     @open '{{ app_bundle }}'
 
 install: build
-    @rm -rf ~/Applications/Redis\ Console.app
-    @cp -R '{{ app_bundle }}' ~/Applications/Redis\ Console.app
-    @echo 'Installed to ~/Applications/Redis Console.app'
+    @rm -rf ~/Applications/Runlet.app
+    @cp -R '{{ app_bundle }}' ~/Applications/Runlet.app
+    @echo 'Installed to ~/Applications/Runlet.app'

@@ -1,4 +1,4 @@
-# Redis Console
+# Runlet
 
 Native macOS Redis GUI client built with Swift and SwiftUI.
 
@@ -55,4 +55,4 @@ just clean
 
 ## License
 
-Redis Console is licensed under the [BSD-3-Clause License](https://opensource.org/licenses/BSD-3-Clause). See [LICENSE](LICENSE) for more details.
+Runlet is licensed under the [BSD-3-Clause License](https://opensource.org/licenses/BSD-3-Clause). See [LICENSE](LICENSE) for more details.

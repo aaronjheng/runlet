@@ -1,12 +1,12 @@
-# Redis Console
+# Runlet
 
 macOS native Redis client with SSH tunnel support, written in Swift/SwiftUI.
 
 ## Directory Layout
 
-`Sources/RedisConsole/` is flat: four process-level files at the root plus one folder per concrete area, mirrored 1:1 by Xcode groups in the project.
+`Sources/Runlet/` is flat: four process-level files at the root plus one folder per concrete area, mirrored 1:1 by Xcode groups in the project.
 
-Root files: `RedisConsoleApp` (process entry), `AppDelegate` + `AppMenu` (windows, tabs, menu bar), `AppLogger` (unified logging, used everywhere).
+Root files: `RunletApp` (process entry), `AppDelegate` + `AppMenu` (windows, tabs, menu bar), `AppLogger` (unified logging, used everywhere).
 
 Area folders:
 
@@ -15,7 +15,7 @@ Area folders:
 - Shared toolkit: `Components/` (reusable views + the pasteboard helper their copy buttons use), `Concurrency/` (`withTimeout`), `Editor/` (syntax-highlighting code editor), `Theme/` (color/font/metrics tokens + light/dark switching)
 - `Session/` (`TabState` core, `ConnectionStore`, `AppDatabase` SQLite persistence, `TabManager`)
 
-Naming rule (for the main program under `Sources/RedisConsole/` only, not top-level engineering dirs like `Tools/`, `Vendor/`): no bucket names (`Tools`, `Utilities`, `Core`, `DesignSystem`, `Inspector`, …). If a folder needs "and misc" to describe it, split it instead.
+Naming rule (for the main program under `Sources/Runlet/` only, not top-level engineering dirs like `Tools/`, `Vendor/`): no bucket names (`Tools`, `Utilities`, `Core`, `DesignSystem`, `Inspector`, …). If a folder needs "and misc" to describe it, split it instead.
 
 ## Dependency Rule
 
