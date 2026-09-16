@@ -396,7 +396,7 @@ extension TabState {
         return rows
     }
     func refreshSelectedKey() async {
-        guard let selectedKey else { return }
+        guard selectedKey != nil else { return }
         resetKeyDetailPaging(clearRows: true)
         await loadSelectedKeyDetail(append: false)
     }

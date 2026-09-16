@@ -28,7 +28,7 @@ Outer layers may use inner layers, never the reverse:
 
 ## Code Conventions
 
-- Use the `@Observable` macro (macOS 14+); no `@Published` / ObservableObject, and no Combine dependency.
+- Use the `@Observable` macro (macOS 27+); no `@Published` / ObservableObject, and no Combine dependency.
 - UI types are annotated `@MainActor`; networking types are marked `@Sendable`.
 - Concurrency primitives: `Mutex`, `actor`, `CheckedContinuation`; `DispatchQueue` is reserved for `RedisClient` I/O only.
 - Errors use the unified `RedisError` enum conforming to `LocalizedError`.

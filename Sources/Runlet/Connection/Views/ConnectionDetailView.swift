@@ -94,7 +94,7 @@ struct ConnectionDetailView: View {
                     Section("Import from URI") {
                         HStack {
                             TextField("URI", text: $uriInput)
-                                .onChange(of: uriInput) { uriError = nil }
+                                .onChange(of: uriInput) { _, _ in uriError = nil }
                             Button("Import") {
                                 if let config = RedisConnectionConfig.parseURI(uriInput) {
                                     name = config.name

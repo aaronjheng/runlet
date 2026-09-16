@@ -278,7 +278,7 @@ final class RedisMonitorClient: Sendable {
                     let secTrust = trust as! SecTrust
 
                     if !caCertificatePath.isEmpty {
-                        let url = URL(fileURLWithPath: caCertificatePath)
+                        let url = URL(filePath: caCertificatePath)
                         if let caData = try? Data(contentsOf: url) {
                             let caCert = SecCertificateCreateWithData(nil, caData as CFData)
                             if let caCert {

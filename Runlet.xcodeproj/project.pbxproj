@@ -7923,7 +7923,7 @@
 				<key>GCC_WARN_UNUSED_VARIABLE</key>
 				<string>YES</string>
 				<key>MACOSX_DEPLOYMENT_TARGET</key>
-				<string>26.0</string>
+				<string>27.0</string>
 				<key>MTL_ENABLE_DEBUG_INFO</key>
 				<string>INCLUDE_SOURCE</string>
 				<key>MTL_FAST_MATH</key>
@@ -7941,7 +7941,7 @@
 				<key>SWIFT_OPTIMIZATION_LEVEL</key>
 				<string>-Onone</string>
 				<key>SWIFT_VERSION</key>
-				<string>6.3</string>
+				<string>6.4</string>
 			</dict>
 			<key>isa</key>
 			<string>XCBuildConfiguration</string>
@@ -8873,7 +8873,7 @@
 				<key>GCC_WARN_UNUSED_VARIABLE</key>
 				<string>YES</string>
 				<key>MACOSX_DEPLOYMENT_TARGET</key>
-				<string>26.0</string>
+				<string>27.0</string>
 				<key>MTL_ENABLE_DEBUG_INFO</key>
 				<string>NO</string>
 				<key>MTL_FAST_MATH</key>
@@ -8889,7 +8889,7 @@
 				<key>SWIFT_OPTIMIZATION_LEVEL</key>
 				<string>-O</string>
 				<key>SWIFT_VERSION</key>
-				<string>6.3</string>
+				<string>6.4</string>
 			</dict>
 			<key>isa</key>
 			<string>XCBuildConfiguration</string>
@@ -9107,7 +9107,7 @@
 				<key>BuildIndependentTargetsInParallel</key>
 				<string>YES</string>
 				<key>LastUpgradeCheck</key>
-				<string>1430</string>
+				<string>2700</string>
 			</dict>
 			<key>buildConfigurationList</key>
 			<string>111F38255585C4A9001B8D7B</string>

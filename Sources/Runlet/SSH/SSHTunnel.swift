@@ -369,6 +369,10 @@ class SSHTunnel: @unchecked Sendable {
             return isLocalHostname(sshHost)
         case .tls:
             return false
+        case .wifiAware:
+            // Wi-Fi Aware (peer-to-peer) failures carry no retryable signal
+            // for an SSH-over-TCP tunnel.
+            return false
         @unknown default:
             return false
         }

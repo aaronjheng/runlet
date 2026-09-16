@@ -54,7 +54,7 @@ extension RedisClient {
                                 let secTrust = trust as! SecTrust
 
                                 if !caCertificatePath.isEmpty {
-                                    let url = URL(fileURLWithPath: caCertificatePath)
+                                    let url = URL(filePath: caCertificatePath)
                                     guard let caData = try? Data(contentsOf: url),
                                         let caCert = SecCertificateCreateWithData(nil, caData as CFData)
                                     else {

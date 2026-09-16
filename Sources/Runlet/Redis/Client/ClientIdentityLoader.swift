@@ -48,8 +48,8 @@ func loadClientIdentity(certificatePath: String, keyPath: String) throws -> Load
         return nil
     }
 
-    let certURL = URL(fileURLWithPath: certPath)
-    let keyURL = URL(fileURLWithPath: keyPathTrimmed)
+    let certURL = URL(filePath: certPath)
+    let keyURL = URL(filePath: keyPathTrimmed)
 
     let certIsPKCS12 = ["p12", "pfx"].contains(certURL.pathExtension.lowercased())
     let keyIsPKCS12 = ["p12", "pfx"].contains(keyURL.pathExtension.lowercased())
@@ -63,8 +63,8 @@ func loadClientIdentity(certificatePath: String, keyPath: String) throws -> Load
     let (keychain, keychainPath) = try createTemporaryKeychain()
 
     do {
-        try importItem(at: keyURL, into: keychain, format: SecExternalFormat.formatPEMSequence)
-        try importItem(at: certURL, into: keychain, format: SecExternalFormat.formatPEMSequence)
+        _ = try importItem(at: keyURL, into: keychain, format: SecExternalFormat.formatPEMSequence)
+        _ = try importItem(at: certURL, into: keychain, format: SecExternalFormat.formatPEMSequence)
 
         let certData: Data
         do {
@@ -92,10 +92,10 @@ func loadClientIdentity(certificatePath: String, keyPath: String) throws -> Load
 }
 
 private func createTemporaryKeychain() throws -> (SecKeychain, String) {
-    let directory = NSTemporaryDirectory()
-    let fileName = "runlet-tls-\(UUID().uuidString).keychain"
-    let path = (directory as NSString).appendingPathComponent(fileName)
-    try? FileManager.default.removeItem(atPath: path)
+    let fileURL = FileManager.default.temporaryDirectory
+        .appendingPathComponent("runlet-tls-\(UUID().uuidString).keychain")
+    let path = fileURL.path
+    try? FileManager.default.removeItem(at: fileURL)
     let password = UUID().uuidString
     var keychain: SecKeychain?
     let status = SecKeychainCreate(

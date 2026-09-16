@@ -243,11 +243,11 @@ actor SystemSSHConnectionPool {
 
         _ = FileManager.default.createFile(atPath: logPath, contents: nil)
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: Self.sshBinaryPath)
+        process.executableURL = URL(filePath: Self.sshBinaryPath)
         process.arguments = args
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = FileHandle.nullDevice
-        let errorHandle = try? FileHandle(forWritingTo: URL(fileURLWithPath: logPath))
+        let errorHandle = try? FileHandle(forWritingTo: URL(filePath: logPath))
         process.standardError = errorHandle
 
         // Publish the entry before spawning so concurrent openers wait on it
@@ -416,12 +416,12 @@ actor SystemSSHConnectionPool {
         // Fingerprint of the SSH destination (`user@host:port#keyPath`), so
         // each destination gets its own socket/log pair in the shared dir.
         let fingerprint = String(stableHash("\(key.user)@\(key.host):\(key.port)#\(key.keyPath)").prefix(12))
-        let socket = (dir as NSString).appendingPathComponent("\(fingerprint).sock")
+        let socket = "\(dir)/\(fingerprint).sock"
         if FileManager.default.fileExists(atPath: socket) {
             AppLogger.debug("system ssh removing leftover control socket \(socket)", category: "SSHTunnel")
             try? FileManager.default.removeItem(atPath: socket)
         }
-        let log = (dir as NSString).appendingPathComponent("\(fingerprint).log")
+        let log = "\(dir)/\(fingerprint).log"
         return (socket, log)
     }
 
@@ -465,7 +465,7 @@ actor SystemSSHConnectionPool {
             else { continue }
             let socket = ((try? FileManager.default.contentsOfDirectory(atPath: dir)) ?? [])
                 .first(where: { !$0.hasSuffix(".log") })
-                .map { (dir as NSString).appendingPathComponent($0) }
+                .map { "\(dir)/\($0)" }
             if let socket {
                 let probe = try? runControlCommand(["-S", socket, "-O", "check", "localhost"], timeoutSeconds: 5)
                 if probe?.status == 0 { continue }
@@ -497,7 +497,7 @@ actor SystemSSHConnectionPool {
     /// a hung invocation so a dead master can never block the pool.
     private func runControlCommand(_ args: [String], timeoutSeconds: TimeInterval) throws -> ControlResult {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: Self.sshBinaryPath)
+        process.executableURL = URL(filePath: Self.sshBinaryPath)
         process.arguments = args
         process.standardInput = FileHandle.nullDevice
         let outputPipe = Pipe()
@@ -525,7 +525,7 @@ actor SystemSSHConnectionPool {
     }
 
     private func readLogTail(_ path: String, maxBytes: Int = 4096) -> String {
-        guard let handle = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path)) else { return "" }
+        guard let handle = try? FileHandle(forReadingFrom: URL(filePath: path)) else { return "" }
         defer { try? handle.close() }
         let data = (try? handle.readToEnd()) ?? Data()
         return redactedTail(String(data: data.suffix(maxBytes), encoding: .utf8) ?? "")

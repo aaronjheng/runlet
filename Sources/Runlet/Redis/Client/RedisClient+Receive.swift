@@ -55,7 +55,8 @@ extension RedisClient {
     }
 
     private func receiveLoop() {
-        queue.async {
+        queue.async { [weak self] in
+            guard let self else { return }
             let connection = self.state.withLock { $0.connection }
             connection?.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
                 guard let self else { return }

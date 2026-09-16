@@ -103,7 +103,7 @@ class KeyAuthDelegate: NIOSSHClientUserAuthenticationDelegate {
     }
 
     private func loadKeyFromFile(path: String) throws -> NIOSSHPrivateKey {
-        let keyData = try Data(contentsOf: URL(fileURLWithPath: path))
+        let keyData = try Data(contentsOf: URL(filePath: path))
         guard let keyString = String(data: keyData, encoding: .utf8) else {
             throw SSHTunnelError.invalidKeyFormat
         }

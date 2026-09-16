@@ -87,6 +87,7 @@ struct SyntaxTextEditor: NSViewRepresentable {
 
     // MARK: Coordinator
 
+    @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SyntaxTextEditor
         /// Suppresses highlighting when we programmatically reset `string`.
@@ -148,7 +149,7 @@ struct SyntaxTextEditor: NSViewRepresentable {
             _ textView: NSTextView,
             completions words: [String],
             forPartialWordRange charRange: NSRange,
-            indexOfSelectedItem index: UnsafeMutablePointer<Int?>?
+            indexOfSelectedItem index: UnsafeMutablePointer<Int>?
         ) -> [String] {
             index?.pointee = 0
             guard let provider = parent.completionProvider else { return [] }
@@ -165,6 +166,7 @@ struct SyntaxTextEditor: NSViewRepresentable {
 
 /// The `NSTextView` subclass owning editor behaviors: auto-indent, bracket
 /// pairing, and the `redis.`-triggered completion prompt.
+@MainActor
 final class SyntaxTextView: NSTextView {
     fileprivate weak var coordinator: SyntaxTextEditor.Coordinator?
 
