@@ -142,7 +142,7 @@ private struct FullWidthListRowModifier: ViewModifier {
             .environment(\.listRowIsSelected, selected)
             .background {
                 ZStack {
-                    Color.primary.opacity(isHovering && !selected ? 0.06 : 0)
+                    isHovering && !selected ? AppColor.hoverBackground : Color.clear
                     // Dim to the unemphasized (gray) selection when the window
                     // loses key status, matching native list blur behavior.
                     Color(

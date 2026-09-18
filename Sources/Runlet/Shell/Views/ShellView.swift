@@ -89,7 +89,7 @@ struct ShellView: View {
                 topTrailingRadius: AppRadius.large,
                 style: .continuous
             )
-            .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
+            .strokeBorder(AppColor.subtleBorder, lineWidth: 1)
         )
     }
 

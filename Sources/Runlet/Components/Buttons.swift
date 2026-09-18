@@ -56,12 +56,18 @@ struct SecondaryButtonStyle: ButtonStyle {
             }
             .background {
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                    .fill(Color.primary.opacity(isHovering && isEnabled && !configuration.isPressed ? 0.06 : 0))
+                    .fill(
+                        isHovering && isEnabled && !configuration.isPressed
+                            ? AppColor.hoverBackground : Color.clear
+                    )
             }
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(isHovering && isEnabled ? 0.14 : 0), lineWidth: 1)
+                    .strokeBorder(
+                        isHovering && isEnabled ? AppColor.subtleBorder : Color.clear,
+                        lineWidth: 1
+                    )
             )
             .brightness(configuration.isPressed && isEnabled ? -0.06 : 0)
             .scaleEffect(configuration.isPressed && isEnabled && !reduceMotion ? 0.97 : 1)
@@ -85,8 +91,8 @@ struct ToolbarButtonStyle: ButtonStyle {
             .padding(AppSpacing.mini)
             .background(
                 configuration.isPressed && isEnabled
-                    ? Color.primary.opacity(0.12)
-                    : isHovering && isEnabled ? Color.primary.opacity(0.08) : Color.clear
+                    ? AppColor.controlFillBackground
+                    : isHovering && isEnabled ? AppColor.iconHoverBackground : Color.clear
             )
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous))
             .contentShape(Rectangle())
@@ -156,10 +162,10 @@ struct IconButtonStyle: ButtonStyle {
     private func hoverBackground(isPressed: Bool) -> Color {
         guard isEnabled else { return Color.clear }
         if isPressed {
-            return isDestructive ? Color.red.opacity(0.16) : Color.primary.opacity(0.12)
+            return isDestructive ? AppColor.destructiveBackground : AppColor.controlFillBackground
         }
         if isHovering {
-            return isDestructive ? Color.red.opacity(0.1) : AppColor.iconHoverBackground
+            return isDestructive ? AppColor.destructiveBackground : AppColor.iconHoverBackground
         }
         return Color.clear
     }

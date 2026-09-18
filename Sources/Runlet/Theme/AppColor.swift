@@ -4,6 +4,14 @@ import SwiftUI
 ///
 /// Prefer these over raw `.red`/`.green`/`.blue` so the inventory generator and
 /// future theming always render consistent, readable colors.
+///
+/// Washes (translucent fills for hover/press/track states) resolve through
+/// `NSColor` dynamic providers so each appearance gets a tuned opacity: a wash
+/// that reads clearly on a white surface nearly disappears on a dark one, so
+/// dark mode uses stronger alphas while light mode keeps the airy defaults.
+/// Resolving per appearance — instead of checking `NSApp.effectiveAppearance`
+/// at view-build time — keeps every surface correct when the user switches
+/// styles mid-session, including per-window overrides.
 enum AppColor {
     // MARK: - Status
 
@@ -16,7 +24,9 @@ enum AppColor {
 
     static let codeBackground: Color = Color(nsColor: .textBackgroundColor)
     static let controlBackground: Color = Color(nsColor: .controlBackgroundColor)
-    static let subtleBackground: Color = Color.secondary.opacity(0.12)
+
+    /// Light fill for badges and secondary chrome.
+    static let subtleBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.12)
 
     /// Standard semi-transparent badge background for a given accent color.
     static func badgeBackground(_ color: Color) -> Color {
@@ -24,20 +34,44 @@ enum AppColor {
     }
 
     /// Track background for distribution bars and similar meters.
-    static let trackBackground: Color = Color.primary.opacity(0.12)
+    static let trackBackground = adaptiveColor(.labelColor, light: 0.12, dark: 0.18)
+
+    /// Hairline stroke for custom control chrome (button borders, panel outlines).
+    static let subtleBorder = adaptiveColor(.labelColor, light: 0.12, dark: 0.18)
+
+    /// Tint layered over the sidebar's opaque base so it stays visually
+    /// distinct from the content area; dark mode needs slightly more contrast.
+    static let sidebarTint = adaptiveColor(.labelColor, light: 0.05, dark: 0.07)
 
     /// Highlight background for selected rows/items in lists and tables.
     /// Subtle variant for dense data rows (Profiler, cluster nodes) where the
     /// emphasized system selection would overwhelm the content.
     static let selectionBackground: Color = Color.accentColor.opacity(0.14)
 
+    // MARK: - Interactive washes
+
     /// Hover wash for custom rows. Matches `RefreshControl` so hover feels
     /// identical across toolbars, lists, and icon buttons.
-    static let hoverBackground: Color = Color.primary.opacity(0.06)
+    static let hoverBackground = adaptiveColor(.labelColor, light: 0.06, dark: 0.10)
 
     /// Hover wash for icon buttons. Slightly stronger than rows so small
     /// hit areas read clearly.
-    static let iconHoverBackground: Color = Color.primary.opacity(0.08)
+    static let iconHoverBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.13)
+
+    /// Pressed/selected fill that must stay clearly stronger than hover
+    /// (toolbar button press, segmented toggle selection, unemphasized rows).
+    static let controlFillBackground = adaptiveColor(.labelColor, light: 0.12, dark: 0.16)
+
+    /// Wash behind destructive hover/press feedback (delete buttons).
+    static let destructiveBackground = adaptiveColor(.systemRed, light: 0.12, dark: 0.20)
+
+    // MARK: - Banners
+
+    /// Error banner fill; dark mode needs a stronger wash to stay legible.
+    static let errorBannerBackground = adaptiveColor(.systemRed, light: 0.12, dark: 0.18)
+
+    /// Warning banner fill; dark mode needs a stronger wash to stay legible.
+    static let warningBannerBackground = adaptiveColor(.systemOrange, light: 0.12, dark: 0.18)
 
     // MARK: - Selection content
 
@@ -72,9 +106,22 @@ enum AppColor {
     static let shellCommand: Color = .primary
     static let shellSuccess: Color = .secondary
     static let shellError: Color = .red
-    static let shellOutputBackground: Color = Color.secondary.opacity(0.1)
+    static let shellOutputBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.12)
 
     // MARK: - Syntax highlighting
+
+    /// Resolves `base` with `light` alpha in light appearance and `dark` alpha
+    /// in dark appearance, re-evaluating whenever the surrounding environment
+    /// switches appearance.
+    private static func adaptiveColor(_ base: NSColor, light: Double, dark: Double) -> Color {
+        Color(
+            nsColor: NSColor(
+                name: nil,
+                dynamicProvider: { appearance in
+                    let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    return base.withAlphaComponent(CGFloat(isDark ? dark : light))
+                }))
+    }
 
     private static func dynamicColor(light: NSColor, dark: NSColor) -> Color {
         Color(

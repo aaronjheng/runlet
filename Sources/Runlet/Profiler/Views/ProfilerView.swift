@@ -421,7 +421,7 @@ private struct ProfilerEntryRow: View {
             .background(
                 isSelected
                     ? (controlActiveState == .inactive
-                        ? Color.primary.opacity(0.08) : AppColor.selectionBackground)
+                        ? AppColor.iconHoverBackground : AppColor.selectionBackground)
                     : isHovering ? AppColor.hoverBackground : Color.clear
             )
             .onHover { isHovering = $0 }

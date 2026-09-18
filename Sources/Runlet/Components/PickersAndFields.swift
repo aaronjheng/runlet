@@ -88,8 +88,8 @@ private struct ToggleButton<Label: View>: View {
         .foregroundStyle(isSelected ? .primary : .secondary)
         .background(
             isSelected
-                ? Color.primary.opacity(0.12)
-                : isHovering ? Color.primary.opacity(0.06) : Color.clear,
+                ? AppColor.controlFillBackground
+                : isHovering ? AppColor.hoverBackground : Color.clear,
             in: backgroundShape
         )
         .onHover { isHovering = $0 }
@@ -195,7 +195,7 @@ private struct FilterFieldIconButton: View {
             )
             .contentShape(Rectangle())
             .background(
-                Color.primary.opacity(isHovering ? 0.08 : 0),
+                isHovering ? AppColor.iconHoverBackground : Color.clear,
                 in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
             )
             .onHover { isHovering = $0 }
@@ -251,7 +251,7 @@ struct OptionsPicker<Option: Hashable & Sendable>: View {
             .foregroundStyle(.primary)
             .background(.background.secondary)
             .background(
-                Color.primary.opacity(isHovering ? 0.06 : 0),
+                isHovering ? AppColor.hoverBackground : Color.clear,
                 in: RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
             )
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))

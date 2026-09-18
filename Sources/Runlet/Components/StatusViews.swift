@@ -48,7 +48,12 @@ struct ErrorBanner: View {
             case .warning: AppColor.warning
             }
         }
-        var background: Color { color.opacity(0.12) }
+        var background: Color {
+            switch self {
+            case .error: AppColor.errorBannerBackground
+            case .warning: AppColor.warningBannerBackground
+            }
+        }
     }
 
     let message: String
@@ -191,7 +196,7 @@ struct RefreshControl: View {
                 .contentShape(Rectangle())
                 .background(
                     isRefreshHovering && !isLoading
-                        ? Color.primary.opacity(0.08)
+                        ? AppColor.iconHoverBackground
                         : Color.clear
                 )
                 .clipShape(
@@ -252,7 +257,7 @@ struct RefreshControl: View {
             .contentShape(Rectangle())
             .background(
                 isMenuHovering && !isLoading
-                    ? Color.primary.opacity(0.08)
+                    ? AppColor.iconHoverBackground
                     : Color.clear
             )
             .clipShape(
@@ -298,7 +303,7 @@ struct RefreshButton: View {
                 .contentShape(Rectangle())
                 .background(
                     isHovering && !isLoading
-                        ? Color.primary.opacity(0.08)
+                        ? AppColor.iconHoverBackground
                         : Color.clear
                 )
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))

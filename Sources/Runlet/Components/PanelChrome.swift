@@ -15,7 +15,7 @@ extension View {
     /// subtle sidebar/content contrast the system material used to provide.
     func flatSidebarBackground() -> some View {
         scrollContentBackground(.hidden)
-            .background(Color.primary.opacity(0.05))
+            .background(AppColor.sidebarTint)
             .background(Color(nsColor: .windowBackgroundColor))
     }
 }
