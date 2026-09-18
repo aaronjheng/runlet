@@ -178,9 +178,9 @@ struct SlowLogView: View {
     private var slowLogThresholdText: String {
         let micros = tab.slowLogConfig.threshold
         if micros >= 1_000_000 {
-            return String(format: "%.1f s", Double(micros) / 1_000_000)
+            return (Double(micros) / 1_000_000).formatted(.number.precision(.fractionLength(1))) + " s"
         } else if micros >= 1_000 {
-            return String(format: "%.0f ms", Double(micros) / 1_000)
+            return (Double(micros) / 1_000).formatted(.number.precision(.fractionLength(0))) + " ms"
         }
         return "\(micros) µs"
     }

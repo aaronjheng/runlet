@@ -283,7 +283,7 @@ extension View {
 /// Clickable sort control for a key-detail table column header, styled after
 /// Sequel Ace: it draws the standard AppKit sort indicator and handles the
 /// click itself. The underlying column is intentionally left non-sortable
-/// because macOS 26 draws an extra separator in front of the active sort
+/// because macOS 27 draws an extra separator in front of the active sort
 /// column; this overlay reproduces the indicator without that artifact.
 struct HeaderSortControl: View {
     let ascending: Bool

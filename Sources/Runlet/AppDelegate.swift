@@ -41,6 +41,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSApplication.didUpdateNotification,
             object: nil
         )
+        sweepStaleTemporaryKeychains()
         openNewTab()
         if let window = NSApp.keyWindow {
             currentAppearance.applyToWindow(window)

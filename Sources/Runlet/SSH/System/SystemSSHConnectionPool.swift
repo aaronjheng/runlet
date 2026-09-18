@@ -107,7 +107,7 @@ actor SystemSSHConnectionPool {
             while true {
                 try Task.checkCancellation()
                 if connections[key] == nil {
-                    try launchSharedConnection(key: key, setupTimeout: setupTimeout)
+                    try await launchSharedConnection(key: key, setupTimeout: setupTimeout)
                 }
                 if try await waitUntilConnectionReady(key: key, deadline: deadline) {
                     connectionID = connections[key]?.id ?? connectionID
@@ -120,7 +120,7 @@ actor SystemSSHConnectionPool {
             }
 
             do {
-                let result = try runControlCommand(
+                let result = try await runControlCommand(
                     ["-S", entry.controlPath, "-O", "forward", "-L", spec, entry.destination],
                     timeoutSeconds: 15
                 )
@@ -137,7 +137,7 @@ actor SystemSSHConnectionPool {
             do {
                 try await waitUntilLocalPortOpen(localPort, deadline: deadline)
             } catch {
-                cancelForwardingBestEffort(entry: entry, spec: spec)
+                await cancelForwardingBestEffort(entry: entry, spec: spec)
                 teardownConnectionIfUnused(key: key)
                 throw error
             }
@@ -172,7 +172,7 @@ actor SystemSSHConnectionPool {
             return
         }
 
-        cancelForwardingBestEffort(entry: entry, spec: lease.forwardingSpec)
+        await cancelForwardingBestEffort(entry: entry, spec: lease.forwardingSpec)
         entry.refcount = max(0, entry.refcount - 1)
 
         guard entry.refcount == 0 else {
@@ -186,7 +186,7 @@ actor SystemSSHConnectionPool {
         }
 
         connections.removeValue(forKey: lease.key)
-        _ = try? runControlCommand(["-S", entry.controlPath, "-O", "exit", entry.destination], timeoutSeconds: 5)
+        _ = try? await runControlCommand(["-S", entry.controlPath, "-O", "exit", entry.destination], timeoutSeconds: 5)
         if entry.process.isRunning {
             entry.process.terminate()
         }
@@ -197,9 +197,9 @@ actor SystemSSHConnectionPool {
 
     // MARK: - Master lifecycle
 
-    private func launchSharedConnection(key: Key, setupTimeout: TimeInterval) throws {
+    private func launchSharedConnection(key: Key, setupTimeout: TimeInterval) async throws {
         let destination = key.user.isEmpty ? key.host : "\(key.user)@\(key.host)"
-        let paths = try controlPaths(key: key)
+        let paths = try await controlPaths(key: key)
         let controlPath = paths.socket
         let logPath = paths.log
 
@@ -289,7 +289,7 @@ actor SystemSSHConnectionPool {
                 // child keeps serving the socket: adopt it instead of
                 // reporting a silent death.
                 if entry.process.terminationStatus == 0 {
-                    let adopted = try? runControlCommand(
+                    let adopted = try? await runControlCommand(
                         ["-S", entry.controlPath, "-O", "check", entry.destination],
                         timeoutSeconds: 5
                     )
@@ -319,7 +319,7 @@ actor SystemSSHConnectionPool {
                 throw SSHTunnelError.connectionFailed("System ssh connection timed out for \(key.host):\(key.port)")
             }
             // `-O check` fails until the master accepts multiplex commands.
-            let check = try? runControlCommand(
+            let check = try? await runControlCommand(
                 ["-S", entry.controlPath, "-O", "check", entry.destination],
                 timeoutSeconds: 5
             )
@@ -395,8 +395,8 @@ actor SystemSSHConnectionPool {
         return message
     }
 
-    private func cancelForwardingBestEffort(entry: SharedConnection, spec: String) {
-        let result = try? runControlCommand(
+    private func cancelForwardingBestEffort(entry: SharedConnection, spec: String) async {
+        let result = try? await runControlCommand(
             ["-S", entry.controlPath, "-O", "cancel", "-L", spec, entry.destination],
             timeoutSeconds: 5
         )
@@ -411,8 +411,8 @@ actor SystemSSHConnectionPool {
     /// process-private socket dir. A leftover socket can only belong to a
     /// dead master (the pool holds no live entry for it when this runs), so
     /// unlinking before rebind is safe.
-    private func controlPaths(key: Key) throws -> (socket: String, log: String) {
-        let dir = try ensureSocketDir()
+    private func controlPaths(key: Key) async throws -> (socket: String, log: String) {
+        let dir = try await ensureSocketDir()
         // Fingerprint of the SSH destination (`user@host:port#keyPath`), so
         // each destination gets its own socket/log pair in the shared dir.
         let fingerprint = String(stableHash("\(key.user)@\(key.host):\(key.port)#\(key.keyPath)").prefix(12))
@@ -425,9 +425,9 @@ actor SystemSSHConnectionPool {
         return (socket, log)
     }
 
-    private func ensureSocketDir() throws -> String {
+    private func ensureSocketDir() async throws -> String {
         if let socketDir { return socketDir }
-        sweepStaleSocketDirsIfNeeded()
+        await sweepStaleSocketDirsIfNeeded()
         let dir = try makePrivateSocketDir()
         socketDir = dir
         return dir
@@ -452,7 +452,7 @@ actor SystemSSHConnectionPool {
     /// live master. Only directories owned by the current user are touched;
     /// a master that still answers `-O check` (e.g. another app instance) is
     /// left alone.
-    private func sweepStaleSocketDirsIfNeeded() {
+    private func sweepStaleSocketDirsIfNeeded() async {
         guard !didSweepStaleSocketDirs else { return }
         didSweepStaleSocketDirs = true
         guard let names = try? FileManager.default.contentsOfDirectory(atPath: "/tmp") else { return }
@@ -467,7 +467,7 @@ actor SystemSSHConnectionPool {
                 .first(where: { !$0.hasSuffix(".log") })
                 .map { "\(dir)/\($0)" }
             if let socket {
-                let probe = try? runControlCommand(["-S", socket, "-O", "check", "localhost"], timeoutSeconds: 5)
+                let probe = try? await runControlCommand(["-S", socket, "-O", "check", "localhost"], timeoutSeconds: 5)
                 if probe?.status == 0 { continue }
             }
             try? FileManager.default.removeItem(atPath: dir)
@@ -495,7 +495,20 @@ actor SystemSSHConnectionPool {
     /// Runs a short-lived multiplex control command (`-O check/forward/
     /// cancel/exit`). These complete in milliseconds; a watchdog terminates
     /// a hung invocation so a dead master can never block the pool.
-    private func runControlCommand(_ args: [String], timeoutSeconds: TimeInterval) throws -> ControlResult {
+    ///
+    /// `Process.waitUntilExit()` blocks its thread, so the blocking wait hops
+    /// to a detached task (global pool) instead of stalling this actor's
+    /// executor behind every other pooled tunnel.
+    private func runControlCommand(_ args: [String], timeoutSeconds: TimeInterval) async throws -> ControlResult {
+        try await Task.detached {
+            try Self.runControlCommandBlocking(args, timeoutSeconds: timeoutSeconds)
+        }.value
+    }
+
+    private nonisolated static func runControlCommandBlocking(
+        _ args: [String],
+        timeoutSeconds: TimeInterval
+    ) throws -> ControlResult {
         let process = Process()
         process.executableURL = URL(filePath: Self.sshBinaryPath)
         process.arguments = args

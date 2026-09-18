@@ -167,7 +167,10 @@ struct DatabaseAnalysisView: View {
 
             AnalysisStatView(label: "Total Keys", value: "\(analysis.totalKeys)")
             AnalysisStatView(label: "Total Memory", value: analysis.serverMetrics.usedMemoryHuman)
-            AnalysisStatView(label: "Hit Rate", value: String(format: "%.1f%%", analysis.serverMetrics.hitRate))
+            AnalysisStatView(
+                label: "Hit Rate",
+                value: (analysis.serverMetrics.hitRate / 100).formatted(.percent.precision(.fractionLength(1)))
+            )
             AnalysisStatView(label: "Ops/sec", value: "\(analysis.serverMetrics.opsPerSecond)")
             AnalysisStatView(label: "Clients", value: "\(analysis.serverMetrics.connectedClients)")
 
@@ -348,7 +351,7 @@ struct DatabaseAnalysisView: View {
             "Keys Sampled: \(analysis.keysSampled)\(analysis.isEstimate ? " (estimate)" : "")",
             "Total Keys: \(analysis.totalKeys)",
             "Total Memory: \(analysis.serverMetrics.usedMemoryHuman)",
-            "Hit Rate: \(String(format: "%.1f%%", analysis.serverMetrics.hitRate))",
+            "Hit Rate: \((analysis.serverMetrics.hitRate / 100).formatted(.percent.precision(.fractionLength(1))))",
             "Ops/sec: \(analysis.serverMetrics.opsPerSecond)",
             "Clients: \(analysis.serverMetrics.connectedClients)",
             "",

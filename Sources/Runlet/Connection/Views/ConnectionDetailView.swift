@@ -487,7 +487,7 @@ struct ConnectionDetailView: View {
             isTesting = false
             switch outcome {
             case .success(let latencyMs, let reply):
-                let elapsed = String(format: "%.2f", latencyMs)
+                let elapsed = latencyMs.formatted(.number.precision(.fractionLength(2)))
                 if let reply, reply != "PONG" {
                     testResult = "OK — \(reply) (\(elapsed) ms)"
                 } else {

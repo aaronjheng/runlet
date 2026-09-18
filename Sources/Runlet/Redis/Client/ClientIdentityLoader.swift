@@ -59,7 +59,9 @@ func loadClientIdentity(certificatePath: String, keyPath: String) throws -> Load
 
     // Separate PEM cert + key: `SecIdentityCreateWithCertificate` only finds the
     // private key when it already lives in a keychain, so import both into a
-    // throwaway keychain and assemble the identity from there.
+    // throwaway keychain and assemble the identity from there. (`SecIdentityCreate`
+    // from in-memory key material is not an option: `SecKeyCreateWithData`
+    // rejects PKCS#8 and SEC1, the formats modern tools emit by default.)
     let (keychain, keychainPath) = try createTemporaryKeychain()
 
     do {
@@ -172,4 +174,17 @@ private func loadPKCS12(at url: URL) throws -> LoadedClientIdentity {
 /// TLS setups never leave files behind in the temporary directory.
 private func deleteKeychainFile(at path: String) {
     try? FileManager.default.removeItem(atPath: path)
+}
+
+/// Removes temporary keychains orphaned by a previous crash or `kill -9`.
+/// Disconnect and failure paths delete their own keychain, so at launch every
+/// `runlet-tls-*.keychain` file belongs to a dead process. Mirrors the
+/// system-ssh socket sweep; the temporary directory is per-user, so only our
+/// own files are ever visible here.
+func sweepStaleTemporaryKeychains() {
+    let dir = FileManager.default.temporaryDirectory
+    guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return }
+    for name in names where name.hasPrefix("runlet-tls-") {
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent(name))
+    }
 }

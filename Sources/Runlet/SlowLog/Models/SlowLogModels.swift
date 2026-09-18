@@ -16,9 +16,9 @@ struct SlowLogEntry: Identifiable, Sendable {
 
     var durationText: String {
         if duration >= 1_000_000 {
-            return String(format: "%.2f s", Double(duration) / 1_000_000)
+            return (Double(duration) / 1_000_000).formatted(.number.precision(.fractionLength(2))) + " s"
         } else if duration >= 1_000 {
-            return String(format: "%.2f ms", Double(duration) / 1_000)
+            return (Double(duration) / 1_000).formatted(.number.precision(.fractionLength(2))) + " ms"
         } else {
             return "\(duration) \u{00B5}s"
         }

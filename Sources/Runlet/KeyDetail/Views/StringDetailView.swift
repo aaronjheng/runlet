@@ -107,12 +107,8 @@ struct StringDetailView: View {
             return value
         }
         guard !data.isEmpty else { return value }
-        do {
-            let decompressed = try (data as NSData).decompressed(using: .zlib) as Data
-            return String(data: decompressed, encoding: .utf8) ?? value
-        } catch {
-            return value
-        }
+        guard let decompressed = gunzip(data) else { return value }
+        return String(data: decompressed, encoding: .utf8) ?? value
     }
 
     /// Why the current format cannot decode `value`, if any. Shown in an
@@ -133,15 +129,13 @@ struct StringDetailView: View {
                 return "Unable to read data — showing the raw value."
             }
             guard !data.isEmpty else { return nil }
-            do {
-                let decompressed = try (data as NSData).decompressed(using: .zlib) as Data
-                guard String(data: decompressed, encoding: .utf8) != nil else {
-                    return "Decompressed data is not valid UTF-8 — showing the raw value."
-                }
-                return nil
-            } catch {
+            guard let decompressed = gunzip(data) else {
                 return "GZip decompression failed — showing the raw value."
             }
+            guard String(data: decompressed, encoding: .utf8) != nil else {
+                return "Decompressed data is not valid UTF-8 — showing the raw value."
+            }
+            return nil
         default:
             return nil
         }
@@ -232,6 +226,39 @@ struct StringDetailView: View {
 
         }
     }
+}
+
+/// Inflates one gzip member (RFC 1952). `NSData` offers `.zlib` but no `.gzip`
+/// algorithm; it does accept the raw deflate stream, so this validates the
+/// header, skips the optional fields selected by the flags, and inflates the
+/// body between them and the 8-byte trailer. Returns nil for anything that is
+/// not a single gzip member (including zlib streams and plain text), so
+/// callers fall back to the raw value.
+private func gunzip(_ data: Data) -> Data? {
+    guard data.count > 18 else { return nil }
+    let bytes = [UInt8](data)
+    guard bytes[0] == 0x1F, bytes[1] == 0x8B, bytes[2] == 0x08 else { return nil }
+    let flags = bytes[3]
+    guard flags & 0xE0 == 0 else { return nil }
+    var pos = 10
+    if flags & 0x04 != 0 {
+        guard pos + 2 <= bytes.count else { return nil }
+        pos += 2 + Int(bytes[pos]) + (Int(bytes[pos + 1]) << 8)
+    }
+    if flags & 0x08 != 0 {
+        guard let end = bytes[pos...].firstIndex(of: 0) else { return nil }
+        pos = end + 1
+    }
+    if flags & 0x10 != 0 {
+        guard let end = bytes[pos...].firstIndex(of: 0) else { return nil }
+        pos = end + 1
+    }
+    if flags & 0x02 != 0 {
+        pos += 2
+    }
+    guard pos + 8 <= bytes.count else { return nil }
+    let body = data[pos..<(bytes.count - 8)]
+    return try? (body as NSData).decompressed(using: .zlib) as Data
 }
 
 private struct PlainTextEditor: NSViewRepresentable {
