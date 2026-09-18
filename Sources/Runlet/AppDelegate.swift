@@ -25,6 +25,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
     private var settingsToolbarController: SettingsToolbarController?
     private let delegateManager = WindowDelegateManager()
+    /// Autosave numbers of the windows currently on screen (frame memory).
+    private var windowFrameNumbersInUse: Set<Int> = []
 
     private var currentAppearance: AppAppearance {
         AppAppearance(rawValue: SettingsStore.shared.settings.appearance) ?? .system
@@ -89,6 +91,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func openNewWindow() {
         let state = tabManager.createTab()
         createWindow(for: state, tabbed: false)
+    }
+
+    /// Claims the smallest free window-frame autosave number, so reopening
+    /// windows reuses the frames of recently closed ones.
+    private func reserveWindowFrameNumber() -> Int {
+        var number = 1
+        while windowFrameNumbersInUse.contains(number) { number += 1 }
+        windowFrameNumbersInUse.insert(number)
+        return number
     }
 
     @objc func toggleFullScreen() {
@@ -185,6 +196,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.collectionBehavior.insert(NSWindow.CollectionBehavior.fullScreenPrimary)
         window.tabbingMode = .preferred
         window.tabbingIdentifier = "Runlet"
+        // Remember each window's frame across launches (AppKit-managed UI
+        // state in UserDefaults): sequential per-window autosave names so
+        // several tabbed windows never fight over one frame, with numbers
+        // recycled as windows close. The first launch keeps the contentRect
+        // above - there is nothing saved yet.
+        let frameNumber = reserveWindowFrameNumber()
+        window.setFrameAutosaveName("Runlet Window \(frameNumber)")
 
         if tabbed, let existingWindow = NSApp.keyWindow {
             existingWindow.addTabbedWindow(window, ordered: .above)
@@ -205,6 +223,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let self, let window {
                 self.delegateManager.removeDelegate(for: window)
                 window.delegate = nil
+                self.windowFrameNumbersInUse.remove(frameNumber)
             }
             Task { @MainActor in
                 guard let self else { return }
