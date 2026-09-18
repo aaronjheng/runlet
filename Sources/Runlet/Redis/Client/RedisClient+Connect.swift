@@ -206,6 +206,9 @@ extension RedisClient {
 
     func disconnect(publishState: Bool) {
         let disconnectAction = {
+            // Finish cleanly first: `cancelConnectionOnQueue` below would
+            // otherwise end the MONITOR stream with `notConnected`.
+            self.finishMonitor(with: nil)
             self.cancelConnectionOnQueue()
             self.clearClientIdentity()
         }

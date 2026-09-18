@@ -72,10 +72,12 @@ extension RedisClient {
                     self.receiveLoop()
                 } else {
                     self.queue.async {
-                        self.completePendingCommands(with: error ?? RedisError.notConnected)
+                        let finishError: Error = error ?? RedisError.notConnected
+                        self.completePendingCommands(with: finishError)
                         self.state.withLock {
                             $0.parser = RESPParser()
                         }
+                        self.finishMonitor(with: finishError)
                     }
                     self.updateConnectionState(isConnected: false, lastError: error?.localizedDescription)
                 }
@@ -106,6 +108,7 @@ extension RedisClient {
         handshakeTask?.cancel()
         connection?.cancel()
         completePendingCommands(with: error)
+        finishMonitor(with: error)
     }
 
     func cancelConnectionForCancellation() {
@@ -128,19 +131,29 @@ extension RedisClient {
     private func processBuffer() {
         let completedCommands: [(PendingCommand, RESPValue)]
         let pushedMessages: [RESPValue]
+        let monitorLines: [String]
+        let monitorFailure: Error?
         let protocolFailure: Error?
-        (completedCommands, pushedMessages, protocolFailure) = state.withLock {
+        (completedCommands, pushedMessages, monitorLines, monitorFailure, protocolFailure) = state.withLock {
             var completedCommands: [(PendingCommand, RESPValue)] = []
             var pushedMessages: [RESPValue] = []
+            var monitorLines: [String] = []
+            var monitorFailure: Error?
             var protocolFailure: Error?
             do {
                 while let message = try $0.parser.parse() {
                     switch message {
                     case .response(let value):
-                        guard !$0.pendingCompletions.isEmpty else { continue }
-                        let pendingResponse = $0.pendingCompletions.removeFirst()
-                        if let completion = pendingResponse.command {
-                            completedCommands.append((completion, value))
+                        if !$0.pendingCompletions.isEmpty {
+                            let pendingResponse = $0.pendingCompletions.removeFirst()
+                            if let completion = pendingResponse.command {
+                                completedCommands.append((completion, value))
+                            }
+                        } else if $0.isMonitoring, let line = value.string {
+                            // Unsolicited MONITOR output: no in-flight request.
+                            monitorLines.append(line)
+                        } else if $0.isMonitoring, case .error(let message) = value {
+                            monitorFailure = RedisError.commandError(message)
                         }
                     case .push(let value):
                         // Unsolicited RESP3 push: never matches an in-flight request.
@@ -158,13 +171,26 @@ extension RedisClient {
                 for completion in pending {
                     completion.complete(.failure(failure))
                 }
+                if $0.isMonitoring {
+                    monitorFailure = failure
+                }
                 protocolFailure = error
             }
-            return (completedCommands, pushedMessages, protocolFailure)
+            return (completedCommands, pushedMessages, monitorLines, monitorFailure, protocolFailure)
         }
 
         for (completion, value) in completedCommands {
             completion.complete(.success(value))
+        }
+
+        if !monitorLines.isEmpty {
+            let continuation = state.withLock { $0.monitorContinuation }
+            for line in monitorLines {
+                continuation?.yield(line)
+            }
+        }
+        if let monitorFailure {
+            finishMonitor(with: monitorFailure)
         }
 
         if let protocolFailure {

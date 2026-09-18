@@ -147,7 +147,7 @@ class TabState {
     /// A non-reset "load more" that arrived while a scan was in flight.
     var pendingLoadMore = false
     var profilerTask: Task<Void, Never>?
-    var profilerMonitorClients: [RedisMonitorClient] = []
+    var profilerMonitorClients: [RedisClient] = []
     var profilerMonitorTasks: RedisProfilerTaskBag?
     var profilerSSHTunnel: SSHTunnel?
     var profilerClusterTunnelManager: SSHClusterTunnelManager?

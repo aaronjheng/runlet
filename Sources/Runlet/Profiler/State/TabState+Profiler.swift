@@ -150,7 +150,7 @@ extension TabState {
         var connectHost = config.host
         var connectPort = config.port
         var tunnel: SSHTunnel?
-        var monitorClient: RedisMonitorClient?
+        var monitorClient: RedisClient?
 
         // Build every resource locally and publish nothing to shared state here.
         // The caller publishes the returned stream once the generation is confirmed,
@@ -228,7 +228,7 @@ extension TabState {
         )
         let taskBag = RedisProfilerTaskBag()
 
-        var monitorClients: [RedisMonitorClient] = []
+        var monitorClients: [RedisClient] = []
         var didTransferOwnership = false
 
         defer {
@@ -282,8 +282,11 @@ extension TabState {
         config: RedisConnectionConfig,
         host: String,
         port: UInt16
-    ) -> RedisMonitorClient {
-        RedisMonitorClient(
+    ) -> RedisClient {
+        // A dedicated MONITOR connection per node: RESP2 with the plain AUTH
+        // handshake (no HELLO), matching what MONITOR expects. Never send
+        // other commands on it once monitoring starts.
+        RedisClient(
             host: host,
             port: port,
             username: config.username.isEmpty ? nil : config.username,
@@ -293,6 +296,7 @@ extension TabState {
             caCertificatePath: config.tls.caCertificatePath,
             clientCertificatePath: config.tls.clientCertificatePath,
             clientKeyPath: config.tls.clientKeyPath,
+            preferredProtocolVersion: .resp2,
             connectionTimeout: config.connectionTimeout
         )
     }

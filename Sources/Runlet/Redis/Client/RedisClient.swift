@@ -14,6 +14,11 @@ final class RedisClient: Sendable {
         var protocolFallbackReason: String?
         var pushHandler: (@Sendable (RESPValue) -> Void)?
         var handshakeTask: Task<Void, Never>?
+        /// True once `startMonitoring()` has put this dedicated connection into
+        /// MONITOR mode. Unsolicited responses are then MONITOR output lines
+        /// routed to `monitorContinuation` instead of being dropped.
+        var isMonitoring = false
+        var monitorContinuation: AsyncThrowingStream<String, Error>.Continuation?
     }
 
     let state = Mutex(State())

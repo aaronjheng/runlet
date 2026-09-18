@@ -30,7 +30,7 @@ struct RedisProfilerCapture: Sendable {
 
 struct RedisProfilerStream {
     let stream: AsyncThrowingStream<RedisProfilerCapture, Error>
-    let monitorClients: [RedisMonitorClient]
+    let monitorClients: [RedisClient]
     let monitorTasks: RedisProfilerTaskBag?
     let tunnel: SSHTunnel?
     let tunnelManager: SSHClusterTunnelManager?
