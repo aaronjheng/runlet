@@ -9,27 +9,40 @@ struct SlowLogEntry: Identifiable, Sendable {
     let command: [String]
     let clientIP: String
     let clientName: String
+    /// Precomputed at fetch: the filter lowercases three fields per row per
+    /// keystroke, and the columns reformat per body.
+    let searchText: String
+    let durationText: String
+    let timestampText: String
+
+    init(id: Int, timestamp: Date, duration: Int, command: [String], clientIP: String, clientName: String) {
+        self.id = id
+        self.timestamp = timestamp
+        self.duration = duration
+        self.command = command
+        self.clientIP = clientIP
+        self.clientName = clientName
+        self.durationText = Self.formatDuration(duration)
+        self.timestampText = Self.iso8601Formatter.string(from: timestamp)
+        self.searchText = ([command.joined(separator: " "), clientIP, clientName]).joined(separator: " ").lowercased()
+    }
 
     var durationMs: Double {
         Double(duration) / 1000.0
     }
 
-    var durationText: String {
+    private static func formatDuration(_ duration: Int) -> String {
         if duration >= 1_000_000 {
             return (Double(duration) / 1_000_000).formatted(.number.precision(.fractionLength(2))) + " s"
         } else if duration >= 1_000 {
             return (Double(duration) / 1_000).formatted(.number.precision(.fractionLength(2))) + " ms"
         } else {
-            return "\(duration) \u{00B5}s"
+            return "\(duration) µs"
         }
     }
 
-    /// ISO 8601 timestamp in local time, e.g. `2026-09-09T14:23:05+08:00`.
-    var timestampText: String {
-        Self.iso8601Formatter.string(from: timestamp)
-    }
-
-    /// Relative age for tooltips, e.g. `3 minutes ago`.
+    /// Relative age for tooltips stays computed: it depends on `.now`.
+    /// E.g. `3 minutes ago`.
     var relativeTimestampText: String {
         Self.relativeFormatter.localizedString(for: timestamp, relativeTo: .now)
     }

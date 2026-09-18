@@ -21,18 +21,31 @@ enum SyntaxTokenType {
     case member  // API member (e.g. redis.call)
     case constant  // named constants (e.g. redis.LOG_DEBUG)
 
+    /// Cached per category: each access built a fresh `NSColor` wrapper per
+    /// token (hundreds per keystroke). The wrapped colors resolve per
+    /// appearance via their dynamic provider, so sharing one instance is
+    /// behavior-identical.
     var color: NSColor {
         switch self {
-        case .keyword: NSColor(AppColor.syntaxKey)
-        case .string: NSColor(AppColor.syntaxString)
-        case .number: NSColor(AppColor.syntaxNumber)
-        case .comment: .secondaryLabelColor
-        case .builtin: NSColor(AppColor.syntaxBuiltin)
-        case .type: NSColor(AppColor.syntaxType)
-        case .member: NSColor(AppColor.syntaxBuiltin)
-        case .constant: NSColor(AppColor.syntaxConstant)
+        case .keyword: Self.keywordColor
+        case .string: Self.stringColor
+        case .number: Self.numberColor
+        case .comment: Self.commentColor
+        case .builtin: Self.builtinColor
+        case .type: Self.typeColor
+        case .member: Self.memberColor
+        case .constant: Self.constantColor
         }
     }
+
+    private static let keywordColor = NSColor(AppColor.syntaxKey)
+    private static let stringColor = NSColor(AppColor.syntaxString)
+    private static let numberColor = NSColor(AppColor.syntaxNumber)
+    private static let commentColor = NSColor.secondaryLabelColor
+    private static let builtinColor = NSColor(AppColor.syntaxBuiltin)
+    private static let typeColor = NSColor(AppColor.syntaxType)
+    private static let memberColor = NSColor(AppColor.syntaxBuiltin)
+    private static let constantColor = NSColor(AppColor.syntaxConstant)
 }
 
 /// Tokenizes source text into highlightable ranges. The editor calls this

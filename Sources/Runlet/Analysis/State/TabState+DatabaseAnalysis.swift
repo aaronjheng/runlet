@@ -129,21 +129,23 @@ extension TabState {
 
         // 3-4. Type / memory / TTL in bounded pipeline batches so a 10k sample
         // never serializes into one giant request, and cancellation lands
-        // between batches instead of only at the very end.
+        // between batches instead of only at the very end. The three commands
+        // per key ride one interleaved pipeline (results at i*3) instead of
+        // three sequential pipelines, cutting round trips 3×.
         let samplesCount = isProduction ? "5" : "0"
         let batchSize = 500
-        var typeResults: [RESPValue] = []
-        var memoryResults: [RESPValue] = []
-        var ttlResults: [RESPValue] = []
+        var metadataResults: [RESPValue] = []
         for batchStart in stride(from: 0, to: sampledKeys.count, by: batchSize) {
             try Task.checkCancellation()
             let batchKeys = Array(sampledKeys[batchStart..<min(batchStart + batchSize, sampledKeys.count)])
-            let typeBatch = try await client.sendPipeline(batchKeys.map { ["TYPE", $0] })
-            let memoryBatch = try await client.sendPipeline(batchKeys.map { ["MEMORY", "USAGE", $0, "SAMPLES", samplesCount] })
-            let ttlBatch = try await client.sendPipeline(batchKeys.map { ["TTL", $0] })
-            typeResults.append(contentsOf: typeBatch)
-            memoryResults.append(contentsOf: memoryBatch)
-            ttlResults.append(contentsOf: ttlBatch)
+            var commands: [[String]] = []
+            commands.reserveCapacity(batchKeys.count * 3)
+            for key in batchKeys {
+                commands.append(["TYPE", key])
+                commands.append(["MEMORY", "USAGE", key, "SAMPLES", samplesCount])
+                commands.append(["TTL", key])
+            }
+            metadataResults.append(contentsOf: try await client.sendPipeline(commands))
         }
 
         var keyMemoryEntries: [KeyMemoryEntry] = []
@@ -156,8 +158,9 @@ extension TabState {
         ]
 
         for (index, key) in sampledKeys.enumerated() {
-            let typeName = index < typeResults.count ? typeResults[index].string ?? "unknown" : "unknown"
-            let rawMemory = index < memoryResults.count ? memoryResults[index] : nil
+            let base = index * 3
+            let typeName = base < metadataResults.count ? metadataResults[base].string ?? "unknown" : "unknown"
+            let rawMemory = base + 1 < metadataResults.count ? metadataResults[base + 1] : nil
             let memory: Int
             if case .error(let message)? = rawMemory {
                 memory = 0
@@ -168,7 +171,7 @@ extension TabState {
             } else {
                 memory = rawMemory?.intValue ?? 0
             }
-            let ttl = index < ttlResults.count ? ttlResults[index].intValue : nil
+            let ttl = base + 2 < metadataResults.count ? metadataResults[base + 2].intValue : nil
 
             typeCountFinal[typeName, default: 0] += 1
             typeMemory[typeName, default: 0] += memory

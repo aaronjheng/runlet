@@ -6,10 +6,26 @@ extension TabState {
     // MARK: - Keys
 
     /// Memoized namespace tree for the current keys/filter/separator.
+    ///
+    /// Keyed by a content hash over the entry key strings plus the separator
+    /// and type filter: hashing is O(total key bytes) while a rebuild is
+    /// O(n log n) ICU-collated compares, and a bare count key would go stale
+    /// on delete-one-create-one (same count, different keys).
     func namespaceTree(for entries: [RedisKeyEntry]) -> KeyNamespaceTree {
-        if let cached = keyNamespaceTreeCache, !entries.isEmpty { return cached }
+        var hasher = Hasher()
+        hasher.combine(entries.count)
+        for entry in entries {
+            hasher.combine(entry.key)
+        }
+        hasher.combine(namespaceSeparator)
+        hasher.combine(keyTypeFilter)
+        let cacheKey = hasher.finalize()
+        if let cached = keyNamespaceTreeCache, keyNamespaceTreeCacheKey == cacheKey {
+            return cached
+        }
         let tree = KeyNamespaceTree(entries: entries, separator: namespaceSeparator)
         keyNamespaceTreeCache = tree
+        keyNamespaceTreeCacheKey = cacheKey
         return tree
     }
 
@@ -207,12 +223,15 @@ extension TabState {
     }
 
     private func applyMetadataResults(_ results: [RESPValue], to entries: [RedisKeyEntry]) {
+        // Collect vanished keys first: `removeAll` per key inside the loop
+        // was O(n) per deletion, O(n·m) over a batch.
+        var vanishedKeys = Set<String>()
         for (entryIndex, entry) in entries.enumerated() {
             guard entryIndex < results.count else { continue }
 
             if let typeName = results[entryIndex].string {
                 if typeName == "none" {
-                    keys.removeAll { $0.key == entry.key }
+                    vanishedKeys.insert(entry.key)
                     if selectedKey?.key == entry.key {
                         clearSelectedKeyDetail()
                     }
@@ -224,6 +243,9 @@ extension TabState {
             if selectedKey?.key == entry.key {
                 keyType = entry.type
             }
+        }
+        if !vanishedKeys.isEmpty {
+            keys.removeAll { vanishedKeys.contains($0.key) }
         }
     }
 }

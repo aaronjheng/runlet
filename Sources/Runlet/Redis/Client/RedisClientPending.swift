@@ -262,4 +262,49 @@ extension RedisClient {
         }
     }
 
+    // MARK: - Pending Response Queue
+
+    /// FIFO helpers live on `State` below so every mutation stays inside one
+    /// `withLock` at call sites.
+}
+
+extension RedisClient.State {
+    mutating func enqueueResponse(_ response: RedisClient.PendingResponse) {
+        pendingCompletions.append(response)
+    }
+
+    mutating func enqueueResponses(_ responses: [RedisClient.PendingResponse]) {
+        pendingCompletions.append(contentsOf: responses)
+    }
+
+    mutating func dequeueResponse() -> RedisClient.PendingResponse? {
+        guard pendingHead < pendingCompletions.count else { return nil }
+        let response = pendingCompletions[pendingHead]
+        pendingHead += 1
+        if pendingHead > 128, pendingHead * 2 >= pendingCompletions.count {
+            pendingCompletions.removeFirst(pendingHead)
+            pendingHead = 0
+        }
+        return response
+    }
+
+    mutating func removeResponse(id: UUID) {
+        if let index = pendingCompletions[pendingHead...].firstIndex(where: { $0.id == id }) {
+            pendingCompletions.remove(at: index)
+        }
+    }
+
+    mutating func cancelResponseSlot(id: UUID) {
+        if let index = pendingCompletions[pendingHead...].firstIndex(where: { $0.id == id }) {
+            pendingCompletions[index] = .cancelled(id)
+        }
+    }
+
+    /// Drains all unconsumed commands (for teardown) and resets the queue.
+    mutating func takeResponseCommands() -> [RedisClient.PendingCommand] {
+        let commands = pendingCompletions[pendingHead...].compactMap(\.command)
+        pendingCompletions.removeAll()
+        pendingHead = 0
+        return commands
+    }
 }

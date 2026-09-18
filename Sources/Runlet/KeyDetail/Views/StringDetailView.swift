@@ -12,45 +12,72 @@ struct StringDetailView: View {
     @State private var isEditing = false
     @State private var editValue = ""
 
-    private var isJson: Bool {
-        guard let data = value.data(using: .utf8) else { return false }
-        return (try? JSONSerialization.jsonObject(with: data)) != nil
-    }
-
-    private var beautifiedValue: String {
+    /// Parse + pretty-print once. The old `isJson`/`beautifiedValue` pair
+    /// parsed the (up to 1 MB) value 2–3× per body evaluation; callers compute
+    /// this once per body and share it.
+    private static func prettyPrintedJSON(_ value: String) -> String? {
         guard
             let data = value.data(using: .utf8),
             let object = try? JSONSerialization.jsonObject(with: data),
             let prettyData = try? JSONSerialization.data(withJSONObject: object, options: .prettyPrinted),
             let prettyString = String(data: prettyData, encoding: .utf8)
         else {
-            return value
+            return nil
         }
         return prettyString
     }
 
-    private var displayedValue: String {
+    /// Decoded text + failure reason computed together, so Base64/GZip inputs
+    /// are decoded once per body instead of once for the error banner and
+    /// again for the displayed text.
+    private struct DecodedValue {
+        let text: String
+        let error: String?
+    }
+
+    private static func decodedValue(_ value: String, format: StringValueFormat) -> DecodedValue {
         switch format {
         case .raw:
-            return value
+            return DecodedValue(text: value, error: nil)
         case .unicode:
-            return unicodeEscapedValue
+            return DecodedValue(text: unicodeEscaped(value), error: nil)
         case .json:
-            return isJson ? beautifiedValue : value
+            // JSON pretty-printing is handled by `prettyPrintedJSON`; a
+            // non-JSON value falls back to raw here.
+            return DecodedValue(text: value, error: nil)
         case .ascii:
-            return asciiValue
+            return DecodedValue(text: ascii(value), error: nil)
         case .hex:
-            return hexValue
+            return DecodedValue(text: hexString(value), error: nil)
         case .base64:
-            return base64DecodedValue
+            guard let data = Data(base64Encoded: value) else {
+                return DecodedValue(text: value, error: "Invalid Base64 data — showing the raw value.")
+            }
+            guard let decoded = String(data: data, encoding: .utf8) else {
+                return DecodedValue(text: value, error: "Base64 data is not valid UTF-8 — showing the raw value.")
+            }
+            return DecodedValue(text: decoded, error: nil)
         case .base64Encode:
-            return base64EncodedValue
+            guard let data = value.data(using: .utf8) else {
+                return DecodedValue(text: value, error: nil)
+            }
+            return DecodedValue(text: data.base64EncodedString(), error: nil)
         case .gzip:
-            return gzipDecompressedValue
+            guard let data = Data(base64Encoded: value) ?? value.data(using: .utf8) else {
+                return DecodedValue(text: value, error: "Unable to read data — showing the raw value.")
+            }
+            guard !data.isEmpty else { return DecodedValue(text: value, error: nil) }
+            guard let decompressed = gunzip(data) else {
+                return DecodedValue(text: value, error: "GZip decompression failed — showing the raw value.")
+            }
+            guard let decoded = String(data: decompressed, encoding: .utf8) else {
+                return DecodedValue(text: value, error: "Decompressed data is not valid UTF-8 — showing the raw value.")
+            }
+            return DecodedValue(text: decoded, error: nil)
         }
     }
 
-    private var unicodeEscapedValue: String {
+    private static func unicodeEscaped(_ value: String) -> String {
         value.unicodeScalars.map { scalar in
             switch scalar.value {
             case 0x0A:
@@ -67,7 +94,7 @@ struct StringDetailView: View {
         }.joined()
     }
 
-    private var asciiValue: String {
+    private static func ascii(_ value: String) -> String {
         String(
             value.utf8.map { byte in
                 if (32...126).contains(byte), let scalar = UnicodeScalar(Int(byte)) {
@@ -78,70 +105,25 @@ struct StringDetailView: View {
         )
     }
 
-    private var hexValue: String {
-        value.utf8.enumerated().map { index, byte in
-            let separator = index > 0 && index % 16 == 0 ? "\n" : " "
-            let prefix = index == 0 ? "" : separator
-            return prefix + String(format: "%02X", byte)
-        }.joined()
-    }
+    /// Hex digit pairs without per-byte `String(format:)` (which parses the
+    /// format string for every byte of the value).
+    private static let hexByteStrings: [String] = (UInt8.min...UInt8.max).map { String(format: "%02X", $0) }
 
-    private var base64DecodedValue: String {
-        guard let data = Data(base64Encoded: value),
-            let decoded = String(data: data, encoding: .utf8)
-        else {
-            return value
+    private static func hexString(_ value: String) -> String {
+        let bytes = Array(value.utf8)
+        var parts: [String] = []
+        parts.reserveCapacity(bytes.count)
+        for (index, byte) in bytes.enumerated() {
+            let separator = index == 0 ? "" : (index % 16 == 0 ? "\n" : " ")
+            parts.append(separator + hexByteStrings[Int(byte)])
         }
-        return decoded
-    }
-
-    private var base64EncodedValue: String {
-        guard let data = value.data(using: .utf8) else {
-            return value
-        }
-        return data.base64EncodedString()
-    }
-
-    private var gzipDecompressedValue: String {
-        guard let data = Data(base64Encoded: value) ?? value.data(using: .utf8) else {
-            return value
-        }
-        guard !data.isEmpty else { return value }
-        guard let decompressed = gunzip(data) else { return value }
-        return String(data: decompressed, encoding: .utf8) ?? value
-    }
-
-    /// Why the current format cannot decode `value`, if any. Shown in an
-    /// `ErrorBanner` above the raw value so decode failures are never
-    /// mistaken for the actual stored value.
-    private var decodeError: String? {
-        switch format {
-        case .base64:
-            guard let data = Data(base64Encoded: value) else {
-                return "Invalid Base64 data — showing the raw value."
-            }
-            guard String(data: data, encoding: .utf8) != nil else {
-                return "Base64 data is not valid UTF-8 — showing the raw value."
-            }
-            return nil
-        case .gzip:
-            guard let data = Data(base64Encoded: value) ?? value.data(using: .utf8) else {
-                return "Unable to read data — showing the raw value."
-            }
-            guard !data.isEmpty else { return nil }
-            guard let decompressed = gunzip(data) else {
-                return "GZip decompression failed — showing the raw value."
-            }
-            guard String(data: decompressed, encoding: .utf8) != nil else {
-                return "Decompressed data is not valid UTF-8 — showing the raw value."
-            }
-            return nil
-        default:
-            return nil
-        }
+        return parts.joined()
     }
 
     var body: some View {
+        // Parse/transform once per body: the JSON branch needs the pretty
+        // string, every other branch needs exactly one decode pass.
+        let jsonPretty = format == .json ? Self.prettyPrintedJSON(value) : nil
         VStack(spacing: 0) {
             if isEditing {
                 VStack(spacing: AppSpacing.small) {
@@ -174,19 +156,20 @@ struct StringDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ScrollView {
-                        if format == .json && isJson {
+                        if let jsonPretty {
                             SelectableText(
-                                text: beautifiedValue,
+                                text: jsonPretty,
                                 font: AppFont.dataCellNSFont,
                                 tokenizer: TreeSitterJsonHighlighter.shared
                             )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(AppSpacing.large)
                         } else {
-                            if let decodeError {
-                                ErrorBanner(message: decodeError)
+                            let decoded = Self.decodedValue(value, format: format)
+                            if let error = decoded.error {
+                                ErrorBanner(message: error)
                             }
-                            Text(decodeError == nil ? displayedValue : value)
+                            Text(decoded.error == nil ? decoded.text : value)
                                 .font(AppFont.dataCell)
                                 .textSelection(.enabled)
                                 .frame(maxWidth: .infinity, alignment: .leading)

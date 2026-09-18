@@ -10,15 +10,14 @@ struct SlowLogView: View {
     private var filteredEntries: [SlowLogEntry] {
         let query = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !query.isEmpty else { return tab.slowLogEntries }
-        return tab.slowLogEntries.filter { entry in
-            entry.commandText.lowercased().contains(query)
-                || entry.clientIP.lowercased().contains(query)
-                || entry.clientName.lowercased().contains(query)
-        }
+        return tab.slowLogEntries.filter { $0.searchText.contains(query) }
     }
 
     var body: some View {
         @Bindable var tab = tab
+        // O(n) filter evaluated once per body and shared by the empty-state
+        // check, the table, the overlay, and the footer.
+        let filtered = filteredEntries
 
         VStack(spacing: 0) {
             // Header
@@ -44,7 +43,7 @@ struct SlowLogView: View {
             }
 
             // Entries list
-            if filteredEntries.isEmpty {
+            if filtered.isEmpty {
                 Spacer()
                 if tab.isLoadingSlowLog {
                     LoadingState(message: "Loading slow log…")
@@ -74,7 +73,7 @@ struct SlowLogView: View {
                 }
                 Spacer()
             } else {
-                Table(filteredEntries, selection: $selection) {
+                Table(filtered, selection: $selection) {
                     TableColumn("ID") { entry in
                         Text("#\(entry.id)")
                             .font(AppFont.monoSubheadline)
@@ -118,7 +117,7 @@ struct SlowLogView: View {
                 .tableStyle(.inset)
                 .contextMenu(forSelectionType: Int.self) { ids in
                     if ids.count == 1, let id = ids.first {
-                        if let entry = filteredEntries.first(where: { $0.id == id }) {
+                        if let entry = filtered.first(where: { $0.id == id }) {
                             Button("Copy Command") {
                                 copyToPasteboard(entry.commandText)
                             }
@@ -132,7 +131,7 @@ struct SlowLogView: View {
                     }
                 }
                 .overlay(alignment: .top) {
-                    if tab.isLoadingSlowLog, !filteredEntries.isEmpty {
+                    if tab.isLoadingSlowLog, !filtered.isEmpty {
                         HStack(spacing: AppSpacing.xSmall) {
                             ProgressView()
                                 .controlSize(.small)
@@ -156,7 +155,7 @@ struct SlowLogView: View {
             // Footer
             PanelFooterBar {
                 StatusFooterView(
-                    countText: footerCountText
+                    countText: footerCountText(filteredCount: filtered.count)
                 )
                 Spacer()
             }
@@ -185,13 +184,12 @@ struct SlowLogView: View {
         return "\(micros) µs"
     }
 
-    private var footerCountText: String {
+    private func footerCountText(filteredCount: Int) -> String {
         let total = tab.slowLogEntries.count
-        let filtered = filteredEntries.count
-        if filterText.isEmpty || filtered == total {
+        if filterText.isEmpty || filteredCount == total {
             return pluralizedCount(total, singular: "entry")
         }
-        return "Showing \(filtered) of " + pluralizedCount(total, singular: "entry")
+        return "Showing \(filteredCount) of " + pluralizedCount(total, singular: "entry")
     }
 
     private func durationColor(_ duration: Int) -> Color {

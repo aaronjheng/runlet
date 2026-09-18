@@ -12,17 +12,13 @@ extension RedisClient {
 
     private func removePendingCompletion(id: UUID) {
         state.withLock { state in
-            if let index = state.pendingCompletions.firstIndex(where: { $0.id == id }) {
-                state.pendingCompletions.remove(at: index)
-            }
+            state.removeResponse(id: id)
         }
     }
 
     private func cancelPendingResponseSlot(id: UUID) {
         state.withLock { state in
-            if let index = state.pendingCompletions.firstIndex(where: { $0.id == id }) {
-                state.pendingCompletions[index] = .cancelled(id)
-            }
+            state.cancelResponseSlot(id: id)
         }
     }
 
@@ -87,9 +83,7 @@ extension RedisClient {
 
     private func completePendingCommands(with error: Error) {
         let pendingCompletions = state.withLock {
-            let pendingCompletions = $0.pendingCompletions.compactMap(\.command)
-            $0.pendingCompletions.removeAll()
-            return pendingCompletions
+            $0.takeResponseCommands()
         }
         for completion in pendingCompletions {
             completion.complete(.failure(error))
@@ -144,8 +138,7 @@ extension RedisClient {
                 while let message = try $0.parser.parse() {
                     switch message {
                     case .response(let value):
-                        if !$0.pendingCompletions.isEmpty {
-                            let pendingResponse = $0.pendingCompletions.removeFirst()
+                        if let pendingResponse = $0.dequeueResponse() {
                             if let completion = pendingResponse.command {
                                 completedCommands.append((completion, value))
                             }
@@ -164,8 +157,7 @@ extension RedisClient {
             } catch {
                 // A hard protocol violation: the stream is desynchronized and
                 // more data can never fix it, so fail everything and reconnect.
-                let pending = $0.pendingCompletions.compactMap(\.command)
-                $0.pendingCompletions.removeAll()
+                let pending = $0.takeResponseCommands()
                 $0.parser = RESPParser()
                 let failure = RedisError.commandError("RESP protocol error: \(error.localizedDescription)")
                 for completion in pending {

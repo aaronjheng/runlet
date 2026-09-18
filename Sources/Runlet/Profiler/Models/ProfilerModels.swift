@@ -59,6 +59,14 @@ struct RedisProfilerEntry: Identifiable, Hashable {
     let arguments: [String]
     let rawLine: String
     let node: RedisEndpoint?
+    /// Precomputed at ingest: the filter joins 6+ fields and lowercases the
+    /// whole line, far too expensive to rebuild per row per body evaluation.
+    let searchText: String
+    /// Precomputed at ingest: `Calendar.dateComponents` per row per body was
+    /// pure waste on a value that never changes.
+    let timeText: String
+    /// Precomputed at ingest: the arguments join, minus the command verb.
+    let argumentsText: String
 
     init(rawLine: String, node: RedisEndpoint? = nil, capturedAt: Date = Date()) {
         self.node = node
@@ -82,6 +90,17 @@ struct RedisProfilerEntry: Identifiable, Hashable {
         } else {
             self.rawLine = parsed.prefix + commandText
         }
+
+        argumentsText =
+            redactedArguments.count > 1
+            ? redactedArguments.dropFirst().map(Self.displayArgument).joined(separator: " ")
+            : ""
+        timeText = Self.formatTime(parsed.timestamp)
+        let databaseText = database.map(String.init) ?? "-"
+        let nodeText = node?.address ?? "-"
+        searchText = ([databaseText, nodeText, source, commandName, commandText, self.rawLine] + redactedArguments)
+            .joined(separator: " ")
+            .lowercased()
     }
 
     var databaseText: String {
@@ -92,18 +111,13 @@ struct RedisProfilerEntry: Identifiable, Hashable {
         node?.address ?? "-"
     }
 
-    var timeText: String {
+    private static func formatTime(_ timestamp: Date) -> String {
         let components = Calendar.current.dateComponents([.hour, .minute, .second, .nanosecond], from: timestamp)
         let hour = components.hour ?? 0
         let minute = components.minute ?? 0
         let second = components.second ?? 0
         let millisecond = (components.nanosecond ?? 0) / 1_000_000
         return String(format: "%02d:%02d:%02d.%03d", hour, minute, second, millisecond)
-    }
-
-    var argumentsText: String {
-        guard arguments.count > 1 else { return "" }
-        return arguments.dropFirst().map(Self.displayArgument).joined(separator: " ")
     }
 
     /// The invoked function name for `FCALL` / `FCALL_RO` entries, otherwise `nil`.
@@ -129,12 +143,6 @@ struct RedisProfilerEntry: Identifiable, Hashable {
             let library = libraries.first(where: { $0.functions.contains { $0.name == functionName } })
         else { return nil }
         return "\(library.name).\(functionName)"
-    }
-
-    var searchText: String {
-        ([databaseText, nodeText, source, commandName, commandText, rawLine] + arguments)
-            .joined(separator: " ")
-            .lowercased()
     }
 
     var isNoiseCommand: Bool {

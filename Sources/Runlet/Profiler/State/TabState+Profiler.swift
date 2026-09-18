@@ -33,6 +33,9 @@ extension TabState {
     }
 
     func clearProfiler() {
+        profilerFlushTask?.cancel()
+        profilerFlushTask = nil
+        profilerPendingCaptures = []
         profilerEntries = []
         profilerCapturedCount = 0
         profilerError = nil
@@ -41,6 +44,10 @@ extension TabState {
     private func cancelProfilerResources() {
         profilerTask?.cancel()
         profilerTask = nil
+
+        profilerFlushTask?.cancel()
+        profilerFlushTask = nil
+        flushProfilerCaptures()
 
         profilerMonitorTasks?.cancelAll()
         profilerMonitorTasks = nil
@@ -67,6 +74,7 @@ extension TabState {
         var profilerStream: RedisProfilerStream?
 
         defer {
+            flushProfilerCaptures()
             if profilerGeneration == generation {
                 profilerMonitorTasks?.cancelAll()
                 for client in profilerMonitorClients {
@@ -325,8 +333,31 @@ extension TabState {
     }
 
     private func appendProfilerCapture(_ capture: RedisProfilerCapture) {
-        profilerCapturedCount += 1
-        profilerEntries.append(RedisProfilerEntry(rawLine: capture.line, node: capture.node))
+        profilerPendingCaptures.append(capture)
+        scheduleProfilerFlush()
+    }
+
+    /// Schedules a single delayed flush; lines arriving before it fires join
+    /// the same batch, so one `@Observable` write covers the whole window.
+    private func scheduleProfilerFlush() {
+        guard profilerFlushTask == nil else { return }
+        let generation = profilerGeneration
+        profilerFlushTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(150))
+            // A stop/restart advanced the generation and already flushed (or
+            // discarded) these lines synchronously; never touch newer state.
+            guard generation == self.profilerGeneration else { return }
+            self.flushProfilerCaptures()
+        }
+    }
+
+    private func flushProfilerCaptures() {
+        profilerFlushTask = nil
+        guard !profilerPendingCaptures.isEmpty else { return }
+        let pending = profilerPendingCaptures
+        profilerPendingCaptures = []
+        profilerCapturedCount += pending.count
+        profilerEntries.append(contentsOf: pending.map { RedisProfilerEntry(rawLine: $0.line, node: $0.node) })
 
         if profilerEntries.count > profilerMaxEntries {
             // Slice off the excess in one pass; removeFirst(1) per entry was O(n²).

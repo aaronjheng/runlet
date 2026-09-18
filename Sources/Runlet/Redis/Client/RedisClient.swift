@@ -6,6 +6,11 @@ final class RedisClient: Sendable {
     struct State: Sendable {
         var connection: NWConnection?
         var pendingCompletions: [PendingResponse] = []
+        /// Head index into `pendingCompletions`. Replies are consumed FIFO and
+        /// `removeFirst()` on every reply was an O(pending) memmove per
+        /// message (~125k shifts per 500-command pipeline); the consumed
+        /// prefix is reclaimed in bulk by `dequeueResponse()`.
+        var pendingHead = 0
         var parser = RESPParser()
         var isConnected = false
         var lastError: String?

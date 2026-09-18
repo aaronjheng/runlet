@@ -92,11 +92,16 @@ struct SyntaxTextEditor: NSViewRepresentable {
         var parent: SyntaxTextEditor
         /// Suppresses highlighting when we programmatically reset `string`.
         private var isSettingText = false
-        /// The text that was last highlighted. `textDidChange` highlights
-        /// immediately after every edit; the `updateNSView` pass that follows
-        /// (triggered by the binding write) then skips the redundant second
-        /// highlight.
+        /// The text that was last highlighted. `textDidChange` schedules a
+        /// debounced highlight; the `updateNSView` pass that follows
+        /// (triggered by the binding write) then skips the redundant
+        /// immediate highlight while one is pending.
         private var lastHighlightedText: String?
+        /// Pending debounced highlight task, if any.
+        private var highlightTask: Task<Void, Never>?
+        /// Monotonic token so a stale debounce task never clears a newer
+        /// task's handle.
+        private var highlightGeneration = 0
 
         init(_ parent: SyntaxTextEditor) {
             self.parent = parent
@@ -105,19 +110,35 @@ struct SyntaxTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
-            applyHighlighting(to: textView)
+            scheduleHighlight(for: textView)
         }
 
         // MARK: Highlighting
 
-        /// Re-applies highlighting only if the current text has not been
-        /// highlighted yet. `updateNSView` runs right after `textDidChange`
-        /// handled the edit, so this avoids a second full parse per keystroke
-        /// and per body re-evaluation.
-        func applyHighlightingIfNeeded(to textView: NSTextView) {
-            if textView.string != lastHighlightedText {
-                applyHighlighting(to: textView)
+        /// Burst typing schedules one highlight ~80ms out instead of parsing
+        /// the whole document per keystroke; the parse still lands while the
+        /// user is typing, imperceptibly later.
+        private func scheduleHighlight(for textView: NSTextView) {
+            highlightTask?.cancel()
+            highlightGeneration += 1
+            let generation = highlightGeneration
+            highlightTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(80))
+                guard !Task.isCancelled else { return }
+                self.applyHighlighting(to: textView)
+                if generation == self.highlightGeneration {
+                    self.highlightTask = nil
+                }
             }
+        }
+
+        /// Re-applies highlighting only if the current text has not been
+        /// highlighted yet and no debounced highlight is pending. `updateNSView`
+        /// runs right after `textDidChange` handled the edit, so this avoids a
+        /// second full parse per keystroke and per body re-evaluation.
+        func applyHighlightingIfNeeded(to textView: NSTextView) {
+            guard highlightTask == nil, textView.string != lastHighlightedText else { return }
+            applyHighlighting(to: textView)
         }
 
         func applyHighlighting(to textView: NSTextView) {

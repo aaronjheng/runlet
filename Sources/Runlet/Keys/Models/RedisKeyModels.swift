@@ -147,13 +147,12 @@ struct KeyNamespaceNode: Identifiable {
     let name: String
     var keys: [RedisKeyEntry] = []
     var children: [KeyNamespaceNode] = []
+    /// Subtree size, sealed by `sortRecursively()` at tree-build time so rows
+    /// read it O(1) instead of walking the subtree per body evaluation.
+    private(set) var keyCount = 0
 
     static var root: KeyNamespaceNode {
         KeyNamespaceNode(id: "", name: "")
-    }
-
-    var keyCount: Int {
-        keys.count + children.reduce(0) { $0 + $1.keyCount }
     }
 
     mutating func insert(_ entry: RedisKeyEntry, separator: String) {
@@ -175,6 +174,7 @@ struct KeyNamespaceNode: Identifiable {
         for index in children.indices {
             children[index].sortRecursively()
         }
+        keyCount = keys.count + children.reduce(0) { $0 + $1.keyCount }
     }
 
     private mutating func insert(

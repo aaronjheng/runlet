@@ -37,16 +37,17 @@ struct ProfilerView: View {
         }
     }
 
-    private var selectedEntry: RedisProfilerEntry? {
+    private func selectedEntry(in entries: [RedisProfilerEntry]) -> RedisProfilerEntry? {
         guard let selectedEntryID else { return nil }
-        return filteredEntries.first { $0.id == selectedEntryID }
-    }
-
-    private var lastVisibleEntryID: RedisProfilerEntry.ID? {
-        filteredEntries.last?.id
+        return entries.first { $0.id == selectedEntryID }
     }
 
     var body: some View {
+        // `filteredEntries` parses nothing per row anymore (search text is
+        // precomputed at ingest), but it is still O(n): evaluate once per
+        // body and share the result instead of recomputing per section.
+        let filtered = filteredEntries
+        let selected = selectedEntry(in: filtered)
         VStack(spacing: 0) {
             ProfilerToolbarView(
                 filterText: $filterText,
@@ -66,13 +67,13 @@ struct ProfilerView: View {
             }
 
             ProfilerContentView(
-                entries: filteredEntries,
+                entries: filtered,
                 isStarting: tab.isProfilerStarting,
                 isRunning: tab.isProfilerRunning,
                 isCluster: tab.selectedConnection?.mode == .cluster || !tab.clusterNodes.isEmpty,
                 selectedEntryID: $selectedEntryID,
                 autoScroll: $autoScroll,
-                lastVisibleEntryID: lastVisibleEntryID,
+                lastVisibleEntryID: filtered.last?.id,
                 showLibraryColumn: showLibraryColumn,
                 libraries: tab.functionLibraries,
                 onStart: startProfilerGated
@@ -81,10 +82,10 @@ struct ProfilerView: View {
             Divider()
 
             ProfilerFooterView(
-                filteredCount: filteredEntries.count,
+                filteredCount: filtered.count,
                 retainedCount: tab.profilerEntries.count,
                 capturedCount: tab.profilerCapturedCount,
-                selectedEntry: selectedEntry,
+                selectedEntry: selected,
                 isStarting: tab.isProfilerStarting,
                 isRunning: tab.isProfilerRunning
             )

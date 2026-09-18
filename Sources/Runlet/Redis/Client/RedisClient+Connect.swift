@@ -19,10 +19,9 @@ extension RedisClient {
         let staleConnection = state.withLock { $0.connection }
         staleConnection?.cancel()
         let staleCompletions = state.withLock {
-            let pendingCompletions = $0.pendingCompletions.compactMap(\.command)
+            let pendingCompletions = $0.takeResponseCommands()
             $0.isConnected = false
             $0.lastError = nil
-            $0.pendingCompletions.removeAll()
             $0.parser = RESPParser()
             $0.negotiatedProtocolVersion = .resp2
             $0.serverCapabilities = [:]

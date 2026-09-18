@@ -65,7 +65,7 @@ extension RedisClient {
                     guard pendingCompletion.reserveResponseSlot() else { return }
 
                     self.state.withLock {
-                        $0.pendingCompletions.append(.command(pendingCompletion))
+                        $0.enqueueResponse(.command(pendingCompletion))
                     }
 
                     connection.send(
@@ -138,7 +138,7 @@ extension RedisClient {
                     }
 
                     self.state.withLock {
-                        $0.pendingCompletions.append(contentsOf: pendingCommands.map(PendingResponse.command))
+                        $0.enqueueResponses(pendingCommands.map(PendingResponse.command))
                     }
 
                     connection.send(

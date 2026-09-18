@@ -161,7 +161,7 @@ struct KeysView: View {
 
                     PanelFooterBar {
                         StatusFooterView(
-                            countText: keysFooterText(displayedCount: filteredKeys.count)
+                            countText: keysFooterText(displayedCount: displayedKeys.count)
                         )
                         Spacer()
                     }

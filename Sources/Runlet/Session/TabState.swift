@@ -37,10 +37,13 @@ class TabState {
         didSet { keyNamespaceTreeCache = nil }
     }
     /// Memoized namespace tree for the current keys + filter + separator.
-    /// Invalidation happens through the `didSet` hooks above; without it,
+    /// The cache is keyed by a content hash (`namespaceTree(for:)`), so the
+    /// `didSet` hooks below are only a fast-path clear; without the memo,
     /// every selection change rebuilt the tree O(n log n) in the view body.
     @ObservationIgnored
     var keyNamespaceTreeCache: KeyNamespaceTree?
+    @ObservationIgnored
+    var keyNamespaceTreeCacheKey: Int?
     var selectedKey: RedisKeyEntry?
     /// Monotonic token bumped whenever a fresh key-detail load begins (select,
     /// search, ordering change). In-flight loads capture it and discard their
@@ -147,13 +150,18 @@ class TabState {
     /// A non-reset "load more" that arrived while a scan was in flight.
     var pendingLoadMore = false
     var profilerTask: Task<Void, Never>?
+    /// Ingest-side buffer: MONITOR lines land here and are flushed into
+    /// `profilerEntries` ~6×/s, so a busy server causes one body evaluation
+    /// per batch instead of one per line.
+    var profilerPendingCaptures: [RedisProfilerCapture] = []
+    var profilerFlushTask: Task<Void, Never>?
     var profilerMonitorClients: [RedisClient] = []
     var profilerMonitorTasks: RedisProfilerTaskBag?
     var profilerSSHTunnel: SSHTunnel?
     var profilerClusterTunnelManager: SSHClusterTunnelManager?
     var profilerGeneration = 0
     let profilerMaxEntries = 2_000
-    let keyMetadataPipelineBatchSize = 50
+    let keyMetadataPipelineBatchSize = 200
     let keyDetailPageSize = 100
     let stringDetailTruncationLimit = 1_000_000
     let keyPatternScanIterationLimit = 1_000
