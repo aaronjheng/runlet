@@ -119,7 +119,20 @@ struct ConnectionDetailView: View {
                         }
                     }
 
-                    Section(isNew ? "New Connection" : "Connection") {
+                    Section("Environment") {
+                        HStack {
+                            Text("Environment")
+                            Spacer()
+                            OptionsPicker(
+                                "Environment",
+                                selection: $environment,
+                                options: ConnectionEnvironment.allCases,
+                                label: \.rawValue
+                            )
+                        }
+                    }
+
+                    Section(isNew ? "New Connection" : "Endpoint") {
                         TextField("Name (optional, defaults to host)", text: $name)
                         HStack {
                             Text("Mode")
@@ -154,9 +167,6 @@ struct ConnectionDetailView: View {
                         }
                         TextField("Username", text: $username)
                         SecureField("Password", text: $password)
-                    }
-
-                    Section("TLS/SSL") {
                         Toggle("Enable TLS", isOn: $tls.enabled)
                         if tls.enabled {
                             Toggle("Verify Server Certificate", isOn: $tls.verifyServerCertificate)
@@ -227,19 +237,6 @@ struct ConnectionDetailView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             }
-                        }
-                    }
-
-                    Section("Environment") {
-                        HStack {
-                            Text("Environment")
-                            Spacer()
-                            OptionsPicker(
-                                "Environment",
-                                selection: $environment,
-                                options: ConnectionEnvironment.allCases,
-                                label: \.rawValue
-                            )
                         }
                     }
                 }
