@@ -1,59 +1,75 @@
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["pillow", "numpy"]
+# dependencies = ["pillow", "resvg-py", "fonttools"]
 # ///
 """Generate the Runlet app icon (all 10 AppIcon sizes).
 
+Pipeline: the icon is drawn as SVG — vector ellipses, gradient fills and the
+R mark embedded as a glyph outline path (fontTools) — rendered to a 2048
+master with resvg, then downscaled with Pillow. Everything stays in memory;
+only the 10 PNGs (and `--preview`, if given) touch disk.
+
 Design: 3-layer disc stack measured from the Sequel Ace icon (disc radius,
-ellipse ratio, wall heights, gaps, stack position); stack colors sampled from
-the original icon in commit b6c40c61 (vivid red/yellow/blue); light
-background from the previous generation; the R mark is painted onto the top
-face: the glyph is first rotated inside
-the disc plane (like a bucket spinning in place), then foreshortened
-vertically by the face's ry/rx ratio, so it reads as lying on the disc.
+ellipse ratio, stack height and position); stack colors sampled from the
+original icon in commit b6c40c61 (vivid red/yellow/blue); light background
+from the previous generation. The R mark is painted onto the top face: the
+glyph is first rotated inside the disc plane (like a bucket spinning in
+place), then foreshortened vertically by the face's ry/rx ratio, so it reads
+as lying on the disc. Each side wall carries the arc-following ramp of the
+numpy-drawn predecessor: a center-anchored and an edge-anchored vertical
+ramp blended by a mask of 1-sqrt(1-(dx/rx)^2) reproduces it exactly, since
+the ramp's iso-lines are the front arc translated downward.
 
 Usage:
-    uv run Tools/gen_appicon.py [--spin 25] [--ratio 0.333] [--font-size 340]
-                                [--preview /tmp/icon_master.png]
+    uv run Tools/gen_appicon.py [--gap 34] [--spin 25] [--ratio 0.333]
+                                [--font-size 340]
+                                [--preview /tmp/runlet_icon_master.png]
 
 Writes the 10 PNGs into Assets.xcassets/Runlet.appiconset/ by default.
 """
 import argparse
+import io
+import math
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
-import numpy as np
+import resvg_py
+from PIL import Image
+from fontTools.pens.recordingPen import RecordingPen
+from fontTools.pens.svgPathPen import SVGPathPen
+from fontTools.ttLib import TTCollection, TTFont
 
 ROOT = Path(__file__).resolve().parent.parent
 ICONSET = ROOT / "Assets.xcassets" / "Runlet.appiconset"
 
 # ---- geometry (1024-space), measured from Sequel Ace's AppIcon ----
-SS = 2                       # supersample factor
 OUT = 1024
-BG_BOX = (100, 100, 924, 924)
-BG_R = 225
+RENDER_PX = 2048            # resvg master size before downscaling
+TILE_R = 170                # baked rounded corner (legacy-format icons render as-is)
 CX = 512
-RX, RY = 282, 94             # disc ellipse (ry/rx = 0.333)
-WALL_TOP = 93                # top disc side wall
-WALL_THIN = 95               # thin band wall
-RED_CY = 322                 # top face ellipse center (back edge at y=228)
-BAND1_E = 556 - RY           # thin band: virtual face center (top arc y=556)
-BAND2_E = 700 - RY           # (top arc y=700)
-STACK_SCALE = 1.28           # grow the stack to fill the full-bleed canvas (b6 fill factor)
+RX, RY = 282, 94            # disc ellipse (ry/rx = 0.333)
+STACK_H = 567               # stack height fixed at the measured value (93+188+47+95+49+95);
+                            # the three side walls share what the gaps leave, so the
+                            # silhouette keeps its original size at any gap
+GAP = 34                    # slot between the layers (numpy build used 47 / 49)
+STACK_SCALE = 1.28          # grow the stack to fill the full-bleed canvas (b6 fill factor)
+FACE_DY = 2                 # R mark center sits this far below the top-face center
+
+# ---- R mark (same values as the numpy-drawn predecessor) ----
+SPIN = 25.0                 # in-plane rotation, deg CCW
+RATIO = RY / RX             # face foreshortening
+FONT_SIZE = 340.0           # em size in 1024-space
 
 # ---- palette: sampled from the icon in commit b6c40c61 ----
-def C(hexs):
-    return np.array([int(hexs[i:i+2], 16) for i in (0, 2, 4)], np.float32)
-
-BG_GRAD_TOP = C("F7F8FA")
-BG_GRAD_BOT = C("EDEFF3")
-RED = dict(face_light=C("F8615F"), face_deep=C("E14036"),
-           wall_light=C("EE534E"), wall_mid=C("E94B44"), wall_deep=C("E03E37"))
-YELLOW = dict(face_light=C("F6AD26"), face_deep=C("F5A824"),
-              wall_light=C("F6AD26"), wall_mid=C("F8B82C"), wall_deep=C("F5A824"))
-BLUE = dict(face_light=C("55A3B9"), face_deep=C("4B92D6"),
-            wall_light=C("55A3B9"), wall_mid=C("509BC7"), wall_deep=C("4B92D6"))
+BG_TOP, BG_BOT = "#F7F8FA", "#EDEFF3"
+RED = dict(face_light="#F8615F", face_deep="#E14036",
+           wall_light="#EE534E", wall_mid="#E94B44", wall_deep="#E03E37")
+YELLOW = dict(face_light="#F6AD26", face_deep="#F5A824",
+              wall_light="#F6AD26", wall_mid="#F8B82C", wall_deep="#F5A824")
+BLUE = dict(face_light="#55A3B9", face_deep="#4B92D6",
+            wall_light="#55A3B9", wall_mid="#509BC7", wall_deep="#4B92D6")
+AO_RGB = (30, 24, 34)       # contact shadow between layers
+GROUND_RGB = (52, 58, 76)   # ground shadow under the stack
 
 SIZES = {"icon_512x512@2x.png": 1024, "icon_512x512.png": 512,
          "icon_256x256@2x.png": 512, "icon_256x256.png": 256,
@@ -61,155 +77,287 @@ SIZES = {"icon_512x512@2x.png": 1024, "icon_512x512.png": 512,
          "icon_32x32@2x.png": 64, "icon_32x32.png": 32,
          "icon_16x16@2x.png": 32, "icon_16x16.png": 16}
 
-W = OUT * SS
-_y, _x = np.mgrid[0:W, 0:W].astype(np.float32)
-Xf, Yf = _x / SS, _y / SS
+GAUSS_F = (0, 1 / 6, 1 / 3, 1 / 2, 2 / 3, 5 / 6, 1)  # radial stops sampling exp(-x^2/2)
 
 
-def over(canvas, mask, rgb):
-    m = mask[..., None]
-    col = np.asarray(rgb, np.float32)
-    if col.ndim == 1:
-        col = np.broadcast_to(col, canvas[0].shape)
-    canvas[0] = col * m + canvas[0] * (1 - m)
-    canvas[1] = mask + canvas[1] * (1 - mask)
+def n(v: float) -> str:
+    s = f"{v:.2f}"
+    return s.rstrip("0").rstrip(".") if "." in s else s
 
 
-def rounded_rect_mask(box, r):
-    img = Image.new("L", (W, W), 0)
-    ImageDraw.Draw(img).rounded_rectangle([v * SS for v in box], radius=r * SS, fill=255)
-    return np.asarray(img, np.float32) / 255
+# ---- SVG primitives ----
+
+def linear(pid, x1, y1, x2, y2, stops):
+    return (f'<linearGradient id="{pid}" gradientUnits="userSpaceOnUse" '
+            f'x1="{n(x1)}" y1="{n(y1)}" x2="{n(x2)}" y2="{n(y2)}">{stops}</linearGradient>')
 
 
-def ellipse_soft(cx, cy, rx, ry, soft=1.2):
-    rho = np.sqrt(((Xf - cx) / rx) ** 2 + ((Yf - cy) / ry) ** 2)
-    return np.clip((1 - rho) * min(rx, ry) / soft / SS, 0, 1)
+def stop(offset, color, opacity=1.0):
+    extra = "" if opacity >= 1 else f' stop-opacity="{opacity:.4f}"'
+    return f'<stop offset="{n(offset)}" stop-color="{color}"{extra}/>'
 
 
-def gauss_blob(cx, cy, sx, sy, rot=0.0):
-    a = np.deg2rad(rot)
-    dx, dy = Xf - cx, Yf - cy
-    u = dx * np.cos(a) + dy * np.sin(a)
-    v = -dx * np.sin(a) + dy * np.cos(a)
-    return np.exp(-(u ** 2 / (2 * sx ** 2) + v ** 2 / (2 * sy ** 2)))
+def radial_gaussian(pid, cx, cy, sx, sy, peak, rgb):
+    """Elliptical Gaussian blob: unit circle warped by translate+scale, stops
+    sampling exp(-4.5 f^2) over a 3-sigma radius."""
+    stops = "".join(
+        stop(f, f"rgb{rgb}", 0 if f == 1 else peak * math.exp(-4.5 * f * f))
+        for f in GAUSS_F)
+    return (f'<radialGradient id="{pid}" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" '
+            f'gradientTransform="translate({n(cx)} {n(cy)}) scale({n(3 * sx)} {n(3 * sy)})">'
+            f'{stops}</radialGradient>')
 
 
-def wall_gradient(u, col):
-    light, mid, deep = col["wall_light"], col["wall_mid"], col["wall_deep"]
-    k = 0.45
-    a = (u <= k)[..., None] * (light + (mid - light) * (u / k)[..., None])
-    b = (u > k)[..., None] * (mid + (deep - mid) * ((u - k) / (1 - k))[..., None])
-    return a + b
+def blob(pid, cx, cy, sx, sy, peak, rgb):
+    """A Gaussian blob element plus its gradient def."""
+    grad = radial_gaussian(pid, cx, cy, sx, sy, peak, rgb)
+    el = (f'<ellipse cx="{n(cx)}" cy="{n(cy)}" rx="{n(3 * sx)}" ry="{n(3 * sy)}" '
+          f'fill="url(#{pid})"/>')
+    return grad, el
 
 
-def draw_disc(canvas, cy, wall, col, face):
-    """Cylinder at face-center cy. Bands pass face=False (no top face drawn)."""
-    dx = Xf - CX
-    arc = np.sqrt(np.clip(1 - (dx / RX) ** 2, 0, 1))
-    sil = (np.clip((RX - np.abs(dx)) / (1.2 * SS), 0, 1)
-           * np.clip((Yf - (cy - RY * arc)) / (1.2 * SS), 0, 1)
-           * np.clip(((cy + wall + RY * arc) - Yf) / (1.2 * SS), 0, 1))
-    y_wall_top = cy + RY * arc          # wall starts at the front arc of the top face
-    u = np.clip((Yf - y_wall_top) / wall, 0, 1)
-    wall_m = sil * np.clip((Yf - y_wall_top) / (1.2 * SS) + 1e-4, 0, 1) * (u < 1)
-    if not face:                        # hide everything above the front arc
-        wall_m = sil * (Yf >= y_wall_top - 0.5)
-    xf = 0.72 + 0.28 * np.clip(1 - (dx / RX) ** 2, 0, 1) ** 0.85
-    over(canvas, wall_m, np.clip(wall_gradient(u, col) * xf[..., None], 0, 255))
-    if face:                            # face painted after the wall: no alpha seam
-        fm = ellipse_soft(CX, cy, RX, RY) * sil
-        t = np.clip(((Xf - CX) * 0.52 + (Yf - cy) * 0.85) / (RX * 1.1), -1, 1) * 0.5 + 0.55
-        over(canvas, fm, col["face_light"] + (col["face_deep"] - col["face_light"]) * t[..., None])
-    return sil
+def band_path(cy, wall):
+    """Wall only: front arc down `wall`, back along the translated arc."""
+    return (f"M{n(CX - RX)} {n(cy)} A{n(RX)} {n(RY)} 0 0 0 {n(CX + RX)} {n(cy)} "
+            f"L{n(CX + RX)} {n(cy + wall)} A{n(RX)} {n(RY)} 0 0 1 {n(CX - RX)} {n(cy + wall)} Z")
 
 
-def draw_ao(canvas, y_src, lower_sil):
-    """Contact shadow under a slab, clipped to the layer below."""
-    g = gauss_blob(CX, y_src + 6, RX * 0.60, 14) * 0.60 + gauss_blob(CX, y_src + 14, RX * 0.78, 24) * 0.40
-    over(canvas, np.clip(g, 0, 1) * lower_sil * 0.30, np.array([30, 24, 34], np.float32))
+def cylinder_path(cy, wall):
+    """Full silhouette: back arc, sides, front arc translated down `wall`."""
+    return (f"M{n(CX - RX)} {n(cy)} A{n(RX)} {n(RY)} 0 0 1 {n(CX + RX)} {n(cy)} "
+            f"L{n(CX + RX)} {n(cy + wall)} A{n(RX)} {n(RY)} 0 0 1 {n(CX - RX)} {n(cy + wall)} Z")
 
 
-def load_bold(size):
-    for path, idx in [("/System/Library/Fonts/Helvetica.ttc", 1),
-                      ("/System/Library/Fonts/HelveticaNeue.ttc", 1),
-                      ("/Library/Fonts/Arial Bold.ttf", 0),
-                      ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 0)]:
+def wall_stops(col):
+    return (stop(0, col["wall_light"]) + stop(0.45, col["wall_mid"])
+            + stop(1, col["wall_deep"]))
+
+
+def mask_points():
+    """Blend weights m(dx) = 1-sqrt(1-(dx/rx)^2): mixing the edge-anchored ramp
+    in with this weight reproduces the arc-following ramp exactly."""
+    pts = []
+    for off in (0, 0.25, 0.375, 0.5, 0.625, 0.75, 1):
+        t = abs(2 * off - 1)
+        pts.append((off, 1 - math.sqrt(max(0.0, 1 - t * t))))
+    return pts
+
+
+def edge_shade_points():
+    """Cylindrical darkening toward the rim, sampled from 0.28*(1-(1-t^2)^0.85)."""
+    pts = []
+    for off in (0, 0.25, 0.375, 0.5, 0.625, 0.75, 1):
+        t = abs(2 * off - 1)
+        pts.append((off, 0.28 * (1 - max(0.0, 1 - t * t) ** 0.85)))
+    return pts
+
+
+def wall_defs(pid, cy, wall, col):
+    """Gradients + mask shading one side wall: center ramp, edge ramp blended
+    by the arc mask, then the rim-darkening overlay."""
+    y_a0, y_b0 = cy + RY, cy
+    d = [
+        linear(f"{pid}wa", CX, y_a0, CX, y_a0 + wall, wall_stops(col)),
+        linear(f"{pid}wb", CX, y_b0, CX, y_b0 + wall, wall_stops(col)),
+        linear(f"{pid}wg", CX - RX, 0, CX + RX, 0,
+               "".join(stop(o, "#fff", v) for o, v in mask_points())),
+        f'<mask id="{pid}wm" maskUnits="userSpaceOnUse" x="{n(CX - RX)}" y="{n(cy)}" '
+        f'width="{n(2 * RX)}" height="{n(wall + RY)}">'
+        f'<rect x="{n(CX - RX)}" y="{n(cy)}" width="{n(2 * RX)}" height="{n(wall + RY)}" '
+        f'fill="url(#{pid}wg)"/></mask>',
+        linear(f"{pid}wo", CX - RX, 0, CX + RX, 0,
+               "".join(stop(o, "#000", v) for o, v in edge_shade_points())),
+    ]
+    return d
+
+
+def wall_body(pid, path):
+    return [f'<path d="{path}" fill="url(#{pid}wa)"/>',
+            f'<path d="{path}" fill="url(#{pid}wb)" mask="url(#{pid}wm)"/>',
+            f'<path d="{path}" fill="url(#{pid}wo)"/>']
+
+
+def contact_shadow(pid, y_src, clip_id):
+    """AO under a slab: two wide flat Gaussians clipped to the layer below
+    (0.30 strength split 0.6/0.4, as in the numpy build)."""
+    defs = []
+    els = [f'<g clip-path="url(#{clip_id})">']
+    for i, (dy, sx, sy, w) in enumerate([(6, 0.60, 14, 0.6), (14, 0.78, 24, 0.4)]):
+        g, e = blob(f"{pid}b{i}", CX, y_src + dy, RX * sx, sy, w * 0.30, AO_RGB)
+        defs.append(g)
+        els.append(e)
+    els.append("</g>")
+    return defs, "".join(els)
+
+
+# ---- R mark ----
+
+def mul(m, b):
+    """Compose affine transforms: mul(a, b) applies b first. SVG order (a,b,c,d,e,f)."""
+    return (m[0] * b[0] + m[2] * b[1], m[1] * b[0] + m[3] * b[1],
+            m[0] * b[2] + m[2] * b[3], m[1] * b[2] + m[3] * b[3],
+            m[0] * b[4] + m[2] * b[5] + m[4], m[1] * b[4] + m[3] * b[5] + m[5])
+
+
+def apply(m, x, y):
+    return (m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5])
+
+
+def _flatten_quad(p0, p1, p2, n=8):
+    return [((1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0],
+             (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1])
+            for t in (i / n for i in range(1, n + 1))]
+
+
+def _flatten_cubic(p0, p1, p2, p3, n=8):
+    return [((1 - t) ** 3 * p0[0] + 3 * (1 - t) ** 2 * t * p1[0] + 3 * (1 - t) * t * t * p2[0] + t ** 3 * p3[0],
+             (1 - t) ** 3 * p0[1] + 3 * (1 - t) ** 2 * t * p1[1] + 3 * (1 - t) * t * t * p2[1] + t ** 3 * p3[1])
+            for t in (i / n for i in range(1, n + 1))]
+
+
+def outline_points(glyph, glyph_set):
+    """Flattened outline in font units (y-up): the rotated ink's true bbox comes
+    from these, since rotating the bbox rectangle overestimates its extremes."""
+    pen = RecordingPen()
+    glyph.draw(pen)
+    pts = []
+    for op, args in pen.value:
+        if op in ("moveTo", "lineTo"):
+            pts.append(args[0])
+        elif op == "qCurveTo":
+            seq = list(args)
+            cur, offs, on = pts[-1], seq[:-1], seq[-1]
+            for i, off in enumerate(offs):
+                nxt = offs[i + 1] if i + 1 < len(offs) else on
+                mid = ((off[0] + nxt[0]) / 2, (off[1] + nxt[1]) / 2)
+                pts.extend(_flatten_quad(cur, off, mid if i + 1 < len(offs) else on))
+                cur = pts[-1]
+        elif op == "curveTo":
+            pts.extend(_flatten_cubic(pts[-1], *args))
+    return pts
+
+
+def load_bold_font():
+    for path in ["/System/Library/Fonts/Helvetica.ttc",
+                 "/System/Library/Fonts/HelveticaNeue.ttc",
+                 "/Library/Fonts/Arial Bold.ttf",
+                 "/System/Library/Fonts/Supplemental/Arial Bold.ttf"]:
         try:
-            f = ImageFont.truetype(path, size, index=idx)
-            if "bold" in f.getname()[1].lower():
-                return f
+            fonts = TTCollection(path, lazy=True).fonts
         except Exception:
-            continue
+            try:
+                fonts = [TTFont(path, lazy=True)]
+            except Exception:
+                continue
+        for f in fonts:
+            style = f["name"].getDebugName(2) or ""
+            if "bold" in style.lower():
+                return f
     raise SystemExit("no bold font found")
 
 
-def build(spin: float, ratio: float, font_size: float) -> Image.Image:
-    bg = [np.zeros((W, W, 3), np.float32), np.zeros((W, W), np.float32)]
-    st = [np.zeros((W, W, 3), np.float32), np.zeros((W, W), np.float32)]
-    # full-bleed background: macOS 27 masks the squircle itself, so fill the canvas
-    bg_t = (Yf / OUT)[..., None]
-    over(bg, np.ones((W, W), np.float32), BG_GRAD_TOP + (BG_GRAD_BOT - BG_GRAD_TOP) * bg_t)
-    y_ground = 512 + (BAND2_E + WALL_THIN + RY - 512) * STACK_SCALE
-    g = gauss_blob(CX, y_ground + 30, RX * 0.70 * STACK_SCALE, 34) * 0.5 + gauss_blob(CX, y_ground + 40, RX * 0.88 * STACK_SCALE, 54) * 0.5
-    over(bg, np.clip(g, 0, 1) * 0.26, np.array([52, 58, 76], np.float32))
+def r_mark(spin, ratio, font_size, face_cy):
+    """White R as a glyph outline path, rotated in the disc plane then
+    foreshortened, final ink bbox centered on the face (like the numpy build)."""
+    font = load_bold_font()
+    glyph_set = font.getGlyphSet()
+    glyph = glyph_set[font.getBestCmap()[ord("R")]]
+    spen = SVGPathPen(glyph_set)
+    glyph.draw(spen)
+    k = font_size / font["head"].unitsPerEm
 
-    # painter order: bottom band -> AO -> middle band -> AO -> top disc
-    blue_sil = draw_disc(st, BAND2_E, WALL_THIN, BLUE, face=False)
-    draw_ao(st, BAND1_E + WALL_THIN + RY, blue_sil)
-    orange_sil = draw_disc(st, BAND1_E, WALL_THIN, YELLOW, face=False)
-    draw_ao(st, RED_CY + WALL_TOP + RY, orange_sil)
-    draw_disc(st, RED_CY, WALL_TOP, RED, face=True)
+    m = (1, 0, 0, 1, CX / 2, 0)                                # pivot: irrelevant to the final bbox
+    m = mul((k, 0, 0, -k, 0, 0), m)                            # em -> px, y-down
+    a = math.radians(-spin)                                    # SVG rotate is CW
+    m = mul((math.cos(a), math.sin(a), -math.sin(a), math.cos(a), 0, 0), m)
+    m = mul((1, 0, 0, ratio, 0, 0), m)                         # foreshorten
+    pts = [apply(m, x, y) for x, y in outline_points(glyph, glyph_set)]
+    bx = (min(p[0] for p in pts) + max(p[0] for p in pts)) / 2
+    by = (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2
+    m = mul((1, 0, 0, 1, CX - bx, face_cy + FACE_DY - by), m)
+    return (f'<g transform="matrix({n(m[0])} {n(m[1])} {n(m[2])} {n(m[3])} '
+            f'{n(m[4])} {n(m[5])})"><path d="{spen.getCommands()}" fill="#FFFFFF"/></g>')
 
-    stack = Image.fromarray(np.dstack([
-        np.clip(st[0], 0, 255).astype(np.uint8),
-        np.clip(st[1] * 255, 0, 255).astype(np.uint8)]), "RGBA")
 
-    # R mark: rotate in the disc plane (bucket spin), then foreshorten by ry/rx
-    font = load_bold(int(font_size * SS))
-    tile = Image.new("RGBA", (int(font_size * SS * 2.4),) * 2, (0, 0, 0, 0))
-    ImageDraw.Draw(tile).text((tile.width // 2, tile.height // 2), "R",
-                              font=font, fill=(255, 255, 255, 255), anchor="mm")
-    tile = tile.crop(tile.getbbox())
-    tile = tile.rotate(spin, expand=True, resample=Image.BICUBIC)   # in-plane spin
-    tile = tile.crop(tile.getbbox())
-    tw, th = tile.size
-    nh = max(2, int(th * ratio))                                    # foreshorten
-    tile = tile.resize((tw, nh), Image.LANCZOS)
-    stack.alpha_composite(tile, (int(CX * SS - tw / 2), int((RED_CY + 2) * SS - nh / 2)))
-    if STACK_SCALE != 1.0:
-        scaled_w = round(W * STACK_SCALE)
-        stack = stack.resize((scaled_w, scaled_w), Image.LANCZOS)
-        stack_frame = Image.new("RGBA", (W, W), (0, 0, 0, 0))
-        stack_frame.paste(stack, ((W - scaled_w) // 2, (W - scaled_w) // 2), stack)
-    else:
-        stack_frame = stack
+# ---- composition ----
 
-    img = Image.fromarray(np.dstack([
-        np.clip(bg[0], 0, 255).astype(np.uint8),
-        np.clip(bg[1] * 255, 0, 255).astype(np.uint8)]), "RGBA")
-    img.alpha_composite(stack_frame)
-    # legacy-format icons render as-is: bake the rounded corners (radius from the b6 reference)
-    corner_mask = rounded_rect_mask((0, 0, OUT, OUT), 170)
-    img.putalpha(Image.fromarray((corner_mask * 255).astype(np.uint8)))
-    return img.resize((OUT, OUT), Image.LANCZOS)
+def build_svg(gap: float, spin: float, ratio: float, font_size: float) -> str:
+    wall = (STACK_H - 2 * RY - 2 * gap) / 3    # equal wall budget per layer
+    red_cy = CX + RY - STACK_H / 2             # stack vertically centered
+    yellow_cy = red_cy + wall + gap            # virtual face center of the band
+    blue_cy = yellow_cy + wall + gap
+    red_bottom = red_cy + wall + RY
+    yellow_bottom = yellow_cy + wall + RY
+    stack_bottom = blue_cy + wall + RY
+    y_ground = CX + (stack_bottom - CX) * STACK_SCALE
+
+    defs = [
+        f'<clipPath id="tile"><rect x="0" y="0" width="{OUT}" height="{OUT}" rx="{TILE_R}"/></clipPath>',
+        linear("bg", 0, 0, 0, OUT, stop(0, BG_TOP) + stop(1, BG_BOT)),
+        f'<clipPath id="sil-y"><path d="{cylinder_path(yellow_cy, wall)}"/></clipPath>',
+        f'<clipPath id="sil-b"><path d="{cylinder_path(blue_cy, wall)}"/></clipPath>',
+    ]
+    defs += wall_defs("r", red_cy, wall, RED)
+    defs += wall_defs("y", yellow_cy, wall, YELLOW)
+    defs += wall_defs("b", blue_cy, wall, BLUE)
+
+    # top face: ramp along (0.52, 0.85), clamps at t=-1.1 / +0.9 of the 1.1*rx span
+    p0, p1 = -1.21 * RX, 0.99 * RX
+    defs.append(linear("face", CX + p0 * 0.52, red_cy + p0 * 0.85,
+                       CX + p1 * 0.52, red_cy + p1 * 0.85,
+                       stop(0, RED["face_light"]) + stop(1, RED["face_deep"])))
+
+    body = [f'<rect x="0" y="0" width="{OUT}" height="{OUT}" fill="url(#bg)"/>']
+    for i, (dy, sx, sy) in enumerate([(30, 0.70, 34), (40, 0.88, 54)]):
+        g, e = blob(f"gr{i}", CX, y_ground + dy, RX * sx * STACK_SCALE, sy,
+                    0.5 * 0.26, GROUND_RGB)
+        defs.append(g)
+        body.append(e)
+
+    stack = []
+    stack += wall_body("b", band_path(blue_cy, wall))
+    ao1_defs, ao1 = contact_shadow("ay", yellow_bottom, "sil-b")
+    defs += ao1_defs
+    stack.append(ao1)
+    stack += wall_body("y", band_path(yellow_cy, wall))
+    ao2_defs, ao2 = contact_shadow("ar", red_bottom, "sil-y")
+    defs += ao2_defs
+    stack.append(ao2)
+    stack += wall_body("r", cylinder_path(red_cy, wall))
+    stack.append(f'<ellipse cx="{n(CX)}" cy="{n(red_cy)}" rx="{n(RX)}" ry="{n(RY)}" fill="url(#face)"/>')
+    stack.append(r_mark(spin, ratio, font_size, red_cy))
+    scale = (f"translate({n(CX)} {n(CX)}) scale({STACK_SCALE}) translate({n(-CX)} {n(-CX)})")
+    body.append(f'<g transform="{scale}">{"".join(stack)}</g>')
+
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{OUT}" height="{OUT}" '
+            f'viewBox="0 0 {OUT} {OUT}"><defs>{"".join(defs)}</defs>'
+            f'<g clip-path="url(#tile)">{"".join(body)}</g></svg>')
+
+
+def render_master(svg: str) -> Image.Image:
+    png = resvg_py.svg_to_bytes(svg_string=svg, width=RENDER_PX, height=RENDER_PX)
+    return Image.open(io.BytesIO(png)).convert("RGBA").resize((OUT, OUT), Image.LANCZOS)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--spin", type=float, default=25.0, help="R in-plane rotation, deg CCW")
-    ap.add_argument("--ratio", type=float, default=RY / RX, help="face foreshortening (ry/rx)")
-    ap.add_argument("--font-size", type=float, default=340.0, help="R font size in 1024-space")
+    ap.add_argument("--gap", type=float, default=GAP,
+                    help="slot between the layers in 1024-space")
+    ap.add_argument("--spin", type=float, default=SPIN, help="R in-plane rotation, deg CCW")
+    ap.add_argument("--ratio", type=float, default=RATIO, help="face foreshortening (ry/rx)")
+    ap.add_argument("--font-size", type=float, default=FONT_SIZE, help="R em size in 1024-space")
     ap.add_argument("--preview", type=str, default="/tmp/runlet_icon_master.png",
                     help="also write the 1024 master to this path")
     args = ap.parse_args()
 
-    master = build(args.spin, args.ratio, args.font_size)
+    master = render_master(build_svg(args.gap, args.spin, args.ratio, args.font_size))
     for name, s in SIZES.items():
         img = master if s == OUT else master.resize((s, s), Image.LANCZOS)
         img.save(ICONSET / name)
     if args.preview:
         master.save(args.preview)
-    print(f"wrote {len(SIZES)} sizes to {ICONSET}" + (f", preview {args.preview}" if args.preview else ""))
+    print(f"wrote {len(SIZES)} sizes to {ICONSET}"
+          + (f", preview {args.preview}" if args.preview else ""))
 
 
 if __name__ == "__main__":
