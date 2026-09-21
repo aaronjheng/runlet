@@ -105,6 +105,7 @@ struct SetDetailView: View {
                         onLoadMore()
                     }
                     .buttonStyle(.borderless)
+                    .hoverBackground()
                 }
 
                 Spacer()

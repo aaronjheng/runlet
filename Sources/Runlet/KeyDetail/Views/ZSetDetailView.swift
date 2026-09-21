@@ -164,6 +164,7 @@ struct ZSetDetailView: View {
                         onLoadMore()
                     }
                     .buttonStyle(.borderless)
+                    .hoverBackground()
                 }
 
                 Spacer()
@@ -255,6 +256,7 @@ struct EditableZSetCell: View {
                 .font(AppFont.dataCell)
                 .lineLimit(1)
                 .copyableCell(row.score, row: rowValue)
+                .hoverBackground()
                 .help("Double-click to edit")
                 .onTapGesture(count: 2) {
                     editingMember = row.member

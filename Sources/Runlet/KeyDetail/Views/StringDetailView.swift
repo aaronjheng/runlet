@@ -143,6 +143,7 @@ struct StringDetailView: View {
                             isEditing = false
                         }
                         .buttonStyle(.borderless)
+                        .hoverBackground()
                         .keyboardShortcut(.cancelAction)
                         Button("Save") {
                             onSave(editValue)

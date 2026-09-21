@@ -136,6 +136,7 @@ struct HashDetailView: View {
                         onLoadMore()
                     }
                     .buttonStyle(.borderless)
+                    .hoverBackground()
                 }
 
                 Spacer()
@@ -227,6 +228,7 @@ struct EditableHashCell: View {
                 .font(AppFont.dataCell)
                 .lineLimit(2)
                 .copyableCell(row.value, row: rowValue)
+                .hoverBackground()
                 .help("Double-click to edit")
                 .onTapGesture(count: 2) {
                     editingField = row.field

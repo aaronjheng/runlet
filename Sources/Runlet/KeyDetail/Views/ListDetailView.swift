@@ -27,6 +27,7 @@ struct EditableListCell: View {
                 .font(AppFont.dataCell)
                 .lineLimit(2)
                 .copyableCell(row.value, row: rowValue)
+                .hoverBackground()
                 .help("Double-click to edit")
                 .onTapGesture(count: 2) {
                     editingIndex = row.index
@@ -161,6 +162,7 @@ struct ListDetailView: View {
                         onLoadMore()
                     }
                     .buttonStyle(.borderless)
+                    .hoverBackground()
                 }
 
                 Spacer()

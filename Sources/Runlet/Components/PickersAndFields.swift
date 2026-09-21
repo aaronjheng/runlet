@@ -317,6 +317,7 @@ struct HeaderSortControl: View {
     private static let headerHeight: CGFloat = AppSize.tableHeaderHeight
     private static let indicatorTrailingInset: CGFloat = AppSpacing.small
     @FocusState private var isFocused: Bool
+    @State private var isHovering = false
 
     var body: some View {
         Button(action: onToggle) {
@@ -326,6 +327,10 @@ struct HeaderSortControl: View {
         }
         .buttonStyle(.plain)
         .focused($isFocused)
+        .background(
+            isHovering && !disabled ? AppColor.hoverBackground : Color.clear,
+            in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
                 .strokeBorder(Color.accentColor, lineWidth: isFocused ? 1.5 : 0)
@@ -337,6 +342,8 @@ struct HeaderSortControl: View {
                 .padding(.trailing, Self.indicatorTrailingInset)
         }
         .disabled(disabled)
+        .onHover { isHovering = $0 }
+        .animation(AppAnimation.quick, value: isHovering)
         .help(helpText)
         .accessibilityLabel(helpText)
     }
