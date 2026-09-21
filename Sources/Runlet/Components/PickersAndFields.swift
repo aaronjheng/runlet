@@ -111,6 +111,7 @@ struct FilterField: View {
     let placeholder: String
     var onSearch: (() -> Void)?
     @FocusState private var isFocused: Bool
+    @State private var isHovering = false
 
     init(_ placeholder: String, text: Binding<String>, onSearch: (() -> Void)? = nil) {
         self.placeholder = placeholder
@@ -118,64 +119,84 @@ struct FilterField: View {
         self.onSearch = onSearch
     }
 
-    /// Right-side inset so typed text never slides underneath the overlay icons:
-    /// trailing button(s) + 8pt trailing padding + 6pt text gap.
-    /// Both icon slots are 22pt buttons (the local-filter glass focuses the
-    /// field), so the inset no longer depends on `onSearch`.
-    private var trailingInset: CGFloat {
-        let buttons = AppSize.filterFieldIconWidth + (text.isEmpty ? 0 : AppSize.filterFieldIconWidth + AppSpacing.xSmall)
-        return buttons + AppSpacing.small + 6
+    /// Right-side icon slots: clear button (when text is non-empty) + search/focus button.
+    /// Both slots are 22pt buttons so server-side and local-filter variants share geometry.
+    private var showsClearButton: Bool { !text.isEmpty }
+
+    private var borderColor: Color {
+        if isFocused {
+            return .accentColor
+        }
+        return isHovering ? AppColor.subtleBorder : Color(nsColor: .separatorColor)
     }
 
     var body: some View {
-        TextField(placeholder, text: $text)
-            .textFieldStyle(.roundedBorder)
-            .focused($isFocused)
-            .onSubmit { onSearch?() }
-            .padding(.trailing, trailingInset)
-            .overlay(alignment: .trailing) {
-                HStack(spacing: AppSpacing.xSmall) {
-                    if !text.isEmpty {
-                        FilterFieldIconButton(
-                            title: "Clear Filter",
-                            systemImage: "xmark.circle.fill",
-                            helpText: "Clear filter"
-                        ) {
-                            text = ""
-                            onSearch?()
-                        }
-                    }
-                    if let onSearch {
-                        FilterFieldIconButton(
-                            title: "Search",
-                            systemImage: "magnifyingglass",
-                            helpText: "Search",
-                            action: onSearch
-                        )
-                    } else {
-                        // No server-side search: keep the same look and hover
-                        // affordance as the search button so the two variants
-                        // can't be mistaken, and focus the field on click.
-                        FilterFieldIconButton(
-                            title: "Focus Filter",
-                            systemImage: "magnifyingglass",
-                            helpText: "Focus filter field"
-                        ) {
-                            isFocused = true
-                        }
-                    }
+        HStack(spacing: AppSpacing.xSmall) {
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                // Same font + vertical padding as Primary/SecondaryButtonStyle
+                // labels, so the field always matches same-row button height
+                // without a hardcoded frame.
+                .font(.system(.body, design: .default))
+                .focused($isFocused)
+                .onSubmit { onSearch?() }
+                .lineLimit(1)
+            if showsClearButton {
+                FilterFieldIconButton(
+                    title: "Clear Filter",
+                    systemImage: "xmark.circle.fill",
+                    helpText: "Clear filter"
+                ) {
+                    text = ""
+                    onSearch?()
                 }
-                .padding(.trailing, AppSpacing.small)
-                // Overlay is offered exactly the field's size, so this stretches
-                // the icon buttons to the real field height on any macOS version
-                // instead of relying on a hardcoded point value.
-                .frame(maxHeight: .infinity)
             }
+            if let onSearch {
+                FilterFieldIconButton(
+                    title: "Search",
+                    systemImage: "magnifyingglass",
+                    helpText: "Search",
+                    action: onSearch
+                )
+            } else {
+                // No server-side search: keep the same look and hover
+                // affordance as the search button so the two variants
+                // can't be mistaken, and focus the field on click.
+                FilterFieldIconButton(
+                    title: "Focus Filter",
+                    systemImage: "magnifyingglass",
+                    helpText: "Focus filter field"
+                ) {
+                    isFocused = true
+                }
+            }
+        }
+        .padding(.leading, AppSpacing.small)
+        .padding(.trailing, AppSpacing.small)
+        .padding(.vertical, AppSpacing.mini)
+        .background {
+            RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                .fill(Color(nsColor: .textBackgroundColor))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                .fill(isHovering && !isFocused ? AppColor.hoverBackground : Color.clear)
+                .allowsHitTesting(false)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                .strokeBorder(borderColor, lineWidth: isFocused ? 1.5 : 1)
+                .allowsHitTesting(false)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { isFocused = true }
+        .onHover { isHovering = $0 }
+        .animation(AppAnimation.quick, value: isHovering)
+        .animation(AppAnimation.quick, value: isFocused)
     }
 }
 
-/// Trailing icon button inside `FilterField`, stretched to the full field
-/// height so its hover wash spans exactly the field height.
+/// Trailing icon button inside `FilterField`.
 private struct FilterFieldIconButton: View {
     let title: String
     let systemImage: String
@@ -190,8 +211,7 @@ private struct FilterFieldIconButton: View {
             .foregroundStyle(isHovering ? .primary : .secondary)
             .frame(
                 minWidth: AppSize.filterFieldIconWidth,
-                maxWidth: AppSize.filterFieldIconWidth,
-                maxHeight: .infinity
+                maxWidth: AppSize.filterFieldIconWidth
             )
             .contentShape(Rectangle())
             .background(

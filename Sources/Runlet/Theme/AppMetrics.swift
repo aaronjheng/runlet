@@ -59,8 +59,6 @@ enum AppSize {
     /// `sidebarHoverWash` so hover matches selection geometry.
     static let sidebarSelectionInset: CGFloat = 10
     /// Width of the trailing icon buttons inside `FilterField`.
-    /// The buttons stretch to the field height via overlay, so no
-    /// hardcoded field height lives here.
     static let filterFieldIconWidth: CGFloat = 22
     /// Fixed width of the settings sidebar column.
     static let settingsSidebarWidth: CGFloat = 215

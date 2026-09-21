@@ -27,6 +27,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let delegateManager = WindowDelegateManager()
     /// Autosave numbers of the windows currently on screen (frame memory).
     private var windowFrameNumbersInUse: Set<Int> = []
+    /// App-lifetime mouse monitor backing click-outside-to-blur.
+    private var blurMonitor: Any?
 
     private var currentAppearance: AppAppearance {
         AppAppearance(rawValue: SettingsStore.shared.settings.appearance) ?? .system
@@ -37,6 +39,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate()
         currentAppearance.apply()
         buildMenuBar()
+        installClickOutsideToBlur()
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleApplicationDidUpdate(_:)),
@@ -52,6 +55,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
+    }
+
+    /// Clicking anywhere that isn't editable text resigns the current first
+    /// responder, so a focused `FilterField` (or any editor) visibly blurs on
+    /// background clicks. The monitor runs before dispatch, so AppKit's
+    /// click-to-focus still lands afterward and SwiftUI syncs the resign back
+    /// into `@FocusState`, redrawing the field border.
+    private func installClickOutsideToBlur() {
+        blurMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            guard let window = event.window,
+                window.firstResponder is NSText || window.firstResponder is NSTextField
+            else { return event }
+            let hit = window.contentView?.superview?.hitTest(event.locationInWindow)
+            if let hit, Self.isEditableText(hit) {
+                return event
+            }
+            window.makeFirstResponder(nil)
+            return event
+        }
+    }
+
+    /// Walks up from the hit view: editable fields and editors (including the
+    /// `NSTextView` field editor behind `TextField`, and the Lua/Shell code
+    /// editors) keep focus; everything else blurs.
+    private static func isEditableText(_ view: NSView?) -> Bool {
+        var current = view
+        while let view = current {
+            if let field = view as? NSTextField, field.isEditable { return true }
+            if let text = view as? NSText, text.isEditable { return true }
+            current = view.superview
+        }
+        return false
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
