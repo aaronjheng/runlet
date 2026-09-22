@@ -222,46 +222,13 @@ struct RefreshControl: View {
     }
 
     private var intervalMenu: some View {
-        Menu {
-            Button {
-                autoRefreshInterval = 0
-            } label: {
-                menuItemLabel(text: "Off", checked: !isAutoRefreshEnabled)
-            }
-            Divider()
-            ForEach(intervals, id: \.self) { interval in
-                Button {
-                    autoRefreshInterval = interval
-                } label: {
-                    menuItemLabel(
-                        text: AutoRefreshInterval.title(interval),
-                        checked: isAutoRefreshEnabled && autoRefreshInterval == interval
-                    )
-                }
-            }
-        } label: {
-            HStack(spacing: AppSpacing.xxSmall) {
-                if isAutoRefreshEnabled {
-                    Text(AutoRefreshInterval.title(autoRefreshInterval))
-                        .font(.system(size: 11, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundStyle(.tint)
-                }
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .imageScale(.medium)
-                    .foregroundStyle(isMenuHovering && !isLoading ? .primary : .secondary)
-            }
-            .padding(.horizontal, AppSpacing.mini)
-            .frame(height: AppSize.refreshControlHeight)
+        intervalMenuChrome
             .contentShape(Rectangle())
             .background(
                 isMenuHovering && !isLoading
                     ? AppColor.iconHoverBackground
-                    : Color.clear
-            )
-            .clipShape(
-                UnevenRoundedRectangle(
+                    : Color.clear,
+                in: UnevenRoundedRectangle(
                     topLeadingRadius: 0,
                     bottomLeadingRadius: 0,
                     bottomTrailingRadius: AppRadius.medium,
@@ -269,14 +236,51 @@ struct RefreshControl: View {
                     style: .continuous
                 )
             )
-            .animation(AppAnimation.quick, value: isMenuHovering)
+            .overlay {
+                Menu {
+                    Button {
+                        autoRefreshInterval = 0
+                    } label: {
+                        menuItemLabel(text: "Off", checked: !isAutoRefreshEnabled)
+                    }
+                    Divider()
+                    ForEach(intervals, id: \.self) { interval in
+                        Button {
+                            autoRefreshInterval = interval
+                        } label: {
+                            menuItemLabel(
+                                text: AutoRefreshInterval.title(interval),
+                                checked: isAutoRefreshEnabled && autoRefreshInterval == interval
+                            )
+                        }
+                    }
+                } label: {
+                    Color.clear
+                        .contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .onHover { isMenuHovering = $0 }
+            .help(isAutoRefreshEnabled ? "Auto refresh every \(AutoRefreshInterval.title(autoRefreshInterval))" : "Auto refresh off")
+    }
+
+    private var intervalMenuChrome: some View {
+        HStack(spacing: AppSpacing.xSmall) {
+            if isAutoRefreshEnabled {
+                Text(AutoRefreshInterval.title(autoRefreshInterval))
+                    .font(.system(size: 11, weight: .medium))
+                    .monospacedDigit()
+                    .foregroundStyle(.tint)
+            }
+            Image(systemName: "chevron.down")
+                .font(.system(size: 11, weight: .semibold))
+                .imageScale(.medium)
+                .foregroundStyle(isMenuHovering && !isLoading ? .primary : .secondary)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .disabled(isLoading)
-        .onHover { isMenuHovering = $0 }
-        .help(isAutoRefreshEnabled ? "Auto refresh every \(AutoRefreshInterval.title(autoRefreshInterval))" : "Auto refresh off")
+        .padding(.horizontal, AppSpacing.mini)
+        .frame(height: AppSize.refreshControlHeight)
     }
 
     private func menuItemLabel(text: String, checked: Bool) -> some View {
