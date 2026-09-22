@@ -222,48 +222,50 @@ struct RefreshControl: View {
     }
 
     private var intervalMenu: some View {
-        intervalMenuChrome
-            .contentShape(Rectangle())
-            .background(
-                isMenuHovering && !isLoading
-                    ? AppColor.iconHoverBackground
-                    : Color.clear,
-                in: UnevenRoundedRectangle(
-                    topLeadingRadius: 0,
-                    bottomLeadingRadius: 0,
-                    bottomTrailingRadius: AppRadius.medium,
-                    topTrailingRadius: AppRadius.medium,
-                    style: .continuous
-                )
-            )
-            .overlay {
-                Menu {
-                    Button {
-                        autoRefreshInterval = 0
-                    } label: {
-                        menuItemLabel(text: "Off", checked: !isAutoRefreshEnabled)
+        HStack(spacing: 0) {
+            Menu {
+                Button {
+                    autoRefreshInterval = 0
+                } label: {
+                    if !isAutoRefreshEnabled {
+                        Label("Off", systemImage: "checkmark")
+                    } else {
+                        Text("Off")
                     }
-                    Divider()
-                    ForEach(intervals, id: \.self) { interval in
-                        Button {
-                            autoRefreshInterval = interval
-                        } label: {
-                            menuItemLabel(
-                                text: AutoRefreshInterval.title(interval),
-                                checked: isAutoRefreshEnabled && autoRefreshInterval == interval
-                            )
+                }
+                Divider()
+                ForEach(intervals, id: \.self) { interval in
+                    Button {
+                        autoRefreshInterval = interval
+                    } label: {
+                        if isAutoRefreshEnabled && autoRefreshInterval == interval {
+                            Label(AutoRefreshInterval.title(interval), systemImage: "checkmark")
+                        } else {
+                            Text(AutoRefreshInterval.title(interval))
                         }
                     }
-                } label: {
-                    Color.clear
-                        .contentShape(Rectangle())
                 }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } label: {
+                intervalMenuChrome
+                    .contentShape(Rectangle())
             }
-            .onHover { isMenuHovering = $0 }
-            .help(isAutoRefreshEnabled ? "Auto refresh every \(AutoRefreshInterval.title(autoRefreshInterval))" : "Auto refresh off")
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+        }
+        .overlay {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: AppRadius.medium,
+                topTrailingRadius: AppRadius.medium,
+                style: .continuous
+            )
+            .fill(isMenuHovering && !isLoading ? AppColor.iconHoverBackground : Color.clear)
+            .frame(height: AppSize.refreshControlHeight)
+            .allowsHitTesting(false)
+        }
+        .onHover { isMenuHovering = $0 }
+        .help(isAutoRefreshEnabled ? "Auto refresh every \(AutoRefreshInterval.title(autoRefreshInterval))" : "Auto refresh off")
     }
 
     private var intervalMenuChrome: some View {
@@ -281,10 +283,6 @@ struct RefreshControl: View {
         }
         .padding(.horizontal, AppSpacing.mini)
         .frame(height: AppSize.refreshControlHeight)
-    }
-
-    private func menuItemLabel(text: String, checked: Bool) -> some View {
-        Text(checked ? "\(text)  \u{2713}" : text)
     }
 }
 

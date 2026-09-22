@@ -247,43 +247,56 @@ struct OptionsPicker<Option: Hashable & Sendable>: View {
     }
 
     var body: some View {
-        Menu {
-            ForEach(options, id: \.self) { option in
-                Button {
-                    selection = option
-                } label: {
-                    if selection == option {
-                        Label(label(option), systemImage: "checkmark")
-                    } else {
-                        Text(label(option))
+        HStack(spacing: 0) {
+            Menu {
+                ForEach(options, id: \.self) { option in
+                    Button {
+                        selection = option
+                    } label: {
+                        if selection == option {
+                            Label(label(option), systemImage: "checkmark")
+                        } else {
+                            Text(label(option))
+                        }
                     }
                 }
+            } label: {
+                pickerChrome
             }
-        } label: {
-            HStack(spacing: AppSpacing.xSmall) {
-                Text(label(selection))
-                    .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.caption)
-            }
-            .padding(.horizontal, AppSpacing.small)
-            .padding(.vertical, AppSpacing.mini)
-            .foregroundStyle(.primary)
-            .background(.background.secondary)
-            .background(
-                isHovering ? AppColor.hoverBackground : Color.clear,
-                in: RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
-            .contentShape(Rectangle())
-            .frame(height: AppSize.refreshControlHeight)
-            .onHover { isHovering = $0 }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .overlay {
+            RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                .fill(isHovering ? AppColor.hoverBackground : Color.clear)
+                .frame(height: AppSize.refreshControlHeight)
+                .allowsHitTesting(false)
+        }
+        .onHover { isHovering = $0 }
+        .animation(AppAnimation.quick, value: isHovering)
         .accessibilityLabel(title)
         .accessibilityValue(label(selection))
         .help(title)
+    }
+
+    private var pickerChrome: some View {
+        pickerLabelContent
+            .foregroundStyle(.primary)
+            .background(.background.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
+    }
+
+    private var pickerLabelContent: some View {
+        HStack(spacing: AppSpacing.xSmall) {
+            Text(label(selection))
+                .lineLimit(1)
+            Image(systemName: "chevron.down")
+                .font(.caption)
+        }
+        .padding(.horizontal, AppSpacing.small)
+        .padding(.vertical, AppSpacing.mini)
+        .frame(height: AppSize.refreshControlHeight)
     }
 }
 
