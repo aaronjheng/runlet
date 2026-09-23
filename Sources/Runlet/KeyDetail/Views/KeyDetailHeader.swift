@@ -9,12 +9,31 @@ extension KeyDetailView {
     func headerView(key: RedisKeyEntry) -> some View {
         HStack(spacing: AppSpacing.small) {
             VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-                HStack(alignment: .firstTextBaseline, spacing: AppSpacing.small) {
+                HStack(alignment: .center, spacing: AppSpacing.small) {
                     Badge(text: redisKeyTypeTitle(key.type), isLoading: key.type.isEmpty)
-                    Text(key.key)
-                        .font(.title3)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                    if isRenaming {
+                        TextField("New key name", text: $renameInput)
+                            .font(.title3)
+                            .lineLimit(1)
+                            .textFieldStyle(.plain)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .focused($renameFieldFocused)
+                            .onAppear { renameFieldFocused = true }
+                            .onSubmit { saveRename(for: key) }
+                            .background(
+                                renameFieldFocused ? AppColor.hoverBackground : Color.clear,
+                                in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                            )
+                            .animation(AppAnimation.quick, value: renameFieldFocused)
+                    } else {
+                        Text(key.key)
+                            .font(.title3)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .hoverBackground()
+                            .contentShape(Rectangle())
+                            .onTapGesture { beginRenaming(for: key) }
+                    }
                     Spacer(minLength: 0)
                 }
 
@@ -102,18 +121,20 @@ extension KeyDetailView {
                 }
 
                 Button("Copy Key", systemImage: didCopyKey ? "checkmark" : "doc.on.doc") {
-                    copyToPasteboard(key.key)
-                    didCopyKey = true
-                    Task {
-                        try? await Task.sleep(for: .milliseconds(1500))
-                        didCopyKey = false
+                    if !isRenaming {
+                        copyToPasteboard(key.key)
+                        didCopyKey = true
+                        Task {
+                            try? await Task.sleep(for: .milliseconds(1500))
+                            didCopyKey = false
+                        }
                     }
                 }
                 .labelStyle(.iconOnly)
                 .foregroundStyle(didCopyKey ? AppColor.success : .primary)
                 .buttonStyle(IconButtonStyle())
                 .toolbarCapsule()
-                .disabled(tab.isLoadingDetail)
+                .disabled(tab.isLoadingDetail || isRenaming)
                 .help("Copy key")
 
                 Button("Delete Key", systemImage: "trash", role: .destructive) {
@@ -172,6 +193,48 @@ extension KeyDetailView {
                 // Only fire success feedback when the operation didn't set a new error.
                 if tab.keyDetailError == previousError {
                     ttlFeedbackTrigger.toggle()
+                }
+            }
+        }
+    }
+
+    // MARK: - Rename
+
+    func beginRenaming(for key: RedisKeyEntry) {
+        renameInput = key.key
+        isRenaming = true
+        renameFieldFocused = true
+    }
+
+    func cancelRenaming() {
+        isRenaming = false
+        renameInput = ""
+        renameFieldFocused = false
+    }
+
+    func saveRename(for key: RedisKeyEntry) {
+        guard !renameInput.isEmpty else { return }
+        guard renameInput != key.key else {
+            cancelRenaming()
+            return
+        }
+        isRenaming = false
+        renameFieldFocused = false
+        let newName = renameInput
+        renameInput = ""
+        let renameMessage =
+            "This will rename \"\(key.key)\" to \"\(newName)\" on a production server. This action cannot be undone."
+        guardProductionWrite(
+            title: "Rename Key?",
+            message: renameMessage,
+            confirmText: "RENAME",
+            confirmButtonTitle: "Rename"
+        ) {
+            Task {
+                let previousError = tab.keyDetailError
+                await tab.renameKey(old: key.key, new: newName)
+                if tab.keyDetailError == previousError {
+                    renameFeedbackTrigger.toggle()
                 }
             }
         }

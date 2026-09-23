@@ -34,6 +34,10 @@ struct KeyDetailView: View {
     @State var productionWriteConfirmText = ""
     @State var deleteFeedbackTrigger = false
     @State var ttlFeedbackTrigger = false
+    @State var renameFeedbackTrigger = false
+    @State var isRenaming = false
+    @State var renameInput = ""
+    @FocusState var renameFieldFocused: Bool
 
     let maxTTL = 2_147_483_647
 
@@ -153,9 +157,20 @@ struct KeyDetailView: View {
             ttlEditorError = nil
             pendingProductionWrite = nil
             productionWriteConfirmText = ""
+            isRenaming = false
+            renameInput = ""
+            renameFieldFocused = false
+        }
+        .onChange(of: renameFieldFocused) { _, focused in
+            if !focused && isRenaming {
+                isRenaming = false
+                renameInput = ""
+                renameFieldFocused = false
+            }
         }
         .sensoryFeedback(.success, trigger: deleteFeedbackTrigger)
         .sensoryFeedback(.success, trigger: ttlFeedbackTrigger)
+        .sensoryFeedback(.success, trigger: renameFeedbackTrigger)
         .task(id: autoRefreshTaskID) {
             guard autoRefreshInterval > 0 else { return }
             while !Task.isCancelled {

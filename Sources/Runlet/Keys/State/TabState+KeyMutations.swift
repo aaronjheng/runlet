@@ -33,7 +33,15 @@ extension TabState {
             guard result.intValue != 0 else {
                 throw RedisError.commandError("Key \"\(new)\" already exists")
             }
-            await scanKeys(reset: true)
+            keys.removeAll { $0.key == old }
+            let newEntry = RedisKeyEntry(key: new, type: "", ttl: nil, size: nil)
+            keys.insert(newEntry, at: 0)
+            if selectedKey?.key == old {
+                selectedKey = newEntry
+                await refreshSelectedKey()
+            } else {
+                await scanKeys(reset: true)
+            }
         } catch {
             reportKeyOperationError(error)
         }
