@@ -21,6 +21,8 @@ updates:
       - dependency-name: tree-sitter-bash
       # swift-tree-sitter only allows tree-sitter < 0.26. Remove after upstream relaxes the constraint.
       - dependency-name: github.com/tree-sitter/tree-sitter
+      # Vendored swift-nio-ssh only allows swift-crypto < 5.0. Remove after upstream relaxes the constraint.
+      - dependency-name: github.com/apple/swift-crypto
     groups:
       swift:
         patterns:
