@@ -383,6 +383,8 @@ struct ShellView: View {
 struct ShellHistoryRow: View, Equatable {
     let entry: ShellHistoryEntry
 
+    @State private var didCopyResult = false
+
     /// Without `Equatable`, SwiftUI re-evaluates every history row's body on
     /// each keystroke in the input field; this lets unchanged rows skip their
     /// body (and the highlighter call) entirely.
@@ -395,40 +397,62 @@ struct ShellHistoryRow: View, Equatable {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
-            // Command line: prompt + highlighted command + status + time
-            HStack(alignment: .firstTextBaseline, spacing: AppSpacing.small) {
-                Text("›")
-                    .font(AppFont.dataCell)
-                    .fontWeight(.bold)
-                    .foregroundStyle(AppColor.shellPrompt)
+        HStack(alignment: .top, spacing: AppSpacing.small) {
+            VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
+                // Command line: prompt + highlighted command + status + time
+                HStack(alignment: .firstTextBaseline, spacing: AppSpacing.small) {
+                    Text("›")
+                        .font(AppFont.dataCell)
+                        .fontWeight(.bold)
+                        .foregroundStyle(AppColor.shellPrompt)
 
-                Text(TreeSitterBashHighlighter.shared.highlight(entry.command))
-                    .font(AppFont.dataCell)
-                    .lineLimit(nil)
+                    Text(TreeSitterBashHighlighter.shared.highlight(entry.command))
+                        .font(AppFont.dataCell)
+                        .lineLimit(nil)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Image(systemName: entry.isError ? "xmark.circle.fill" : "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(statusColor)
+
+                    Text(entry.timestamp, style: .time)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+
+                // Output block
+                Text(entry.result)
+                    .font(AppFont.monoSubheadline)
+                    .foregroundStyle(entry.isError ? AppColor.shellError : .primary)
+                    .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: entry.isError ? "xmark.circle.fill" : "checkmark.circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(statusColor)
-
-                Text(entry.timestamp, style: .time)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .padding(AppSpacing.small)
+                    .background(AppColor.shellOutputBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
             }
 
-            // Output block
-            Text(entry.result)
-                .font(AppFont.monoSubheadline)
-                .foregroundStyle(entry.isError ? AppColor.shellError : .primary)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(AppSpacing.small)
-                .background(AppColor.shellOutputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+            copyResultButton
         }
         .padding(.horizontal, AppSpacing.large)
         .padding(.vertical, AppSpacing.small)
         .background(.background)
+    }
+
+    /// Copies the entry's output; the right-click menu still covers copying the
+    /// command itself.
+    private var copyResultButton: some View {
+        Button("Copy Result", systemImage: didCopyResult ? "checkmark" : "doc.on.doc") {
+            copyToPasteboard(entry.result)
+            didCopyResult = true
+            Task {
+                try? await Task.sleep(for: .milliseconds(1500))
+                didCopyResult = false
+            }
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(IconButtonStyle(size: .tableAction))
+        .foregroundStyle(didCopyResult ? AppColor.success : .primary)
+        .disabled(entry.result.isEmpty)
+        .help(entry.result.isEmpty ? "No output to copy" : "Copy result")
     }
 }

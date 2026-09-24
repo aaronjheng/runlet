@@ -112,8 +112,8 @@ struct ToolbarButtonStyle: ButtonStyle {
 /// variant pairs with its neighbors — regular (28pt) matches
 /// `RefreshControl`, row is glyph-sized so dense rows keep text height instead
 /// of being stretched by their action buttons, and tableAction is the middle
-/// ground for table action columns: a 22pt hover target that only nudges the
-/// row height.
+/// ground for table action columns and other dense row actions: a 22pt hover
+/// target that only nudges the row height.
 enum IconButtonSize: Sendable {
     case regular
     case row
