@@ -329,7 +329,9 @@ struct HeaderSortControl: View {
     let onToggle: () -> Void
 
     private static let headerHeight: CGFloat = AppSize.tableHeaderHeight
-    private static let indicatorTrailingInset: CGFloat = AppSpacing.small
+    private static let intercellGap: CGFloat = AppSpacing.compact
+    private static let indicatorTrailingInset: CGFloat = AppSpacing.large
+    private var backgroundWidth: CGFloat { max(0, headerWidth - Self.intercellGap) }
     @FocusState private var isFocused: Bool
     @State private var isHovering = false
 
@@ -342,14 +344,16 @@ struct HeaderSortControl: View {
         .buttonStyle(.plain)
         .focused($isFocused)
         .focusEffectDisabled()
-        .background(
-            isHovering && !disabled ? AppColor.hoverBackground : Color.clear,
-            in: Rectangle()
-        )
-        .overlay(
+        .background(alignment: .leading) {
+            Rectangle()
+                .fill(isHovering && !disabled ? AppColor.hoverBackground : Color.clear)
+                .frame(width: backgroundWidth)
+        }
+        .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
                 .strokeBorder(Color.accentColor, lineWidth: isFocused ? AppBorderWidth.focused : 0)
-        )
+                .frame(width: backgroundWidth, height: Self.headerHeight)
+        }
         .overlay(alignment: .trailing) {
             Image(nsImage: Self.sortIndicatorImage(ascending: ascending))
                 .foregroundStyle(.secondary)
