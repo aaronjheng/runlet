@@ -34,7 +34,10 @@ struct SyntaxTextEditor: NSViewRepresentable {
         textView.allowsImageEditing = false
         textView.allowsUndo = true
         textView.usesRuler = false
-        textView.focusRingType = .default
+        textView.focusRingType = .none
+        textView.wantsLayer = true
+        textView.layer?.cornerRadius = AppRadius.medium
+        textView.layer?.borderColor = NSColor.controlAccentColor.cgColor
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticLinkDetectionEnabled = false
@@ -111,6 +114,16 @@ struct SyntaxTextEditor: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             parent.text = textView.string
             scheduleHighlight(for: textView)
+        }
+
+        func textDidBeginEditing(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            textView.layer?.borderWidth = AppBorderWidth.focused
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            textView.layer?.borderWidth = 0
         }
 
         // MARK: Highlighting

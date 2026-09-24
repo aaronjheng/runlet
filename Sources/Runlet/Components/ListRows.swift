@@ -183,72 +183,239 @@ extension View {
 
 // MARK: - Inline Text Field
 
+/// Inline editor for editable table cells (List values, Hash values, ZSet
+/// scores).
+///
+/// The editor is a real AppKit field — standard bezel, 2 pt focus border,
+/// sized to the cell it edits — exactly like native table inline editing. It
+/// lives in the enclosing `NSScrollView`'s clip view rather than in the cell:
+/// SwiftUI's table row view clips its content to the row's height, so a field
+/// inside the cell either fills the row (and `Table`, which sizes rows to
+/// their tallest cell, stretches it) or stays small enough to leave no room
+/// for its focus border. A clip-view subview shares the
+/// table's coordinate space, so it scrolls with its row for free.
+///
+/// Attach it as an overlay of the text the cell shows while idle, so that text
+/// — and with it the row height — stays in place underneath:
+///
+/// ```swift
+/// Text(row.value)
+///     .font(AppFont.dataCell)
+///     .lineLimit(2)
+///     .opacity(isEditing ? 0 : 1)
+///     .overlay {
+///         if isEditing {
+///             InlineTextField(original: row.value, text: $editValue, onSubmit: save, onCancel: cancel)
+///         }
+///     }
+/// ```
 struct InlineTextField: NSViewRepresentable {
+    /// Value the cell displays. Submitting it unchanged closes the editor
+    /// through `onCancel` instead of saving, so a no-op overwrite never costs
+    /// a write, a production confirmation, and a full key reload.
+    let original: String
     @Binding var text: String
     let onSubmit: () -> Void
     let onCancel: () -> Void
 
-    func makeNSView(context: Context) -> NSTextField {
-        let textField = NSTextField()
-        textField.isBezeled = true
-        textField.bezelStyle = .roundedBezel
-        textField.font = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-        textField.delegate = context.coordinator
-        textField.focusRingType = .default
-        return textField
+    func makeNSView(context: Context) -> InlineTextFieldAnchorView {
+        let anchor = InlineTextFieldAnchorView(frame: .zero)
+        let coordinator = context.coordinator
+        coordinator.attach(to: anchor)
+        anchor.onMoveToWindow = { coordinator.place() }
+        return anchor
     }
 
-    func updateNSView(_ nsView: NSTextField, context: Context) {
-        if nsView.stringValue != text {
-            nsView.stringValue = text
-        }
-        // Claim first responder exactly once per cell lifetime. Re-claiming
-        // on every update would yank focus back after an intentional blur
-        // (click-away), making it impossible to leave the cell.
-        let coordinator = context.coordinator
-        if !coordinator.didClaimFocus, let window = nsView.window {
-            window.makeFirstResponder(nsView)
-            if window.firstResponder == nsView {
-                coordinator.didClaimFocus = true
-            }
-        }
+    func updateNSView(_ nsView: InlineTextFieldAnchorView, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.update(text: text)
+    }
+
+    static func dismantleNSView(_ nsView: InlineTextFieldAnchorView, coordinator: Coordinator) {
+        coordinator.detach()
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject, NSTextFieldDelegate {
-        let parent: InlineTextField
-        private var isCancelling = false
-        private var isSubmitting = false
-        var didClaimFocus = false
+    /// Zero-size view marking the cell being edited. It only reports entering a
+    /// window — the first moment the enclosing table is reachable — so the
+    /// field can be placed and focused.
+    final class InlineTextFieldAnchorView: NSView {
+        var onMoveToWindow: (() -> Void)?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard window != nil else { return }
+            onMoveToWindow?()
+        }
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        /// The representable's current inputs. Refreshed on every update so the
+        /// no-op check compares against the value the cell displays *now*,
+        /// which advances when a save's reload brings the written value back.
+        var parent: InlineTextField
+        private let field = NSTextField()
+        private weak var anchorView: NSView?
+        private weak var clipView: NSClipView?
+        private weak var tableView: NSTableView?
+        private var didClaimFocus = false
+        /// True while the editor is being torn down. Removing the field ends its
+        /// editing session, and the end-editing notification that follows must
+        /// not submit a second time.
+        private var isDetaching = false
 
         init(_ parent: InlineTextField) {
             self.parent = parent
+            super.init()
+            field.isBezeled = true
+            field.bezelStyle = .roundedBezel
+            field.focusRingType = .none
+            field.wantsLayer = true
+            field.layer?.cornerRadius = AppRadius.small
+            field.layer?.borderWidth = AppBorderWidth.focused
+            field.layer?.borderColor = NSColor.controlAccentColor.cgColor
+            // Same font as the cell it covers, so the value doesn't shift when
+            // editing starts.
+            field.font = AppFont.dataCellNSFont
+            // Single line: a wrapping field would outgrow its row.
+            field.usesSingleLineMode = true
+            field.delegate = self
+        }
+
+        func attach(to anchor: NSView) {
+            anchorView = anchor
+        }
+
+        func update(text: String) {
+            if field.stringValue != text {
+                field.stringValue = text
+            }
+            place()
+        }
+
+        /// Puts the field over its cell, adding it to the clip view on the
+        /// first call.
+        func place() {
+            guard let anchorView, anchorView.window != nil else { return }
+            if field.superview == nil {
+                guard let scrollView = anchorView.enclosingScrollView,
+                    let tableView = scrollView.documentView as? NSTableView
+                else {
+                    // Not a table cell (or a table implementation we don't
+                    // recognise): edit in place instead, where the row clips
+                    // the focus border. Keeps the cell editable rather than
+                    // blank.
+                    AppLogger.warn("Inline text field found no enclosing table", category: "Keys")
+                    field.frame = anchorView.bounds
+                    anchorView.addSubview(field)
+                    claimFocus()
+                    return
+                }
+                let clipView = scrollView.contentView
+                self.clipView = clipView
+                self.tableView = tableView
+                clipView.addSubview(field)
+                observeGeometry(of: clipView, in: tableView)
+            }
+            guard let clipView, let tableView else { return }
+            let row = tableView.row(for: anchorView)
+            let column = tableView.column(for: anchorView)
+            guard row >= 0, column >= 0 else { return }
+            let cell = tableView.rect(ofRow: row).intersection(tableView.rect(ofColumn: column))
+            // Native editing fills the cell; cap the field at its own height so
+            // a value that wraps to two lines gets a centred field instead of a
+            // tall bezel.
+            let height = min(cell.height, field.intrinsicContentSize.height)
+            let frame = NSRect(
+                x: cell.minX,
+                y: cell.midY - height / 2,
+                width: cell.width,
+                height: height
+            )
+            field.frame = clipView.convert(frame, from: tableView)
+            claimFocus()
+        }
+
+        /// Claims first responder exactly once per editor lifetime. Re-claiming
+        /// on every update would yank focus back after an intentional blur
+        /// (click-away), making it impossible to leave the cell.
+        private func claimFocus() {
+            guard !didClaimFocus, let window = field.window else { return }
+            window.makeFirstResponder(field)
+            // Editing hands the keyboard to the window's field editor, so the
+            // field itself is only the responder until the editor takes over.
+            if window.firstResponder === field || window.firstResponder === field.currentEditor() {
+                didClaimFocus = true
+            }
+        }
+
+        /// Keeps the field on its cell across geometry changes. Scrolling needs
+        /// no updates — the field shares the table's coordinate space — but
+        /// column widths and the clip view's size both move the cell.
+        private func observeGeometry(of clipView: NSClipView, in tableView: NSTableView) {
+            clipView.postsBoundsChangedNotifications = true
+            let center = NotificationCenter.default
+            center.addObserver(
+                self,
+                selector: #selector(geometryDidChange),
+                name: NSView.boundsDidChangeNotification,
+                object: clipView
+            )
+            center.addObserver(
+                self,
+                selector: #selector(geometryDidChange),
+                name: NSTableView.columnDidResizeNotification,
+                object: tableView
+            )
+        }
+
+        @objc private func geometryDidChange() {
+            place()
+        }
+
+        func detach() {
+            isDetaching = true
+            field.removeFromSuperview()
+        }
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                isSubmitting = true
-                parent.onSubmit()
+                submit()
                 return true
             }
             if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-                isCancelling = true
-                parent.onCancel()
+                cancel()
                 return true
             }
             return false
         }
 
-        func controlTextDidEndEditing(_ obj: Notification) {
-            defer {
-                isCancelling = false
-                isSubmitting = false
+        /// Submits the edited value — or just closes when it matches what the
+        /// cell already shows: a no-op overwrite would still cost a write, a
+        /// production confirmation, and a full key reload.
+        private func submit() {
+            if field.stringValue == parent.original {
+                cancel()
+            } else {
+                parent.onSubmit()
             }
-            guard !isCancelling, !isSubmitting else { return }
-            parent.onSubmit()
+        }
+
+        private func cancel() {
+            parent.onCancel()
+        }
+
+        func controlTextDidEndEditing(_ obj: Notification) {
+            guard !isDetaching else { return }
+            submit()
         }
 
         func controlTextDidChange(_ obj: Notification) {

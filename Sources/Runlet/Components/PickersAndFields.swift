@@ -139,6 +139,7 @@ struct FilterField: View {
                 // without a hardcoded frame.
                 .font(.system(.body, design: .default))
                 .focused($isFocused)
+                .focusEffectDisabled()
                 .onSubmit { onSearch?() }
                 .lineLimit(1)
             if showsClearButton {
@@ -185,7 +186,7 @@ struct FilterField: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                .strokeBorder(borderColor, lineWidth: isFocused ? 1.5 : 1)
+                .strokeBorder(borderColor, lineWidth: isFocused ? AppBorderWidth.focused : AppBorderWidth.regular)
                 .allowsHitTesting(false)
         }
         .contentShape(Rectangle())
@@ -340,13 +341,14 @@ struct HeaderSortControl: View {
         }
         .buttonStyle(.plain)
         .focused($isFocused)
+        .focusEffectDisabled()
         .background(
             isHovering && !disabled ? AppColor.hoverBackground : Color.clear,
             in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
-                .strokeBorder(Color.accentColor, lineWidth: isFocused ? 1.5 : 0)
+                .strokeBorder(Color.accentColor, lineWidth: isFocused ? AppBorderWidth.focused : 0)
         )
         .overlay(alignment: .trailing) {
             Image(nsImage: Self.sortIndicatorImage(ascending: ascending))

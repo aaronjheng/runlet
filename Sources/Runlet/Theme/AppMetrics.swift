@@ -32,6 +32,11 @@ enum AppRadius {
     static let pill: CGFloat = 9999
 }
 
+enum AppBorderWidth {
+    static let regular: CGFloat = 1
+    static let focused: CGFloat = 2
+}
+
 enum AppSize {
     static let productionConfirmWidth: CGFloat = 320
     static let ttlEditorWidth: CGFloat = 260

@@ -244,24 +244,31 @@ struct EditableZSetCell: View {
     let rowValue: String
     let onSaveMember: (String, String) -> Void
 
+    private var isEditing: Bool { editingMember == row.member }
+
     var body: some View {
-        if editingMember == row.member {
-            InlineTextField(
-                text: $editScore,
-                onSubmit: { onSaveMember(row.member, editScore) },
-                onCancel: { editingMember = nil }
-            )
-        } else {
-            Text(row.score)
-                .font(AppFont.dataCell)
-                .lineLimit(1)
-                .copyableCell(row.score, row: rowValue)
-                .hoverBackground()
-                .help("Double-click to edit")
-                .onTapGesture(count: 2) {
-                    editingMember = row.member
-                    editScore = row.score
+        Text(row.score)
+            .font(AppFont.dataCell)
+            .lineLimit(1)
+            // The editor covers this cell while it is open; keeping the text in
+            // place underneath holds the row at its displayed height.
+            .opacity(isEditing ? 0 : 1)
+            .copyableCell(row.score, row: rowValue)
+            .hoverBackground()
+            .help("Double-click to edit")
+            .onTapGesture(count: 2) {
+                editingMember = row.member
+                editScore = row.score
+            }
+            .overlay {
+                if isEditing {
+                    InlineTextField(
+                        original: row.score,
+                        text: $editScore,
+                        onSubmit: { onSaveMember(row.member, editScore) },
+                        onCancel: { editingMember = nil }
+                    )
                 }
-        }
+            }
     }
 }

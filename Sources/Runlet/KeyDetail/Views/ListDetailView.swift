@@ -15,25 +15,32 @@ struct EditableListCell: View {
     let rowValue: String
     let onSaveElement: (Int, String) -> Void
 
+    private var isEditing: Bool { editingIndex == row.index }
+
     var body: some View {
-        if editingIndex == row.index {
-            InlineTextField(
-                text: $editValue,
-                onSubmit: { onSaveElement(row.index, editValue) },
-                onCancel: { editingIndex = nil }
-            )
-        } else {
-            Text(row.value)
-                .font(AppFont.dataCell)
-                .lineLimit(2)
-                .copyableCell(row.value, row: rowValue)
-                .hoverBackground()
-                .help("Double-click to edit")
-                .onTapGesture(count: 2) {
-                    editingIndex = row.index
-                    editValue = row.value
+        Text(row.value)
+            .font(AppFont.dataCell)
+            .lineLimit(2)
+            // The editor covers this cell while it is open; keeping the text in
+            // place underneath holds the row at its displayed height.
+            .opacity(isEditing ? 0 : 1)
+            .copyableCell(row.value, row: rowValue)
+            .hoverBackground()
+            .help("Double-click to edit")
+            .onTapGesture(count: 2) {
+                editingIndex = row.index
+                editValue = row.value
+            }
+            .overlay {
+                if isEditing {
+                    InlineTextField(
+                        original: row.value,
+                        text: $editValue,
+                        onSubmit: { onSaveElement(row.index, editValue) },
+                        onCancel: { editingIndex = nil }
+                    )
                 }
-        }
+            }
     }
 }
 

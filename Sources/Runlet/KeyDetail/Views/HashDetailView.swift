@@ -216,24 +216,31 @@ struct EditableHashCell: View {
     let rowValue: String
     let onSaveField: (String, String) -> Void
 
+    private var isEditing: Bool { editingField == row.field }
+
     var body: some View {
-        if editingField == row.field {
-            InlineTextField(
-                text: $editValue,
-                onSubmit: { onSaveField(row.field, editValue) },
-                onCancel: { editingField = nil }
-            )
-        } else {
-            Text(row.value)
-                .font(AppFont.dataCell)
-                .lineLimit(2)
-                .copyableCell(row.value, row: rowValue)
-                .hoverBackground()
-                .help("Double-click to edit")
-                .onTapGesture(count: 2) {
-                    editingField = row.field
-                    editValue = row.value
+        Text(row.value)
+            .font(AppFont.dataCell)
+            .lineLimit(2)
+            // The editor covers this cell while it is open; keeping the text in
+            // place underneath holds the row at its displayed height.
+            .opacity(isEditing ? 0 : 1)
+            .copyableCell(row.value, row: rowValue)
+            .hoverBackground()
+            .help("Double-click to edit")
+            .onTapGesture(count: 2) {
+                editingField = row.field
+                editValue = row.value
+            }
+            .overlay {
+                if isEditing {
+                    InlineTextField(
+                        original: row.value,
+                        text: $editValue,
+                        onSubmit: { onSaveField(row.field, editValue) },
+                        onCancel: { editingField = nil }
+                    )
                 }
-        }
+            }
     }
 }

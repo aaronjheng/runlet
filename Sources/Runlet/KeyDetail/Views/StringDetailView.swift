@@ -134,7 +134,7 @@ struct StringDetailView: View {
                         .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
                         .overlay(
                             RoundedRectangle(cornerRadius: AppRadius.medium)
-                                .stroke(Color.accentColor, lineWidth: 2)
+                                .stroke(Color.accentColor, lineWidth: AppBorderWidth.focused)
                         )
 
                     HStack(spacing: AppSpacing.small) {
@@ -261,7 +261,7 @@ private struct PlainTextEditor: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isRichText = false
         textView.allowsUndo = true
-        textView.focusRingType = .default
+        textView.focusRingType = .none
         textView.delegate = context.coordinator
         return scrollView
     }
