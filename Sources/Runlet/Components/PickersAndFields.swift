@@ -344,7 +344,7 @@ struct HeaderSortControl: View {
         .focusEffectDisabled()
         .background(
             isHovering && !disabled ? AppColor.hoverBackground : Color.clear,
-            in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+            in: Rectangle()
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
