@@ -110,17 +110,21 @@ struct ToolbarButtonStyle: ButtonStyle {
 /// and dismiss buttons so hit areas are discoverable on hover.
 /// Sizing for `IconButtonStyle`: total height is frame + padding so each
 /// variant pairs with its neighbors — regular (28pt) matches
-/// `RefreshControl`, row is glyph-sized so `Table` rows keep text height
-/// instead of being stretched by their action buttons.
+/// `RefreshControl`, row is glyph-sized so dense rows keep text height instead
+/// of being stretched by their action buttons, and tableAction is the middle
+/// ground for table action columns: a 22pt hover target that only nudges the
+/// row height.
 enum IconButtonSize: Sendable {
     case regular
     case row
+    case tableAction
 
     /// Fixed inner frame; nil sizes to the glyph.
     var minSide: CGFloat? {
         switch self {
         case .regular: return 20
         case .row: return nil
+        case .tableAction: return 18
         }
     }
 
@@ -128,6 +132,7 @@ enum IconButtonSize: Sendable {
         switch self {
         case .regular: return AppSpacing.xSmall
         case .row: return AppSpacing.xxSmall
+        case .tableAction: return AppSpacing.xxSmall
         }
     }
 }

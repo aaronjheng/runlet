@@ -100,13 +100,13 @@ struct ZSetDetailView: View {
                                     editScore = row.score
                                 }
                                 .labelStyle(.iconOnly)
-                                .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
+                                .buttonStyle(IconButtonStyle(size: .tableAction, weight: .semibold))
                                 .help("Edit score")
 
                                 DeleteIconButton(
                                     action: { memberPendingDeletion = row.member },
                                     helpText: "Delete member",
-                                    size: .row
+                                    size: .tableAction
                                 )
                             }
                         )

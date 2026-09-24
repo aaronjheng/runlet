@@ -58,7 +58,7 @@ struct SetDetailView: View {
                             DeleteIconButton(
                                 action: { memberPendingDeletion = row.member },
                                 helpText: "Delete member",
-                                size: .row
+                                size: .tableAction
                             )
                         )
                     },
