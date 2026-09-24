@@ -425,7 +425,7 @@ struct ShellHistoryRow: View, Equatable {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(AppSpacing.small)
                 .background(AppColor.shellOutputBackground)
-                .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
         }
         .padding(.horizontal, AppSpacing.large)
         .padding(.vertical, AppSpacing.small)
