@@ -2,6 +2,40 @@ import SwiftUI
 
 // MARK: - Key Detail Header
 
+/// The key name in the detail header, which doubles as the rename control.
+/// Hovering draws the same chrome `FilterField` does — a wash plus a 1pt
+/// hairline border — so the title reads as editable; the chrome hangs just
+/// outside the text so the header layout never shifts.
+private struct RenameKeyTitle: View {
+    let title: String
+    let action: () -> Void
+    @State private var isHovering = false
+
+    var body: some View {
+        Text(title)
+            .font(.title3)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .background {
+                RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                    .fill(isHovering ? AppColor.hoverBackground : Color.clear)
+                    .padding(-AppSpacing.xxSmall)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                    .strokeBorder(AppColor.subtleBorder, lineWidth: AppBorderWidth.regular)
+                    .padding(-AppSpacing.xxSmall)
+                    .opacity(isHovering ? 1 : 0)
+                    .allowsHitTesting(false)
+            }
+            .onHover { isHovering = $0 }
+            .animation(AppAnimation.quick, value: isHovering)
+            .help("Click to rename")
+    }
+}
+
 /// Header bar, TTL editing flow, and generic fallback bodies for
 /// `KeyDetailView`. Kept in an extension of the main view so the state
 /// properties stay owned by `KeyDetailView.swift`.
@@ -16,23 +50,39 @@ extension KeyDetailView {
                             .font(.title3)
                             .lineLimit(1)
                             .textFieldStyle(.plain)
+                            .focusEffectDisabled()
                             .fixedSize(horizontal: true, vertical: false)
                             .focused($renameFieldFocused)
                             .onAppear { renameFieldFocused = true }
                             .onSubmit { saveRename(for: key) }
-                            .background(
-                                renameFieldFocused ? AppColor.hoverBackground : Color.clear,
-                                in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
-                            )
+                            // The chrome hangs a hair outside the text instead of
+                            // adding padding, so entering rename mode never
+                            // shifts the header layout.
+                            .background {
+                                RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                                    .fill(Color(nsColor: .textBackgroundColor))
+                                    .padding(-AppSpacing.xxSmall)
+                            }
+                            .overlay {
+                                // Same focus treatment as `FilterField`: the field
+                                // draws its own border, accent while focused.
+                                RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                                    .strokeBorder(
+                                        renameFieldFocused
+                                            ? Color.accentColor
+                                            : Color(nsColor: .separatorColor),
+                                        lineWidth: renameFieldFocused
+                                            ? AppBorderWidth.focused
+                                            : AppBorderWidth.regular
+                                    )
+                                    .padding(-AppSpacing.xxSmall)
+                                    .allowsHitTesting(false)
+                            }
                             .animation(AppAnimation.quick, value: renameFieldFocused)
                     } else {
-                        Text(key.key)
-                            .font(.title3)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .hoverBackground()
-                            .contentShape(Rectangle())
-                            .onTapGesture { beginRenaming(for: key) }
+                        RenameKeyTitle(title: key.key) {
+                            beginRenaming(for: key)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
