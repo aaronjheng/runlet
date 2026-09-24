@@ -34,19 +34,6 @@ struct ZSetDetailView: View {
         rows.map { ZSetEntry(score: $0.0, member: $0.1) }
     }
 
-    /// Score column header sort control. 125pt = 10pt leading inset + 100pt
-    /// column + 15pt intercell gap.
-    private var scoreHeaderSortControl: some View {
-        HeaderSortControl(
-            ascending: order == .ascending,
-            headerWidth: 125,
-            disabled: !pendingSearchText.isEmpty,
-            helpText: pendingSearchText.isEmpty ? "Sort by score" : "Sort order unavailable while filtering"
-        ) {
-            onOrderChange(order == .ascending ? .descending : .ascending)
-        }
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             FilterField("Member filter", text: $pendingSearchText) {
@@ -65,64 +52,91 @@ struct ZSetDetailView: View {
 
             Divider()
 
-            Table(zsetEntries, selection: $selection) {
-                TableColumn("Score") { row in
-                    EditableZSetCell(
-                        row: row,
-                        editingMember: $editingMember,
-                        editScore: $editScore,
-                        rowValue: "\(row.score)\t\(row.member)",
-                        onSaveMember: onSaveMember
+            FullWidthTable(
+                rows: zsetEntries,
+                columns: [
+                    FullWidthTable.Column(
+                        title: "Score",
+                        width: 100,
+                        resizable: false,
+                        sort: FullWidthTable.Column.Sort(
+                            ascending: order == .ascending,
+                            disabled: !pendingSearchText.isEmpty,
+                            help: pendingSearchText.isEmpty
+                                ? "Sort by score"
+                                : "Sort order unavailable while filtering"
+                        ) {
+                            onOrderChange(order == .ascending ? .descending : .ascending)
+                        }
+                    ) { row in
+                        AnyView(
+                            EditableZSetCell(
+                                row: row,
+                                editingMember: $editingMember,
+                                editScore: $editScore,
+                                rowValue: "\(row.score)\t\(row.member)",
+                                onSaveMember: onSaveMember
+                            )
+                        )
+                    },
+                    FullWidthTable.Column(title: "Member") { row in
+                        AnyView(
+                            Text(row.member)
+                                .font(AppFont.dataCell)
+                                .lineLimit(2)
+                                .selectionForeground()
+                                .copyableCell(row.member, row: "\(row.score)\t\(row.member)")
+                        )
+                    },
+                    FullWidthTable.Column(
+                        title: "Actions",
+                        width: AppSize.tableActionsWidthDouble,
+                        resizable: false
+                    ) { row in
+                        AnyView(
+                            HStack(spacing: AppSpacing.small) {
+                                Button("Edit Score", systemImage: "square.and.pencil") {
+                                    editingMember = row.member
+                                    editScore = row.score
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
+                                .help("Edit score")
+
+                                DeleteIconButton(
+                                    action: { memberPendingDeletion = row.member },
+                                    helpText: "Delete member",
+                                    size: .row
+                                )
+                            }
+                        )
+                    },
+                ],
+                selection: $selection,
+                onDoubleClick: { row, column in
+                    guard column == 0 else { return }
+                    editingMember = row.member
+                    editScore = row.score
+                },
+                contextMenu: { row in
+                    let menu = NSMenu()
+                    menu.addItem(NSMenuItem("Copy Member") { copyToPasteboard(row.member) })
+                    menu.addItem(
+                        NSMenuItem("Copy Row") { copyToPasteboard("\(row.score)\t\(row.member)") }
                     )
-                }
-                .width(100)
-
-                TableColumn("Member") { row in
-                    Text(row.member)
-                        .font(AppFont.dataCell)
-                        .lineLimit(2)
-                        .copyableCell(row.member, row: "\(row.score)\t\(row.member)")
-                }
-
-                TableColumn("Actions") { row in
-                    HStack(spacing: AppSpacing.small) {
-                        Button("Edit Score", systemImage: "square.and.pencil") {
+                    menu.addItem(.separator())
+                    menu.addItem(
+                        NSMenuItem("Edit Score") {
                             editingMember = row.member
                             editScore = row.score
                         }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
-                        .help("Edit score")
-
-                        DeleteIconButton(
-                            action: { memberPendingDeletion = row.member },
-                            helpText: "Delete member",
-                            size: .row
-                        )
-                    }
+                    )
+                    menu.addItem(
+                        NSMenuItem("Delete Member") { memberPendingDeletion = row.member }
+                    )
+                    return menu
                 }
-                .width(AppSize.tableActionsWidthDouble)
-            }
-            .contextMenu(forSelectionType: String.self) { ids in
-                if ids.count == 1, let member = ids.first {
-                    if let score = zsetEntries.first(where: { $0.member == member })?.score {
-                        Button("Copy Member") {
-                            copyToPasteboard(member)
-                        }
-                        Button("Copy Row") {
-                            copyToPasteboard("\(score)\t\(member)")
-                        }
-                        Divider()
-                        Button("Edit Score") {
-                            editingMember = member
-                            editScore = score
-                        }
-                        Button("Delete Member", role: .destructive) {
-                            memberPendingDeletion = member
-                        }
-                    }
-                }
-            }
+            )
             .overlay {
                 if zsetEntries.isEmpty {
                     VStack {
@@ -147,9 +161,6 @@ struct ZSetDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.background)
                 }
-            }
-            .overlay(alignment: .topLeading) {
-                scoreHeaderSortControl
             }
 
             Divider()
@@ -250,16 +261,12 @@ struct EditableZSetCell: View {
         Text(row.score)
             .font(AppFont.dataCell)
             .lineLimit(1)
+            .selectionForeground()
             // The editor covers this cell while it is open; keeping the text in
             // place underneath holds the row at its displayed height.
             .opacity(isEditing ? 0 : 1)
             .copyableCell(row.score, row: rowValue)
-            .hoverBackground()
             .help("Double-click to edit")
-            .onTapGesture(count: 2) {
-                editingMember = row.member
-                editScore = row.score
-            }
             .overlay {
                 if isEditing {
                     InlineTextField(

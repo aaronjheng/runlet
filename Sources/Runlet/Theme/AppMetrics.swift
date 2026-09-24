@@ -87,6 +87,11 @@ enum AppSize {
     static let tableActionsWidthDouble: CGFloat = 80
     /// Height of a table header cell, matching `NSTableHeaderView` metrics.
     static let tableHeaderHeight: CGFloat = 28
+    /// Height of a `FullWidthTable` data row: one monospaced text line plus the
+    /// `AppSpacing.mini` padding on both sides. Matches `tableHeaderHeight` so
+    /// header and body share the same rhythm; two-line cell content grows past
+    /// it when the table measures the row.
+    static let tableRowHeight: CGFloat = 28
     /// Diameter of a cluster topology node hit area.
     static let topologyNodeDiameter: CGFloat = 44
     /// Height of distribution bars in the analysis charts.

@@ -21,16 +21,12 @@ struct EditableListCell: View {
         Text(row.value)
             .font(AppFont.dataCell)
             .lineLimit(2)
+            .selectionForeground()
             // The editor covers this cell while it is open; keeping the text in
             // place underneath holds the row at its displayed height.
             .opacity(isEditing ? 0 : 1)
             .copyableCell(row.value, row: rowValue)
-            .hoverBackground()
             .help("Double-click to edit")
-            .onTapGesture(count: 2) {
-                editingIndex = row.index
-                editValue = row.value
-            }
             .overlay {
                 if isEditing {
                     InlineTextField(
@@ -72,64 +68,87 @@ struct ListDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Table(listEntries, selection: $selection) {
-                TableColumn("Index") { row in
-                    Text("\(row.index)")
-                        .font(AppFont.monoSubheadline)
-                        .foregroundStyle(.secondary)
-                        .copyableCell("\(row.index)", row: "\(row.index)\t\(row.value)")
-                }
-                .width(60)
-
-                TableColumn("Value") { row in
-                    EditableListCell(
-                        row: row,
-                        editingIndex: $editingIndex,
-                        editValue: $editValue,
-                        rowValue: "\(row.index)\t\(row.value)",
-                        onSaveElement: onSaveElement
-                    )
-                }
-
-                TableColumn("Actions") { row in
-                    HStack(spacing: AppSpacing.small) {
-                        Button("Edit Element", systemImage: "square.and.pencil") {
-                            editingIndex = row.index
-                            editValue = row.value
+            FullWidthTable(
+                rows: listEntries,
+                columns: [
+                    FullWidthTable.Column(
+                        title: "Index",
+                        width: 60,
+                        resizable: false,
+                        sort: FullWidthTable.Column.Sort(
+                            ascending: order == .ascending,
+                            help: "Sort by index"
+                        ) {
+                            onOrderChange(order == .ascending ? .descending : .ascending)
                         }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
-                        .help("Edit element")
-
-                        DeleteIconButton(
-                            action: { elementPendingDeletion = row },
-                            helpText: "Delete element",
-                            size: .row
+                    ) { row in
+                        AnyView(
+                            Text("\(row.index)")
+                                .font(AppFont.monoSubheadline)
+                                .selectionForeground(secondary: true)
+                                .copyableCell("\(row.index)", row: "\(row.index)\t\(row.value)")
                         )
-                    }
-                }
-                .width(AppSize.tableActionsWidthDouble)
-            }
-            .contextMenu(forSelectionType: Int.self) { ids in
-                if ids.count == 1, let index = ids.first {
-                    if let row = listEntries.first(where: { $0.index == index }) {
-                        Button("Copy Value") {
-                            copyToPasteboard(row.value)
-                        }
-                        Button("Copy Row") {
-                            copyToPasteboard("\(row.index)\t\(row.value)")
-                        }
-                        Divider()
-                        Button("Edit Element") {
+                    },
+                    FullWidthTable.Column(title: "Value") { row in
+                        AnyView(
+                            EditableListCell(
+                                row: row,
+                                editingIndex: $editingIndex,
+                                editValue: $editValue,
+                                rowValue: "\(row.index)\t\(row.value)",
+                                onSaveElement: onSaveElement
+                            )
+                        )
+                    },
+                    FullWidthTable.Column(
+                        title: "Actions",
+                        width: AppSize.tableActionsWidthDouble,
+                        resizable: false
+                    ) { row in
+                        AnyView(
+                            HStack(spacing: AppSpacing.small) {
+                                Button("Edit Element", systemImage: "square.and.pencil") {
+                                    editingIndex = row.index
+                                    editValue = row.value
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
+                                .help("Edit element")
+
+                                DeleteIconButton(
+                                    action: { elementPendingDeletion = row },
+                                    helpText: "Delete element",
+                                    size: .row
+                                )
+                            }
+                        )
+                    },
+                ],
+                selection: $selection,
+                onDoubleClick: { row, column in
+                    guard column == 1 else { return }
+                    editingIndex = row.index
+                    editValue = row.value
+                },
+                contextMenu: { row in
+                    let menu = NSMenu()
+                    menu.addItem(NSMenuItem("Copy Value") { copyToPasteboard(row.value) })
+                    menu.addItem(
+                        NSMenuItem("Copy Row") { copyToPasteboard("\(row.index)\t\(row.value)") }
+                    )
+                    menu.addItem(.separator())
+                    menu.addItem(
+                        NSMenuItem("Edit Element") {
                             editingIndex = row.index
                             editValue = row.value
                         }
-                        Button("Delete Element", role: .destructive) {
-                            elementPendingDeletion = row
-                        }
-                    }
+                    )
+                    menu.addItem(
+                        NSMenuItem("Delete Element") { elementPendingDeletion = row }
+                    )
+                    return menu
                 }
-            }
+            )
             .overlay {
                 if listEntries.isEmpty {
                     VStack {
@@ -143,17 +162,6 @@ struct ListDetailView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.background)
-                }
-            }
-            .overlay(alignment: .topLeading) {
-                // 85pt = 60pt Index column + 25pt intercell gap, mirroring the
-                // score sort control in `ZSetDetailView`.
-                HeaderSortControl(
-                    ascending: order == .ascending,
-                    headerWidth: 85,
-                    helpText: "Sort by index"
-                ) {
-                    onOrderChange(order == .ascending ? .descending : .ascending)
                 }
             }
 

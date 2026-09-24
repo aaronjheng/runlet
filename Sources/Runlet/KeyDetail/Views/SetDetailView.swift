@@ -37,37 +37,44 @@ struct SetDetailView: View {
 
             Divider()
 
-            Table(setEntries, selection: $selection) {
-                TableColumn("Member") { row in
-                    Text(row.member)
-                        .font(AppFont.dataCell)
-                        .lineLimit(2)
-                        .copyableCell(row.member, row: row.member)
-                }
-
-                TableColumn("Actions") { row in
-                    DeleteIconButton(
-                        action: { memberPendingDeletion = row.member },
-                        helpText: "Delete member",
-                        size: .row
+            FullWidthTable(
+                rows: setEntries,
+                columns: [
+                    FullWidthTable.Column(title: "Member") { row in
+                        AnyView(
+                            Text(row.member)
+                                .font(AppFont.dataCell)
+                                .lineLimit(2)
+                                .selectionForeground()
+                                .copyableCell(row.member, row: row.member)
+                        )
+                    },
+                    FullWidthTable.Column(
+                        title: "Actions",
+                        width: AppSize.tableActionsWidthSingle,
+                        resizable: false
+                    ) { row in
+                        AnyView(
+                            DeleteIconButton(
+                                action: { memberPendingDeletion = row.member },
+                                helpText: "Delete member",
+                                size: .row
+                            )
+                        )
+                    },
+                ],
+                selection: $selection,
+                contextMenu: { row in
+                    let menu = NSMenu()
+                    menu.addItem(NSMenuItem("Copy Member") { copyToPasteboard(row.member) })
+                    menu.addItem(NSMenuItem("Copy Row") { copyToPasteboard(row.member) })
+                    menu.addItem(.separator())
+                    menu.addItem(
+                        NSMenuItem("Delete Member") { memberPendingDeletion = row.member }
                     )
+                    return menu
                 }
-                .width(AppSize.tableActionsWidthSingle)
-            }
-            .contextMenu(forSelectionType: String.self) { ids in
-                if ids.count == 1, let member = ids.first {
-                    Button("Copy Member") {
-                        copyToPasteboard(member)
-                    }
-                    Button("Copy Row") {
-                        copyToPasteboard(member)
-                    }
-                    Divider()
-                    Button("Delete Member", role: .destructive) {
-                        memberPendingDeletion = member
-                    }
-                }
-            }
+            )
             .overlay {
                 if setEntries.isEmpty {
                     VStack {

@@ -41,64 +41,83 @@ struct HashDetailView: View {
 
             Divider()
 
-            Table(hashEntries, selection: $selection) {
-                TableColumn("Field") { row in
-                    Text(row.field)
-                        .font(AppFont.dataCell)
-                        .lineLimit(2)
-                        .copyableCell(row.field, row: "\(row.field)\t\(row.value)")
-                }
-                .width(min: 100, ideal: 150, max: 300)
+            FullWidthTable(
+                rows: hashEntries,
+                columns: [
+                    FullWidthTable.Column(
+                        title: "Field",
+                        width: 150,
+                        minWidth: 100,
+                        maxWidth: 300
+                    ) { row in
+                        AnyView(
+                            Text(row.field)
+                                .font(AppFont.dataCell)
+                                .lineLimit(2)
+                                .selectionForeground()
+                                .copyableCell(row.field, row: "\(row.field)\t\(row.value)")
+                        )
+                    },
+                    FullWidthTable.Column(title: "Value") { row in
+                        AnyView(
+                            EditableHashCell(
+                                row: row,
+                                editingField: $editingField,
+                                editValue: $editValue,
+                                rowValue: "\(row.field)\t\(row.value)",
+                                onSaveField: onSaveField
+                            )
+                        )
+                    },
+                    FullWidthTable.Column(
+                        title: "Actions",
+                        width: AppSize.tableActionsWidthDouble,
+                        resizable: false
+                    ) { row in
+                        AnyView(
+                            HStack(spacing: AppSpacing.small) {
+                                Button("Edit Field", systemImage: "square.and.pencil") {
+                                    editingField = row.field
+                                    editValue = row.value
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
+                                .help("Edit field")
 
-                TableColumn("Value") { row in
-                    EditableHashCell(
-                        row: row,
-                        editingField: $editingField,
-                        editValue: $editValue,
-                        rowValue: "\(row.field)\t\(row.value)",
-                        onSaveField: onSaveField
+                                DeleteIconButton(
+                                    action: { fieldPendingDeletion = row.field },
+                                    helpText: "Delete field",
+                                    size: .row
+                                )
+                            }
+                        )
+                    },
+                ],
+                selection: $selection,
+                onDoubleClick: { row, column in
+                    guard column == 1 else { return }
+                    editingField = row.field
+                    editValue = row.value
+                },
+                contextMenu: { row in
+                    let menu = NSMenu()
+                    menu.addItem(NSMenuItem("Copy Field") { copyToPasteboard(row.field) })
+                    menu.addItem(
+                        NSMenuItem("Copy Row") { copyToPasteboard("\(row.field)\t\(row.value)") }
                     )
-                }
-
-                TableColumn("Actions") { row in
-                    HStack(spacing: AppSpacing.small) {
-                        Button("Edit Field", systemImage: "square.and.pencil") {
+                    menu.addItem(.separator())
+                    menu.addItem(
+                        NSMenuItem("Edit Field") {
                             editingField = row.field
                             editValue = row.value
                         }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(IconButtonStyle(size: .row, weight: .semibold))
-                        .help("Edit field")
-
-                        DeleteIconButton(
-                            action: { fieldPendingDeletion = row.field },
-                            helpText: "Delete field",
-                            size: .row
-                        )
-                    }
+                    )
+                    menu.addItem(
+                        NSMenuItem("Delete Field") { fieldPendingDeletion = row.field }
+                    )
+                    return menu
                 }
-                .width(AppSize.tableActionsWidthDouble)
-            }
-            .contextMenu(forSelectionType: String.self) { ids in
-                if ids.count == 1, let field = ids.first {
-                    if let value = hashEntries.first(where: { $0.field == field })?.value {
-                        Button("Copy Field") {
-                            copyToPasteboard(field)
-                        }
-                        Button("Copy Row") {
-                            copyToPasteboard("\(field)\t\(value)")
-                        }
-                        Divider()
-                        Button("Edit Field") {
-                            editingField = field
-                            editValue = value
-                        }
-                        Button("Delete Field", role: .destructive) {
-                            fieldPendingDeletion = field
-                        }
-                    }
-                }
-            }
+            )
             .overlay {
                 if hashEntries.isEmpty {
                     VStack {
@@ -222,16 +241,12 @@ struct EditableHashCell: View {
         Text(row.value)
             .font(AppFont.dataCell)
             .lineLimit(2)
+            .selectionForeground()
             // The editor covers this cell while it is open; keeping the text in
             // place underneath holds the row at its displayed height.
             .opacity(isEditing ? 0 : 1)
             .copyableCell(row.value, row: rowValue)
-            .hoverBackground()
             .help("Double-click to edit")
-            .onTapGesture(count: 2) {
-                editingField = row.field
-                editValue = row.value
-            }
             .overlay {
                 if isEditing {
                     InlineTextField(

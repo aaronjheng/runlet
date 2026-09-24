@@ -95,6 +95,31 @@ extension EnvironmentValues {
 }
 
 extension View {
+    /// Foreground for content on a full-width row (`fullWidthListRow` and
+    /// `FullWidthTable` cells): flips to the on-selection white while the row is
+    /// selected, so the content stays legible on the emphasized fill.
+    func selectionForeground(secondary: Bool = false) -> some View {
+        modifier(SelectionForegroundModifier(secondary: secondary))
+    }
+}
+
+private struct SelectionForegroundModifier: ViewModifier {
+    let secondary: Bool
+    @Environment(\.listRowIsSelected) private var isSelected
+
+    func body(content: Content) -> some View {
+        content.foregroundStyle(foreground)
+    }
+
+    private var foreground: Color {
+        if isSelected {
+            return secondary ? AppColor.onSelectionSecondary : AppColor.onSelection
+        }
+        return secondary ? .secondary : .primary
+    }
+}
+
+extension View {
     /// Draws the chrome of a full-width list row: the selection highlight and
     /// a 1pt bottom separator, both spanning the enclosing scroll container
     /// edge to edge (connecting to the split-view dividers on both sides).
