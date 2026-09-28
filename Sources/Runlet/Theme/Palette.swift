@@ -113,7 +113,10 @@ extension Palette {
     static let systemLight = Palette(
         windowBackground: .windowBackgroundColor,
         secondaryBackground: .controlBackgroundColor,
-        pillBackground: .controlBackgroundColor,
+        // One visible step above the white content surface — approximates the
+        // hierarchical `.background.secondary` fill pills had before theming.
+        // Tune here if the step ever reads too subtle or too strong.
+        pillBackground: NSColor(srgbRed: 242.0 / 255.0, green: 242.0 / 255.0, blue: 242.0 / 255.0, alpha: 1),
         codeBackground: .textBackgroundColor,
         sidebarBackground: .windowBackgroundColor,
         subtleBackground: 0.08,
