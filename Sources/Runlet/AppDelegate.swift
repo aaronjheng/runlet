@@ -17,7 +17,7 @@ final class WindowDelegateManager {
 }
 
 @MainActor
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     let tabManager = TabManager()
     private var stateToWindow: [UUID: NSWindow] = [:]
     let tabShortcutLimit = 9
