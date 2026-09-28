@@ -244,6 +244,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         window.center()
         window.title = "Runlet"
         window.backgroundColor = AppColor.windowBackgroundNS
+        // The titlebar draws no background of its own, so it shows the themed
+        // window background. AppKit also stops drawing its boundary hairline
+        // in this mode; TabContentView draws the equivalent line in content.
+        window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: contentView)
         window.collectionBehavior.insert(NSWindow.CollectionBehavior.fullScreenPrimary)

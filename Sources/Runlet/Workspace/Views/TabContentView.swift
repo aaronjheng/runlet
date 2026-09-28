@@ -30,6 +30,11 @@ struct TabContentView: View {
             }
         }
         .animation(.default, value: tab.activeSession?.isConnected)
+        // Stand-in for the system titlebar separator, which AppKit stops
+        // drawing once `titlebarAppearsTransparent` is set: the same hairline
+        // at the same boundary keeps the drag strip delineated instead of
+        // blending into the panel below.
+        .overlay(alignment: .top) { Divider() }
         .background(WindowTitleUpdater())
     }
 }
