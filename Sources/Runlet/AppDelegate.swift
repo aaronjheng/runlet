@@ -161,6 +161,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         window.contentViewController = split
         window.tabbingMode = .disallowed
         window.backgroundColor = AppColor.windowBackgroundNS
+        // Like the main windows: the bar draws no background of its own, so it
+        // shows the themed surfaces underneath — sidebar color on the left,
+        // content color on the right.
+        window.titlebarAppearsTransparent = true
         // Like the main windows: AppKit must never free the panel behind our
         // back (isReleasedWhenClosed), and closing drops our references so
         // the next open rebuilds instead of retaining a dead window.

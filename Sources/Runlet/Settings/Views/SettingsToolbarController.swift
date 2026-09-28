@@ -29,8 +29,9 @@ final class SettingsToolbarController: NSObject, NSToolbarDelegate {
     func install(in window: NSWindow) {
         self.window = window
         window.toolbarStyle = .unified
-        // `.automatic` draws a hairline once content scrolls under the bar, splitting the surface.
-        window.titlebarSeparatorStyle = .none
+        // Match the main windows: keep the system hairline visible under the
+        // themed bar instead of hiding the boundary.
+        window.titlebarSeparatorStyle = .line
         let toolbar = NSToolbar(identifier: "SettingsToolbar")
         toolbar.delegate = self
         // Labels would print "Back"/"Forward" under the chevrons and double the bar's height.
