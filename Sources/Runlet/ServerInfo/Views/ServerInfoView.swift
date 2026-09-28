@@ -246,12 +246,12 @@ struct ServerInfoView: View {
     private func infoRow(_ key: String, _ value: String) -> some View {
         HStack {
             Text(key)
-                .font(AppFont.monoSubheadline)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 160, alignment: .leading)
             Spacer()
             Text(value)
-                .font(AppFont.monoSubheadline)
+                .font(.subheadline)
                 .textSelection(.enabled)
         }
     }
@@ -260,20 +260,20 @@ struct ServerInfoView: View {
         VStack(alignment: .leading, spacing: AppSpacing.xSmall) {
             HStack(alignment: .firstTextBaseline) {
                 Text(capability.name)
-                    .font(AppFont.monoSubheadline)
+                    .font(.subheadline)
                     .foregroundStyle(.primary)
                     .frame(minWidth: 160, alignment: .leading)
                     .textSelection(.enabled)
                 Spacer()
                 Text(capability.version ?? "-")
-                    .font(AppFont.monoSubheadline)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }
 
             if !capability.details.isEmpty {
                 Text(capabilityDetails(capability))
-                    .font(AppFont.monoSubheadline)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .textSelection(.enabled)
@@ -292,7 +292,7 @@ struct ServerInfoView: View {
 
             VStack(alignment: .leading, spacing: AppSpacing.xxSmall) {
                 Text(node.endpoint.address)
-                    .font(AppFont.monoSubheadline)
+                    .font(.subheadline)
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Text(nodeSubtitle(node))
@@ -317,7 +317,7 @@ struct ServerInfoView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(AppFont.monoSubheadline)
+                .font(.subheadline)
                 .textSelection(.enabled)
         }
     }
