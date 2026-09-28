@@ -14,6 +14,7 @@ extension TabState {
         stopProfiler(clearEntries: true)
         connectTask?.cancel()
         activeSession?.disconnect()
+        connectedConfig = nil
         sshTunnel?.stop()
         sshTunnel = nil
         let previousClusterTunnelManager = sshClusterTunnelManager
@@ -95,6 +96,7 @@ extension TabState {
                 try Task.checkCancellation()
 
                 activeSession = redis
+                connectedConfig = resolvedConfig
                 selectedConnection = resolvedConfig
                 loadShellHistory(for: resolvedConfig)
                 isConnecting = false
@@ -155,6 +157,7 @@ extension TabState {
         connectTask = nil
         activeSession?.disconnect()
         activeSession = nil
+        connectedConfig = nil
         sshTunnel?.stop()
         sshTunnel = nil
         let clusterTunnelManager = sshClusterTunnelManager
@@ -174,6 +177,7 @@ extension TabState {
         connectTask = nil
         activeSession?.disconnect()
         activeSession = nil
+        connectedConfig = nil
         sshTunnel?.stop()
         sshTunnel = nil
         let clusterTunnelManager = sshClusterTunnelManager

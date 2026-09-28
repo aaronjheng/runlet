@@ -32,6 +32,11 @@ class TabState {
     var failedConnection: RedisConnectionConfig?
     var selectedConnection: RedisConnectionConfig?
     var pendingConnection: RedisConnectionConfig?
+    /// Config the active session was established with. `selectedConnection`
+    /// can be edited (Save) without reconnecting, so features opening new
+    /// connections later (profiler) must use this snapshot to stay consistent
+    /// with the live session instead of unapplied edits.
+    var connectedConfig: RedisConnectionConfig?
 
     var keys: [RedisKeyEntry] = [] {
         didSet { keyNamespaceTreeCache = nil }

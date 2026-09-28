@@ -34,6 +34,9 @@ struct RedisProfilerStream {
     let monitorTasks: RedisProfilerTaskBag?
     let tunnel: SSHTunnel?
     let tunnelManager: SSHClusterTunnelManager?
+    /// Nodes that failed to enter MONITOR mode in cluster mode, surfaced as
+    /// a non-fatal warning while the healthy nodes keep streaming.
+    var nodeWarning: String?
 }
 
 struct RedisProfilerEntry: Identifiable, Hashable {

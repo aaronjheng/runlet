@@ -5,10 +5,24 @@ extension TabState {
 
     func startProfiler() {
         guard !isProfilerRunning && !isProfilerStarting else { return }
-        guard let config = selectedConnection else {
+        // `selectedConnection` can hold edits saved after connecting (which
+        // do not reconnect), so MONITOR must authenticate with the config the
+        // live session was established with — otherwise a password added via
+        // Save would fail against servers that need none, while Keys (which
+        // rides the live session) keeps working.
+        guard let config = connectedConfig ?? selectedConnection else {
             profilerError = "Connect to a Redis server before starting the profiler."
             return
         }
+        AppLogger.info(
+            "profiler starting",
+            category: "Profiler",
+            fields: [
+                "redis": config.address,
+                "auth_configured": "\(!config.password.isEmpty)",
+                "live_session": "\(connectedConfig != nil)",
+            ]
+        )
 
         profilerGeneration += 1
         let generation = profilerGeneration
@@ -123,6 +137,9 @@ extension TabState {
 
             isProfilerStarting = false
             isProfilerRunning = true
+            if let nodeWarning = stream.nodeWarning {
+                profilerError = nodeWarning
+            }
             AppLogger.info("profiler started redis=\(config.address)", category: "Profiler")
 
             for try await capture in stream.stream {
@@ -178,12 +195,13 @@ extension TabState {
 
             try Task.checkCancellation()
 
-            let client = makeProfilerMonitorClient(config: config, host: connectHost, port: connectPort)
+            let (client, rawStream) = try await startProfilerMonitorStream(
+                config: config,
+                host: connectHost,
+                port: connectPort,
+                context: "Redis profiler connection"
+            )
             monitorClient = client
-
-            let rawStream = try await withTimeout(config.connectionTimeout, context: "Redis profiler connection") {
-                try await client.startMonitoring()
-            }
 
             let (stream, continuation) = AsyncThrowingStream<RedisProfilerCapture, Error>.makeStream(
                 of: RedisProfilerCapture.self,
@@ -237,6 +255,7 @@ extension TabState {
         let taskBag = RedisProfilerTaskBag()
 
         var monitorClients: [RedisClient] = []
+        var nodeFailures: [(endpoint: RedisEndpoint, error: Error)] = []
         var didTransferOwnership = false
 
         defer {
@@ -249,31 +268,63 @@ extension TabState {
             }
         }
 
+        // A single bad node (unreachable, wrong password, stale topology
+        // entry) must not kill MONITOR on the healthy nodes: connect per
+        // node, keep whatever works, and report the rest with its address.
         for endpoint in endpoints {
             try Task.checkCancellation()
 
-            let clientEndpoint: RedisEndpoint
-            if let tunnelManager {
-                clientEndpoint = try await tunnelManager.clientEndpoint(for: endpoint)
-            } else {
-                clientEndpoint = endpoint
-            }
+            do {
+                let clientEndpoint: RedisEndpoint
+                if let tunnelManager {
+                    clientEndpoint = try await tunnelManager.clientEndpoint(for: endpoint)
+                } else {
+                    clientEndpoint = endpoint
+                }
 
-            let monitorClient = makeProfilerMonitorClient(config: config, host: clientEndpoint.host, port: clientEndpoint.port)
-            monitorClients.append(monitorClient)
-
-            let context = "Redis profiler connection to \(endpoint.address)"
-            let rawStream = try await withTimeout(config.connectionTimeout, context: context) {
-                try await monitorClient.startMonitoring()
-            }
-
-            taskBag.add(
-                monitorStreamTask(
-                    rawStream: rawStream,
-                    node: endpoint,
-                    continuation: continuation
+                let context = "Redis profiler connection to \(endpoint.address)"
+                let (monitorClient, rawStream) = try await startProfilerMonitorStream(
+                    config: config,
+                    host: clientEndpoint.host,
+                    port: clientEndpoint.port,
+                    context: context
                 )
+
+                monitorClients.append(monitorClient)
+                taskBag.add(
+                    monitorStreamTask(
+                        rawStream: rawStream,
+                        node: endpoint,
+                        continuation: continuation
+                    )
+                )
+            } catch {
+                if error is CancellationError {
+                    throw error
+                }
+                nodeFailures.append((endpoint: endpoint, error: error))
+                AppLogger.error(
+                    "profiler node failed endpoint=\(endpoint.address) error=\(error)",
+                    category: "Profiler")
+            }
+        }
+
+        guard !monitorClients.isEmpty else {
+            let details = nodeFailures.map { failure in
+                "\(failure.endpoint.address): \(failure.error.localizedDescription)"
+            }.joined(separator: "; ")
+            throw RedisError.commandError(
+                "Profiler could not MONITOR any of the \(endpoints.count) cluster nodes: \(details)"
             )
+        }
+
+        var nodeWarning: String?
+        if !nodeFailures.isEmpty {
+            let skipped = nodeFailures.map { failure in
+                "\(failure.endpoint.address): \(failure.error.localizedDescription)"
+            }.joined(separator: "; ")
+            nodeWarning =
+                "Profiler is monitoring \(monitorClients.count) of \(endpoints.count) cluster nodes. Skipped \(skipped)."
         }
 
         didTransferOwnership = true
@@ -282,7 +333,8 @@ extension TabState {
             monitorClients: monitorClients,
             monitorTasks: taskBag,
             tunnel: nil,
-            tunnelManager: tunnelManager
+            tunnelManager: tunnelManager,
+            nodeWarning: nodeWarning
         )
     }
 
@@ -307,6 +359,62 @@ extension TabState {
             preferredProtocolVersion: .resp2,
             connectionTimeout: config.connectionTimeout
         )
+    }
+
+    /// Opens one MONITOR connection, working around servers that reject a
+    /// standalone AUTH while having no password at all (observed on Redis
+    /// 8.8: `HELLO 3 AUTH` is silently accepted, plain `AUTH` fails): in that
+    /// case only, retry the same node anonymously. Any other failure —
+    /// including a genuinely wrong password (`WRONGPASS`) — propagates.
+    /// Owns the client lifecycle: failures disconnect before throwing.
+    private func startProfilerMonitorStream(
+        config: RedisConnectionConfig,
+        host: String,
+        port: UInt16,
+        context: String
+    ) async throws -> (RedisClient, AsyncThrowingStream<String, Error>) {
+        let client = makeProfilerMonitorClient(config: config, host: host, port: port)
+        do {
+            let stream = try await withTimeout(config.connectionTimeout, context: context) {
+                try await client.startMonitoring()
+            }
+            return (client, stream)
+        } catch {
+            client.disconnect()
+            guard sendsProfilerAuth(config), isNoPasswordConfiguredError(error) else {
+                throw error
+            }
+            AppLogger.info(
+                "profiler retrying without AUTH; server has no password configured",
+                category: "Profiler",
+                fields: ["context": context]
+            )
+            var anonymousConfig = config
+            anonymousConfig.username = ""
+            anonymousConfig.password = ""
+            let anonymous = makeProfilerMonitorClient(config: anonymousConfig, host: host, port: port)
+            do {
+                let stream = try await withTimeout(config.connectionTimeout, context: context) {
+                    try await anonymous.startMonitoring()
+                }
+                return (anonymous, stream)
+            } catch {
+                anonymous.disconnect()
+                throw error
+            }
+        }
+    }
+
+    private func sendsProfilerAuth(_ config: RedisConnectionConfig) -> Bool {
+        !config.username.isEmpty || !config.password.isEmpty
+    }
+
+    /// Matches the "server has no password" AUTH rejection across server
+    /// versions: Redis 7+ reports "without any password configured", Redis 6
+    /// and earlier report "no password is set".
+    private func isNoPasswordConfiguredError(_ error: Error) -> Bool {
+        let message = error.localizedDescription.lowercased()
+        return message.contains("without any password configured") || message.contains("no password is set")
     }
 
     private nonisolated func monitorStreamTask(
