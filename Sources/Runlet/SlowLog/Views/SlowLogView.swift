@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SlowLogView: View {
     @Environment(TabState.self) private var tab
+    @Environment(\.colorScheme) private var colorScheme
     @State private var filterText = ""
     @State private var selection = Set<Int>()
 
@@ -115,6 +116,8 @@ struct SlowLogView: View {
                     .width(130)
                 }
                 .tableStyle(.inset)
+                .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+                .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(Color.clear))
                 .contextMenu(forSelectionType: Int.self) { ids in
                     if ids.count == 1, let id = ids.first {
                         if let entry = filtered.first(where: { $0.id == id }) {

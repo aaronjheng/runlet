@@ -35,6 +35,7 @@ struct FunctionCallView: View {
             resultSection
         }
         .frame(width: 640, height: 560)
+        .presentationSurface()
         .sheet(isPresented: $showProductionConfirm) {
             ProductionConfirmView(
                 title: "Call Function on Production?",

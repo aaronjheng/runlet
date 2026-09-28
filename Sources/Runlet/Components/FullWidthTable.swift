@@ -105,7 +105,7 @@ private struct FullWidthTableRepresentable<Row: Identifiable>: NSViewRepresentab
         tableView.style = .fullWidth
         tableView.selectionHighlightStyle = .regular
         tableView.usesAlternatingRowBackgroundColors = true
-        tableView.backgroundColor = .controlBackgroundColor
+        tableView.backgroundColor = AppColor.secondaryBackgroundNS
         tableView.gridStyleMask = []
         tableView.intercellSpacing = .zero
         tableView.allowsMultipleSelection = true
@@ -131,7 +131,7 @@ private struct FullWidthTableRepresentable<Row: Identifiable>: NSViewRepresentab
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.drawsBackground = true
-        scrollView.backgroundColor = .controlBackgroundColor
+        scrollView.backgroundColor = AppColor.secondaryBackgroundNS
         scrollView.borderType = .noBorder
         scrollView.automaticallyAdjustsContentInsets = false
         scrollView.contentInsets = NSEdgeInsetsZero

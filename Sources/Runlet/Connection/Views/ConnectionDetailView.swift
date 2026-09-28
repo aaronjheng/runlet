@@ -21,6 +21,7 @@ private struct SaveFeedback: Equatable {
 struct ConnectionDetailView: View {
     @Environment(TabState.self) private var tab
     @Environment(ConnectionStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var name = ""
     @State private var connectionMode: RedisConnectionMode = .standalone
@@ -241,6 +242,8 @@ struct ConnectionDetailView: View {
                     }
                 }
                 .formStyle(.grouped)
+                .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+                .background(colorScheme == .dark ? AnyShapeStyle(AppColor.windowBackground) : AnyShapeStyle(Color.clear))
             }
             .onChange(of: tab.connectionPanel) { _, newValue in
                 loadConfig(from: newValue)

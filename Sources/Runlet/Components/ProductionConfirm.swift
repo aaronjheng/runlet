@@ -63,6 +63,7 @@ struct ProductionConfirmView: View {
         }
         .padding(AppSpacing.large)
         .frame(width: AppSize.productionConfirmWidth)
+        .presentationSurface()
         .onAppear { isInputFocused = true }
     }
 

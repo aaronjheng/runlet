@@ -29,6 +29,7 @@ struct LuaEditorView: View {
         case failed(String)
     }
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var libraryName: String
     @State private var code: String
     @State private var replace: Bool
@@ -68,6 +69,7 @@ struct LuaEditorView: View {
             actions
         }
         .frame(width: 700, height: 540)
+        .presentationSurface()
         .confirmationDialog(
             mode.isEdit ? "Save library \"\(libraryName)\"?" : "Load library \"\(libraryName)\"?",
             isPresented: Binding(
@@ -195,7 +197,7 @@ struct LuaEditorView: View {
         .padding(.horizontal, AppSpacing.small)
         .frame(minHeight: AppSize.footerHeight)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
     }
 
     @ViewBuilder

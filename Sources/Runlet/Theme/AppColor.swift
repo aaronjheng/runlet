@@ -22,8 +22,33 @@ enum AppColor {
 
     // MARK: - Backgrounds
 
-    static let codeBackground: Color = Color(nsColor: .textBackgroundColor)
-    static let controlBackground: Color = Color(nsColor: .controlBackgroundColor)
+    /// Main window/content background. Dark mode uses the custom #262626.
+    static let windowBackground = dynamicColor(light: .windowBackgroundColor, dark: darkMainBackground)
+
+    /// AppKit counterpart of `windowBackground` for `NSWindow.backgroundColor`
+    /// and other `NSView`-level surfaces.
+    static let windowBackgroundNS = dynamicNSColor(light: .windowBackgroundColor, dark: darkMainBackground)
+
+    /// Secondary surfaces (sidebars, headers, tables, fields). Dark mode uses
+    /// the custom #212121.
+    static let secondaryBackground = dynamicColor(light: .controlBackgroundColor, dark: darkSecondaryBackground)
+
+    /// AppKit counterpart of `secondaryBackground` for `NSTableView` and
+    /// scroll view backgrounds.
+    static let secondaryBackgroundNS = dynamicNSColor(light: .controlBackgroundColor, dark: darkSecondaryBackground)
+
+    /// Sidebar base. Tracks the window color in light mode (plus
+    /// `sidebarTint` below) and pins to #212121 in dark mode.
+    static let sidebarBackground = dynamicColor(light: .windowBackgroundColor, dark: darkSecondaryBackground)
+
+    /// Raised pill/track surfaces (segmented pickers, refresh pills, dropdown
+    /// labels, secondary buttons). Dark mode uses #2E2E2E: a step above the
+    /// secondary base so unselected segments stay legible instead of sinking
+    /// into the track.
+    static let pillBackground = dynamicColor(light: .controlBackgroundColor, dark: darkPillBackground)
+
+    static let codeBackground: Color = dynamicColor(light: .textBackgroundColor, dark: darkSecondaryBackground)
+    static let controlBackground: Color = secondaryBackground
 
     /// Light fill for badges and secondary chrome.
     static let subtleBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.12)
@@ -40,8 +65,9 @@ enum AppColor {
     static let subtleBorder = adaptiveColor(.labelColor, light: 0.12, dark: 0.18)
 
     /// Tint layered over the sidebar's opaque base so it stays visually
-    /// distinct from the content area; dark mode needs slightly more contrast.
-    static let sidebarTint = adaptiveColor(.labelColor, light: 0.05, dark: 0.07)
+    /// distinct from the content area in light mode. Dark mode pins the
+    /// sidebar to the flat #212121 base instead, so no tint is applied.
+    static let sidebarTint = adaptiveColor(.labelColor, light: 0.05, dark: 0.0)
 
     /// Highlight background for selected rows/items in lists and tables.
     /// Subtle variant for dense data rows (Profiler, cluster nodes) where the
@@ -109,6 +135,22 @@ enum AppColor {
     static let shellOutputBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.12)
 
     // MARK: - Syntax highlighting
+
+    /// Fixed dark-mode surfaces. Declared once so every background token
+    /// below stays in sync with the requested palette.
+    private static let darkMainBackground = NSColor(srgbRed: 38.0 / 255.0, green: 38.0 / 255.0, blue: 38.0 / 255.0, alpha: 1)
+    private static let darkSecondaryBackground = NSColor(srgbRed: 33.0 / 255.0, green: 33.0 / 255.0, blue: 33.0 / 255.0, alpha: 1)
+    private static let darkPillBackground = NSColor(srgbRed: 46.0 / 255.0, green: 46.0 / 255.0, blue: 46.0 / 255.0, alpha: 1)
+
+    /// `NSColor` twin of `dynamicColor` for AppKit surfaces that take
+    /// `NSColor` directly (`NSWindow.backgroundColor`, `NSTableView`).
+    private static func dynamicNSColor(light: NSColor, dark: NSColor) -> NSColor {
+        NSColor(
+            name: nil,
+            dynamicProvider: { appearance in
+                appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            })
+    }
 
     /// Resolves `base` with `light` alpha in light appearance and `dark` alpha
     /// in dark appearance, re-evaluating whenever the surrounding environment

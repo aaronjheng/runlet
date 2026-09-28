@@ -13,6 +13,7 @@ struct AddHashFieldSheet: View {
     let onSave: (String, String) -> Void
     let onCancel: () -> Void
     @FocusState private var fieldFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: AppSpacing.large) {
@@ -26,6 +27,7 @@ struct AddHashFieldSheet: View {
                     .lineLimit(3...6)
             }
             .formStyle(.grouped)
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
 
             HStack {
                 Button("Cancel") { onCancel() }
@@ -45,6 +47,7 @@ struct AddHashFieldSheet: View {
             }
         }
         .padding(AppSpacing.large)
+        .presentationSurface()
         .onAppear { fieldFocused = true }
     }
 }
@@ -56,6 +59,7 @@ struct AddListElementSheet: View {
     let onSave: (String, ListInsertPosition) -> Void
     let onCancel: () -> Void
     @FocusState private var valueFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: AppSpacing.large) {
@@ -72,6 +76,7 @@ struct AddListElementSheet: View {
                 }
             }
             .formStyle(.grouped)
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
 
             HStack {
                 Button("Cancel") { onCancel() }
@@ -91,6 +96,7 @@ struct AddListElementSheet: View {
             }
         }
         .padding(AppSpacing.large)
+        .presentationSurface()
         .onAppear { valueFocused = true }
     }
 }
@@ -101,6 +107,7 @@ struct AddSetMemberSheet: View {
     let onSave: (String) -> Void
     let onCancel: () -> Void
     @FocusState private var memberFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: AppSpacing.large) {
@@ -113,6 +120,7 @@ struct AddSetMemberSheet: View {
                     .focused($memberFocused)
             }
             .formStyle(.grouped)
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
 
             HStack {
                 Button("Cancel") { onCancel() }
@@ -132,6 +140,7 @@ struct AddSetMemberSheet: View {
             }
         }
         .padding(AppSpacing.large)
+        .presentationSurface()
         .onAppear { memberFocused = true }
     }
 }
@@ -143,6 +152,7 @@ struct AddZSetMemberSheet: View {
     let onSave: (String, String) -> Void
     let onCancel: () -> Void
     @FocusState private var scoreFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: AppSpacing.large) {
@@ -155,6 +165,7 @@ struct AddZSetMemberSheet: View {
                 TextField("Member", text: $member)
             }
             .formStyle(.grouped)
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
 
             HStack {
                 Button("Cancel") { onCancel() }
@@ -174,6 +185,7 @@ struct AddZSetMemberSheet: View {
             }
         }
         .padding(AppSpacing.large)
+        .presentationSurface()
         .onAppear { scoreFocused = true }
     }
 }
@@ -245,6 +257,7 @@ struct AddKeySheet: View {
             formSection
         }
         .frame(width: AppSize.addKeySheetWidth)
+        .presentationSurface()
         .onAppear { keyNameFocused = true }
     }
 

@@ -4,6 +4,7 @@ import SwiftUI
 struct ShellView: View {
     @Environment(TabState.self) private var tab
     @Environment(\.controlActiveState) private var controlActiveState
+    @Environment(\.colorScheme) private var colorScheme
     @State private var input = ""
     @State private var historyIndex = -1
     @State private var historyDraft = ""
@@ -79,7 +80,7 @@ struct ShellView: View {
                 proxy.scrollTo(filteredCompletions[index], anchor: .center)
             }
         }
-        .background(.bar)
+        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
         .overlay(
             UnevenRoundedRectangle(
@@ -297,7 +298,7 @@ struct ShellView: View {
                     }
                 }
             }
-            .background(.bar)
+            .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
             .onChange(of: completionsVisible) { _, visible in
                 hoverAnchorLocation = visible ? NSEvent.mouseLocation : nil
             }
@@ -435,7 +436,7 @@ struct ShellHistoryRow: View, Equatable {
         }
         .padding(.horizontal, AppSpacing.large)
         .padding(.vertical, AppSpacing.small)
-        .background(.background)
+        .background(AppColor.windowBackground)
     }
 
     /// Copies the entry's output; the right-click menu still covers copying the

@@ -8,6 +8,7 @@ import SwiftUI
 /// `SettingsStore`.
 struct SettingsView: View {
     @Environment(SettingsNavigationState.self) private var navigation
+    @Environment(\.colorScheme) private var colorScheme
     @Bindable private var store = SettingsStore.shared
 
     /// Live binding so a theme change from the menu is reflected while the
@@ -51,6 +52,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.windowBackground) : AnyShapeStyle(Color.clear))
     }
 
     // MARK: - Appearance
@@ -76,5 +79,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.windowBackground) : AnyShapeStyle(Color.clear))
     }
 }

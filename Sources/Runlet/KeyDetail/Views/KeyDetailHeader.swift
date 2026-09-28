@@ -60,7 +60,7 @@ extension KeyDetailView {
                             // shifts the header layout.
                             .background {
                                 RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
-                                    .fill(Color(nsColor: .textBackgroundColor))
+                                    .fill(AppColor.codeBackground)
                                     .padding(-AppSpacing.xxSmall)
                             }
                             .overlay {
@@ -340,6 +340,8 @@ extension KeyDetailView {
             }
         }
         .listStyle(.inset)
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(Color.clear))
     }
 
     @ViewBuilder

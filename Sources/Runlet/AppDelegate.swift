@@ -160,6 +160,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.contentViewController = split
         window.tabbingMode = .disallowed
+        window.backgroundColor = AppColor.windowBackgroundNS
         // Like the main windows: AppKit must never free the panel behind our
         // back (isReleasedWhenClosed), and closing drops our references so
         // the next open rebuilds instead of retaining a dead window.
@@ -242,6 +243,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.center()
         window.title = "Runlet"
+        window.backgroundColor = AppColor.windowBackgroundNS
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: contentView)
         window.collectionBehavior.insert(NSWindow.CollectionBehavior.fullScreenPrimary)

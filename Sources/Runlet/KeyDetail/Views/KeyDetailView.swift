@@ -12,6 +12,7 @@ struct PendingProductionWrite: Identifiable {
 
 struct KeyDetailView: View {
     @Environment(TabState.self) var tab
+    @Environment(\.colorScheme) var colorScheme
     @State var didCopyKey = false
     @State var showingAddHashField = false
     @State var newHashField = ""
@@ -263,6 +264,7 @@ struct KeyTTLEditorPopover: View {
         }
         .padding(AppSpacing.large)
         .frame(width: AppSize.ttlEditorWidth)
+        .presentationSurface()
         .onAppear { inputFocused = true }
     }
 }

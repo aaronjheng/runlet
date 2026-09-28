@@ -4,6 +4,14 @@ import SwiftUI
 // MARK: - Sidebar Background
 
 extension View {
+    /// Replaces the system presentation material behind sheets and popovers
+    /// with the app's opaque window background. The default material is
+    /// translucent and picks up the wallpaper's tint, so in dark mode it reads
+    /// brownish next to the flat neutral surfaces everywhere else.
+    func presentationSurface() -> some View {
+        presentationBackground(AppColor.windowBackground)
+    }
+
     /// Gives a `.listStyle(.sidebar)` list a flat, opaque background with a slight tint
     /// so the sidebar stays visually distinct from the content area.
     ///
@@ -16,12 +24,13 @@ extension View {
     func flatSidebarBackground() -> some View {
         scrollContentBackground(.hidden)
             .background(AppColor.sidebarTint)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(AppColor.sidebarBackground)
     }
 }
 
 struct PanelFooterBar<Content: View>: View {
     @ViewBuilder let content: Content
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: AppSpacing.small) {
@@ -33,7 +42,7 @@ struct PanelFooterBar<Content: View>: View {
         .padding(.horizontal, AppSpacing.small)
         .frame(minHeight: AppSize.footerHeight)
         .frame(maxWidth: .infinity)
-        .background(.bar)
+        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
     }
 }
 

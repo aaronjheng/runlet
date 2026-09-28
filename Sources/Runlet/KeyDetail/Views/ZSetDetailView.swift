@@ -159,7 +159,7 @@ struct ZSetDetailView: View {
                         Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(.background)
+                    .background(AppColor.windowBackground)
                 }
             }
 

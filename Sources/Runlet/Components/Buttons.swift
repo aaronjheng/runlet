@@ -52,7 +52,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(.primary)
             .background {
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                    .fill(.background.secondary)
+                    .fill(AppColor.pillBackground)
             }
             .background {
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
@@ -186,7 +186,7 @@ extension View {
         self
             .background(
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                    .fill(.background.secondary)
+                    .fill(AppColor.pillBackground)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)

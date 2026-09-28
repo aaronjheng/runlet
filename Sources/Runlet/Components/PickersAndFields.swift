@@ -64,7 +64,7 @@ struct BinaryTogglePicker<Option: Hashable & Sendable, FirstLabel: View, SecondL
             }
         }
         .frame(height: AppSize.refreshControlHeight)
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
+        .background(AppColor.pillBackground, in: RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
     }
 }
 
@@ -177,7 +177,7 @@ struct FilterField: View {
         .padding(.vertical, AppSpacing.mini)
         .background {
             RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                .fill(Color(nsColor: .textBackgroundColor))
+                .fill(AppColor.codeBackground)
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
@@ -283,7 +283,7 @@ struct OptionsPicker<Option: Hashable & Sendable>: View {
     private var pickerChrome: some View {
         pickerLabelContent
             .foregroundStyle(.primary)
-            .background(.background.secondary)
+            .background(AppColor.pillBackground)
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
             .contentShape(Rectangle())
     }
