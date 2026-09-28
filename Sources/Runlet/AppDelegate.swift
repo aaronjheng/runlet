@@ -160,6 +160,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.contentViewController = split
         window.tabbingMode = .disallowed
+        // Like the main windows: AppKit must never free the panel behind our
+        // back (isReleasedWhenClosed), and closing drops our references so
+        // the next open rebuilds instead of retaining a dead window.
+        window.isReleasedWhenClosed = false
+        let delegate = WindowDelegate { [weak self, weak window] in
+            window?.delegate = nil
+            if let self {
+                if let window {
+                    self.delegateManager.removeDelegate(for: window)
+                }
+                self.settingsWindow = nil
+                self.settingsToolbarController = nil
+            }
+        }
+        window.delegate = delegate
+        delegateManager.setDelegate(delegate, for: window)
         window.minSize = NSSize(width: 780, height: 520)
         window.setContentSize(NSSize(width: 780, height: 520))
         let toolbarController = SettingsToolbarController(navigation: navigation)
