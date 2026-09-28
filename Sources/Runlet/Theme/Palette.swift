@@ -108,17 +108,17 @@ struct Palette {
 }
 
 extension Palette {
-    /// The light side in use today: system colors with the airy wash
-    /// defaults and lower-luminance syntax hues.
+    /// The light side in use today: the soft #F9F9F9 page with white raised
+    /// surfaces, the airy wash defaults, and lower-luminance syntax hues.
     static let systemLight = Palette(
-        windowBackground: .windowBackgroundColor,
-        secondaryBackground: .controlBackgroundColor,
-        // One visible step above the white content surface — approximates the
-        // hierarchical `.background.secondary` fill pills had before theming.
-        // Tune here if the step ever reads too subtle or too strong.
-        pillBackground: NSColor(srgbRed: 242.0 / 255.0, green: 242.0 / 255.0, blue: 242.0 / 255.0, alpha: 1),
-        codeBackground: .textBackgroundColor,
-        sidebarBackground: .windowBackgroundColor,
+        windowBackground: NSColor(srgbRed: 249.0 / 255.0, green: 249.0 / 255.0, blue: 249.0 / 255.0, alpha: 1),
+        secondaryBackground: NSColor(srgbRed: 255.0 / 255.0, green: 255.0 / 255.0, blue: 255.0 / 255.0, alpha: 1),
+        // A step below both surfaces so pills stay readable on the #F9F9F9
+        // page and on white cards alike. Tune here if the step ever reads too
+        // subtle or too strong.
+        pillBackground: NSColor(srgbRed: 239.0 / 255.0, green: 239.0 / 255.0, blue: 239.0 / 255.0, alpha: 1),
+        codeBackground: NSColor(srgbRed: 255.0 / 255.0, green: 255.0 / 255.0, blue: 255.0 / 255.0, alpha: 1),
+        sidebarBackground: NSColor(srgbRed: 249.0 / 255.0, green: 249.0 / 255.0, blue: 249.0 / 255.0, alpha: 1),
         subtleBackground: 0.08,
         trackBackground: 0.12,
         subtleBorder: 0.12,
