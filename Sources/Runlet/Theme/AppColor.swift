@@ -5,13 +5,22 @@ import SwiftUI
 /// Prefer these over raw `.red`/`.green`/`.blue` so the inventory generator and
 /// future theming always render consistent, readable colors.
 ///
-/// Washes (translucent fills for hover/press/track states) resolve through
-/// `NSColor` dynamic providers so each appearance gets a tuned opacity: a wash
-/// that reads clearly on a white surface nearly disappears on a dark one, so
-/// dark mode uses stronger alphas while light mode keeps the airy defaults.
-/// Resolving per appearance — instead of checking `NSApp.effectiveAppearance`
-/// at view-build time — keeps every surface correct when the user switches
-/// styles mid-session, including per-window overrides.
+/// Every appearance-dependent token resolves from a `Palette`: the palette
+/// matching the active appearance supplies the slot value at draw time, so
+/// switching styles mid-session — including per-window overrides — keeps every
+/// surface correct. Introducing an additional theme means adding a `Palette`
+/// instance; no token or call site changes.
+///
+/// Washes (translucent fills for hover/press/track states) stay alpha
+/// strengths inside the palette and are applied over shared dynamic bases
+/// (`labelColor`, `systemRed`, `systemOrange`) at resolution time: the bases
+/// must keep re-resolving per appearance, while the wash strength is a
+/// per-palette decision.
+///
+/// The theming roadmap — how palettes become selectable themes — lives in
+/// `Palette.swift`. In short: this enum stays the only token surface; when a
+/// theme registry arrives, only the private `paletteColor`/`paletteNSColor`/
+/// `paletteWash` helpers below change.
 enum AppColor {
     // MARK: - Status
 
@@ -22,36 +31,35 @@ enum AppColor {
 
     // MARK: - Backgrounds
 
-    /// Main window/content background. Dark mode uses the custom #262626.
-    static let windowBackground = dynamicColor(light: .windowBackgroundColor, dark: darkMainBackground)
+    /// Main window/content background. The dark palette uses the custom #262626.
+    static let windowBackground = paletteColor(\.windowBackground)
 
     /// AppKit counterpart of `windowBackground` for `NSWindow.backgroundColor`
     /// and other `NSView`-level surfaces.
-    static let windowBackgroundNS = dynamicNSColor(light: .windowBackgroundColor, dark: darkMainBackground)
+    static let windowBackgroundNS = paletteNSColor(\.windowBackground)
 
-    /// Secondary surfaces (sidebars, headers, tables, fields). Dark mode uses
-    /// the custom #212121.
-    static let secondaryBackground = dynamicColor(light: .controlBackgroundColor, dark: darkSecondaryBackground)
+    /// Secondary surfaces (sidebars, headers, tables, fields). The dark
+    /// palette uses the custom #212121.
+    static let secondaryBackground = paletteColor(\.secondaryBackground)
 
     /// AppKit counterpart of `secondaryBackground` for `NSTableView` and
     /// scroll view backgrounds.
-    static let secondaryBackgroundNS = dynamicNSColor(light: .controlBackgroundColor, dark: darkSecondaryBackground)
+    static let secondaryBackgroundNS = paletteNSColor(\.secondaryBackground)
 
     /// Sidebar base. Tracks the window color in light mode (plus
-    /// `sidebarTint` below) and pins to #212121 in dark mode.
-    static let sidebarBackground = dynamicColor(light: .windowBackgroundColor, dark: darkSecondaryBackground)
+    /// `sidebarTint` below); the dark palette pins it to the flat #212121.
+    static let sidebarBackground = paletteColor(\.sidebarBackground)
 
     /// Raised pill/track surfaces (segmented pickers, refresh pills, dropdown
-    /// labels, secondary buttons). Dark mode uses #2E2E2E: a step above the
-    /// secondary base so unselected segments stay legible instead of sinking
-    /// into the track.
-    static let pillBackground = dynamicColor(light: .controlBackgroundColor, dark: darkPillBackground)
+    /// labels, secondary buttons): a step above the secondary base so
+    /// unselected segments stay legible instead of sinking into the track.
+    static let pillBackground = paletteColor(\.pillBackground)
 
-    static let codeBackground: Color = dynamicColor(light: .textBackgroundColor, dark: darkSecondaryBackground)
+    static let codeBackground = paletteColor(\.codeBackground)
     static let controlBackground: Color = secondaryBackground
 
     /// Light fill for badges and secondary chrome.
-    static let subtleBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.12)
+    static let subtleBackground = paletteWash(\.subtleBackground)
 
     /// Standard semi-transparent badge background for a given accent color.
     static func badgeBackground(_ color: Color) -> Color {
@@ -59,15 +67,15 @@ enum AppColor {
     }
 
     /// Track background for distribution bars and similar meters.
-    static let trackBackground = adaptiveColor(.labelColor, light: 0.12, dark: 0.18)
+    static let trackBackground = paletteWash(\.trackBackground)
 
     /// Hairline stroke for custom control chrome (button borders, panel outlines).
-    static let subtleBorder = adaptiveColor(.labelColor, light: 0.12, dark: 0.18)
+    static let subtleBorder = paletteWash(\.subtleBorder)
 
     /// Tint layered over the sidebar's opaque base so it stays visually
-    /// distinct from the content area in light mode. Dark mode pins the
-    /// sidebar to the flat #212121 base instead, so no tint is applied.
-    static let sidebarTint = adaptiveColor(.labelColor, light: 0.05, dark: 0.0)
+    /// distinct from the content area in light mode. The dark palette pins
+    /// the sidebar to the flat base instead, so no tint is applied.
+    static let sidebarTint = paletteWash(\.sidebarTint)
 
     /// Highlight background for selected rows/items in lists and tables.
     /// Subtle variant for dense data rows (Profiler, cluster nodes) where the
@@ -78,26 +86,26 @@ enum AppColor {
 
     /// Hover wash for custom rows. Matches `RefreshControl` so hover feels
     /// identical across toolbars, lists, and icon buttons.
-    static let hoverBackground = adaptiveColor(.labelColor, light: 0.06, dark: 0.10)
+    static let hoverBackground = paletteWash(\.hoverBackground)
 
     /// Hover wash for icon buttons. Slightly stronger than rows so small
     /// hit areas read clearly.
-    static let iconHoverBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.13)
+    static let iconHoverBackground = paletteWash(\.iconHoverBackground)
 
     /// Pressed/selected fill that must stay clearly stronger than hover
     /// (toolbar button press, segmented toggle selection, unemphasized rows).
-    static let controlFillBackground = adaptiveColor(.labelColor, light: 0.12, dark: 0.16)
+    static let controlFillBackground = paletteWash(\.controlFillBackground)
 
     /// Wash behind destructive hover/press feedback (delete buttons).
-    static let destructiveBackground = adaptiveColor(.systemRed, light: 0.12, dark: 0.20)
+    static let destructiveBackground = paletteWash(\.destructiveBackground, base: .systemRed)
 
     // MARK: - Banners
 
-    /// Error banner fill; dark mode needs a stronger wash to stay legible.
-    static let errorBannerBackground = adaptiveColor(.systemRed, light: 0.12, dark: 0.18)
+    /// Error banner fill; the dark palette needs a stronger wash to stay legible.
+    static let errorBannerBackground = paletteWash(\.errorBannerBackground, base: .systemRed)
 
-    /// Warning banner fill; dark mode needs a stronger wash to stay legible.
-    static let warningBannerBackground = adaptiveColor(.systemOrange, light: 0.12, dark: 0.18)
+    /// Warning banner fill; the dark palette needs a stronger wash to stay legible.
+    static let warningBannerBackground = paletteWash(\.warningBannerBackground, base: .systemOrange)
 
     // MARK: - Selection content
 
@@ -132,15 +140,69 @@ enum AppColor {
     static let shellCommand: Color = .primary
     static let shellSuccess: Color = .secondary
     static let shellError: Color = .red
-    static let shellOutputBackground = adaptiveColor(.labelColor, light: 0.08, dark: 0.12)
+    static let shellOutputBackground = paletteWash(\.shellOutputBackground)
 
     // MARK: - Syntax highlighting
 
-    /// Fixed dark-mode surfaces. Declared once so every background token
-    /// below stays in sync with the requested palette.
-    private static let darkMainBackground = NSColor(srgbRed: 38.0 / 255.0, green: 38.0 / 255.0, blue: 38.0 / 255.0, alpha: 1)
-    private static let darkSecondaryBackground = NSColor(srgbRed: 33.0 / 255.0, green: 33.0 / 255.0, blue: 33.0 / 255.0, alpha: 1)
-    private static let darkPillBackground = NSColor(srgbRed: 46.0 / 255.0, green: 46.0 / 255.0, blue: 46.0 / 255.0, alpha: 1)
+    /// Keywords: `local`, `function`, `return`, `if`
+    static let syntaxKey = paletteColor(\.syntaxKey)
+
+    /// Built-in functions & API members: `pairs`, `redis.call`
+    static let syntaxBuiltin = paletteColor(\.syntaxBuiltin)
+
+    /// String literals
+    static let syntaxString = paletteColor(\.syntaxString)
+
+    /// Numeric literals
+    static let syntaxNumber = paletteColor(\.syntaxNumber)
+
+    /// Boolean literals & named constants: `true`, `LOG_DEBUG`
+    static let syntaxBool = paletteColor(\.syntaxBool)
+
+    /// Named constants — same visual group as booleans
+    static let syntaxConstant = syntaxBool
+
+    /// Type-like tokens & JSON object keys
+    static let syntaxType = paletteColor(\.syntaxType)
+
+    /// Null / nil — deliberately muted
+    static let syntaxNull = Color(nsColor: .secondaryLabelColor)
+
+    /// Punctuation — inherits system secondary
+    static let syntaxPunctuation: Color = .secondary
+
+    // MARK: - Palette resolution
+
+    // These three helpers are the seam from step one of the theming refactor:
+    // the only place that hardwires `systemLight`/`neutralDark`. Redirecting
+    // them at a theme registry is the entire step-two change on this side.
+
+    /// Color for `slot`, read from the palette matching the active appearance.
+    private static func paletteColor(_ slot: KeyPath<Palette, NSColor>) -> Color {
+        dynamicColor(
+            light: Palette.systemLight[keyPath: slot],
+            dark: Palette.neutralDark[keyPath: slot])
+    }
+
+    /// AppKit counterpart of `paletteColor` for surfaces that take `NSColor`
+    /// directly (`NSWindow.backgroundColor`, `NSTableView`).
+    private static func paletteNSColor(_ slot: KeyPath<Palette, NSColor>) -> NSColor {
+        dynamicNSColor(
+            light: Palette.systemLight[keyPath: slot],
+            dark: Palette.neutralDark[keyPath: slot])
+    }
+
+    /// Translucent fill for `slot`'s alpha strength over `base`, re-resolved
+    /// whenever the surrounding environment switches appearance.
+    private static func paletteWash(
+        _ slot: KeyPath<Palette, Double>,
+        base: NSColor = .labelColor
+    ) -> Color {
+        adaptiveColor(
+            base,
+            light: Palette.systemLight[keyPath: slot],
+            dark: Palette.neutralDark[keyPath: slot])
+    }
 
     /// `NSColor` twin of `dynamicColor` for AppKit surfaces that take
     /// `NSColor` directly (`NSWindow.backgroundColor`, `NSTableView`).
@@ -173,53 +235,4 @@ enum AppColor {
                     appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
                 }))
     }
-
-    private static func hsb(_ hue: CGFloat, _ saturation: CGFloat, _ brightness: CGFloat) -> NSColor {
-        NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: 1)
-    }
-
-    /// Keywords: `local`, `function`, `return`, `if`
-    static let syntaxKey = dynamicColor(
-        light: hsb(0.750, 0.50, 0.55),
-        dark: hsb(0.750, 0.40, 0.82)
-    )
-
-    /// Built-in functions & API members: `pairs`, `redis.call`
-    static let syntaxBuiltin = dynamicColor(
-        light: hsb(0.514, 0.65, 0.45),
-        dark: hsb(0.514, 0.50, 0.78)
-    )
-
-    /// String literals
-    static let syntaxString = dynamicColor(
-        light: hsb(0.375, 0.55, 0.42),
-        dark: hsb(0.375, 0.42, 0.75)
-    )
-
-    /// Numeric literals
-    static let syntaxNumber = dynamicColor(
-        light: hsb(0.078, 0.70, 0.65),
-        dark: hsb(0.078, 0.58, 0.88)
-    )
-
-    /// Boolean literals & named constants: `true`, `LOG_DEBUG`
-    static let syntaxBool = dynamicColor(
-        light: hsb(0.931, 0.50, 0.60),
-        dark: hsb(0.931, 0.38, 0.82)
-    )
-
-    /// Named constants — same visual group as booleans
-    static let syntaxConstant = syntaxBool
-
-    /// Type-like tokens & JSON object keys
-    static let syntaxType = dynamicColor(
-        light: hsb(0.597, 0.60, 0.55),
-        dark: hsb(0.597, 0.48, 0.82)
-    )
-
-    /// Null / nil — deliberately muted
-    static let syntaxNull = Color(nsColor: .secondaryLabelColor)
-
-    /// Punctuation — inherits system secondary
-    static let syntaxPunctuation: Color = .secondary
 }
