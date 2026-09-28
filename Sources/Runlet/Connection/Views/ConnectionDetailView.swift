@@ -43,6 +43,8 @@ struct ConnectionDetailView: View {
     @State private var sshPortError: String?
     @State private var isNew = false
     @State private var editingConfig: RedisConnectionConfig?
+    @State private var showPassword = false
+    @State private var showSSHPassword = false
 
     /// Outcome of the most recent Save action. Success auto-dismisses after
     /// a short delay; failure stays until the next save or a different
@@ -85,6 +87,22 @@ struct ConnectionDetailView: View {
         }
         return nil
     }
+
+    /// Eye toggle shown after a password field. The field itself swaps
+    /// between `SecureField` and `TextField` at the call site; this only
+    /// flips the shared reveal state.
+    private func passwordRevealButton(visible: Binding<Bool>) -> some View {
+        Button {
+            visible.wrappedValue.toggle()
+        } label: {
+            Image(systemName: visible.wrappedValue ? "eye.slash" : "eye")
+        }
+        .buttonStyle(IconButtonStyle(size: .row))
+        .foregroundStyle(.secondary)
+        .help(visible.wrappedValue ? "Hide password" : "Show password")
+        .accessibilityLabel(visible.wrappedValue ? "Hide password" : "Show password")
+    }
+
     @State private var connectionTimeout: TimeInterval = 10
     @State private var pingTimeout: TimeInterval = 5
 
@@ -167,7 +185,28 @@ struct ConnectionDetailView: View {
                                 .foregroundStyle(AppColor.error)
                         }
                         TextField("Username", text: $username)
-                        SecureField("Password", text: $password)
+                        HStack {
+                            Text("Password")
+                            Spacer()
+                            if showPassword {
+                                TextField("", text: $password, axis: .horizontal)
+                                    .accessibilityLabel("Password")
+                                    .frame(width: AppSize.formFieldWidth)
+                            } else {
+                                SecureField("", text: $password)
+                                    .accessibilityLabel("Password")
+                                    .frame(width: AppSize.formFieldWidth)
+                            }
+                        }
+                        .padding(.trailing, 24)
+                        .overlay(alignment: .trailing) {
+                            if !password.isEmpty {
+                                passwordRevealButton(visible: $showPassword)
+                            }
+                        }
+                        .onChange(of: password) { _, newValue in
+                            if newValue.isEmpty { showPassword = false }
+                        }
                         Toggle("Enable TLS", isOn: $tls.enabled)
                         if tls.enabled {
                             Toggle("Verify Server Certificate", isOn: $tls.verifyServerCertificate)
@@ -216,7 +255,28 @@ struct ConnectionDetailView: View {
                             }
                             TextField("User (optional)", text: $ssh.user)
                             if ssh.mode == .builtIn {
-                                SecureField("Password (optional)", text: $ssh.password)
+                                HStack {
+                                    Text("Password (optional)")
+                                    Spacer()
+                                    if showSSHPassword {
+                                        TextField("", text: $ssh.password, axis: .horizontal)
+                                            .accessibilityLabel("SSH password")
+                                            .frame(width: AppSize.formFieldWidth)
+                                    } else {
+                                        SecureField("", text: $ssh.password)
+                                            .accessibilityLabel("SSH password")
+                                            .frame(width: AppSize.formFieldWidth)
+                                    }
+                                }
+                                .padding(.trailing, 24)
+                                .overlay(alignment: .trailing) {
+                                    if !ssh.password.isEmpty {
+                                        passwordRevealButton(visible: $showSSHPassword)
+                                    }
+                                }
+                                .onChange(of: ssh.password) { _, newValue in
+                                    if newValue.isEmpty { showSSHPassword = false }
+                                }
                                 TextField("Private Key Path (optional)", text: $ssh.privateKeyPath)
                                 Text("Provide a password or a private key file path")
                                     .font(.subheadline)
