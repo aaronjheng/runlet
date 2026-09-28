@@ -106,7 +106,6 @@ struct LoadingState: View {
 struct Card<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.small) {
@@ -116,7 +115,7 @@ struct Card<Content: View>: View {
         }
         .padding(AppSpacing.large)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.pillBackground) : AnyShapeStyle(.bar))
+        .background(AppColor.pillBackground)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.large))
     }
 }

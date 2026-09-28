@@ -12,7 +12,6 @@ struct PendingProductionWrite: Identifiable {
 
 struct KeyDetailView: View {
     @Environment(TabState.self) var tab
-    @Environment(\.colorScheme) var colorScheme
     @State var didCopyKey = false
     @State var showingAddHashField = false
     @State var newHashField = ""

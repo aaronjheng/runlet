@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ServerInfoView: View {
     @Environment(TabState.self) private var tab
-    @Environment(\.colorScheme) private var colorScheme
 
     var sections: [String] {
         tab.serverInfo.keys
@@ -196,8 +195,8 @@ struct ServerInfoView: View {
             }
         }
         .listStyle(.inset)
-        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(Color.clear))
+        .scrollContentBackground(.hidden)
+        .background(AppColor.secondaryBackground)
         .overlay {
             if tab.isLoadingServerInfo && !tab.serverInfo.isEmpty {
                 VStack(spacing: AppSpacing.small) {

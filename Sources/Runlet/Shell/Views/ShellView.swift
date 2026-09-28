@@ -4,7 +4,6 @@ import SwiftUI
 struct ShellView: View {
     @Environment(TabState.self) private var tab
     @Environment(\.controlActiveState) private var controlActiveState
-    @Environment(\.colorScheme) private var colorScheme
     @State private var input = ""
     @State private var historyIndex = -1
     @State private var historyDraft = ""
@@ -80,7 +79,7 @@ struct ShellView: View {
                 proxy.scrollTo(filteredCompletions[index], anchor: .center)
             }
         }
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
+        .background(AppColor.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
         .overlay(
             UnevenRoundedRectangle(
@@ -298,7 +297,7 @@ struct ShellView: View {
                     }
                 }
             }
-            .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
+            .background(AppColor.secondaryBackground)
             .onChange(of: completionsVisible) { _, visible in
                 hoverAnchorLocation = visible ? NSEvent.mouseLocation : nil
             }

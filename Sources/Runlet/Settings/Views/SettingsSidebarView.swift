@@ -6,7 +6,6 @@ import SwiftUI
 /// system-supplied.
 struct SettingsSidebarView: View {
     @Environment(SettingsNavigationState.self) private var navigation
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         List(selection: selection) {
@@ -16,8 +15,7 @@ struct SettingsSidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(Color.clear))
+        .flatSidebarBackground()
     }
 
     /// `List` hands back an optional selection; routing it through `select`

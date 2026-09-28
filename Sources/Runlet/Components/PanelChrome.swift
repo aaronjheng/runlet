@@ -30,7 +30,6 @@ extension View {
 
 struct PanelFooterBar<Content: View>: View {
     @ViewBuilder let content: Content
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: AppSpacing.small) {
@@ -42,7 +41,7 @@ struct PanelFooterBar<Content: View>: View {
         .padding(.horizontal, AppSpacing.small)
         .frame(minHeight: AppSize.footerHeight)
         .frame(maxWidth: .infinity)
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
+        .background(AppColor.secondaryBackground)
     }
 }
 

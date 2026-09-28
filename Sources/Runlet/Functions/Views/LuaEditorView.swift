@@ -29,7 +29,6 @@ struct LuaEditorView: View {
         case failed(String)
     }
 
-    @Environment(\.colorScheme) private var colorScheme
     @State private var libraryName: String
     @State private var code: String
     @State private var replace: Bool
@@ -197,7 +196,7 @@ struct LuaEditorView: View {
         .padding(.horizontal, AppSpacing.small)
         .frame(minHeight: AppSize.footerHeight)
         .frame(maxWidth: .infinity)
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(.bar))
+        .background(AppColor.secondaryBackground)
     }
 
     @ViewBuilder

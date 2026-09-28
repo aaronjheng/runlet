@@ -340,8 +340,8 @@ extension KeyDetailView {
             }
         }
         .listStyle(.inset)
-        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
-        .background(colorScheme == .dark ? AnyShapeStyle(AppColor.secondaryBackground) : AnyShapeStyle(Color.clear))
+        .scrollContentBackground(.hidden)
+        .background(AppColor.secondaryBackground)
     }
 
     @ViewBuilder
