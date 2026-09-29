@@ -7,10 +7,12 @@ extension AppDelegate {
         let appMenuItem = NSMenuItem()
         mainMenu.addItem(appMenuItem)
         let appMenu = NSMenu()
-        appMenu.addItem(
-            withTitle: "About Runlet",
-            action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+        let aboutItem = NSMenuItem(
+            title: "About Runlet",
+            action: #selector(openAbout),
             keyEquivalent: "")
+        aboutItem.target = self
+        appMenu.addItem(aboutItem)
         appMenu.addItem(.separator())
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.keyEquivalentModifierMask = [.command]

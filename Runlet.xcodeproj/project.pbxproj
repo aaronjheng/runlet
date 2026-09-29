@@ -138,6 +138,119 @@
 			<key>isa</key>
 			<string>PBXBuildFile</string>
 		</dict>
+		<key>A70E1001A1B1000000000001</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>AppLicense.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>A70E1001A1B1000000000002</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>AboutView.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>A70E1001A1B1000000000003</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>LicenseView.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>A70E1001A1B1000000000004</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>text</string>
+			<key>path</key>
+			<string>LICENSE</string>
+			<key>sourceTree</key>
+			<string>SOURCE_ROOT</string>
+		</dict>
+		<key>A70E1002A1B1000000000001</key>
+		<dict>
+			<key>fileRef</key>
+			<string>A70E1001A1B1000000000001</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>A70E1002A1B1000000000002</key>
+		<dict>
+			<key>fileRef</key>
+			<string>A70E1001A1B1000000000002</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>A70E1002A1B1000000000003</key>
+		<dict>
+			<key>fileRef</key>
+			<string>A70E1001A1B1000000000003</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>A70E1002A1B1000000000004</key>
+		<dict>
+			<key>fileRef</key>
+			<string>A70E1001A1B1000000000004</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>A70E1003A1B1000000000001</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>A70E1003A1B1000000000002</string>
+				<string>A70E1003A1B1000000000003</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>About</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>A70E1003A1B1000000000002</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>A70E1001A1B1000000000001</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Models</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>A70E1003A1B1000000000003</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>A70E1001A1B1000000000002</string>
+				<string>A70E1001A1B1000000000003</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Views</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
 		<key>D1E2F3A4B5C6D7E8F9A0B1C2</key>
 		<dict>
 			<key>isa</key>
@@ -160,6 +273,7 @@
 		<dict>
 			<key>children</key>
 			<array>
+				<string>A70E1003A1B1000000000001</string>
 				<string>9DE9F5FB21A935258590C191</string>
 				<string>2C67A17E145B3F1F383265E8</string>
 				<string>C447F7AD72FECFFBBA9698BF</string>
@@ -8440,6 +8554,9 @@
 				<string>92821194E268B55034F6FEDE</string>
 				<string>B37F27FE3AFAD02A17B1BCC9</string>
 				<string>C28AC1A2ED74D9880132E86D</string>
+				<string>A70E1002A1B1000000000001</string>
+				<string>A70E1002A1B1000000000002</string>
+				<string>A70E1002A1B1000000000003</string>
 			<string>FA1B2C3D4E5F60718293A4B6</string>
 			</array>
 			<key>isa</key>
@@ -9212,6 +9329,7 @@
 			<key>files</key>
 			<array>
 				<string>08095B79379073E5CDB6A8AF</string>
+				<string>A70E1002A1B1000000000004</string>
 			</array>
 			<key>isa</key>
 			<string>PBXResourcesBuildPhase</string>
@@ -9647,6 +9765,7 @@
 			<key>children</key>
 			<array>
 				<string>88C421BA492019C7EFFFFEC2</string>
+				<string>A70E1001A1B1000000000004</string>
 				<string>B3D974DB8863C491649CE938</string>
 				<string>EBBB9DD78140920F3F35D5A6</string>
 				<string>CBC7648DD685A71D5D0DA5CE</string>

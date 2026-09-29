@@ -39,6 +39,17 @@ enum AppBorderWidth {
 
 enum AppSize {
     static let productionConfirmWidth: CGFloat = 320
+    /// Fixed size of the About panel (icon + version + License button).
+    static let aboutPanelWidth: CGFloat = 320
+    static let aboutPanelHeight: CGFloat = 380
+    static let aboutIconSide: CGFloat = 96
+    /// Minimum size of the License window; it stays resizable from there.
+    static let licensePanelWidth: CGFloat = 460
+    static let licensePanelHeight: CGFloat = 420
+    /// Height of the transparent full-size titlebar the app's utility windows
+    /// draw their content under. Panels reserve it at the top so the window
+    /// title and traffic lights never overlap the content.
+    static let titlebarClearance: CGFloat = 28
     static let ttlEditorWidth: CGFloat = 260
     static let formFieldWidth: CGFloat = 80
     /// Fixed width for leading form labels (e.g. Library / Function / Mode rows in dialogs)

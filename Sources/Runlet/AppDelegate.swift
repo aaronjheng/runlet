@@ -16,6 +16,13 @@ final class WindowDelegateManager {
     }
 }
 
+/// Menu-bar panels whose content is pure SwiftUI. Each kind owns at most one
+/// window, so opening it again brings the existing window forward.
+private enum UtilityPanel: Hashable {
+    case about
+    case license
+}
+
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     let tabManager = TabManager()
@@ -24,6 +31,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     private var tabRefreshScheduled = false
     private var settingsWindow: NSWindow?
     private var settingsToolbarController: SettingsToolbarController?
+    /// Small app-level panels opened from the menu bar, kept alive while open.
+    private var utilityWindows: [UtilityPanel: NSWindow] = [:]
     private let delegateManager = WindowDelegateManager()
     /// Autosave numbers of the windows currently on screen (frame memory).
     private var windowFrameNumbersInUse: Set<Int> = []
@@ -190,6 +199,85 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         currentAppearance.applyToWindow(window)
         settingsWindow = window
         window.makeKeyAndOrderFront(nil)
+    }
+
+    @objc func openAbout() {
+        openUtilityWindow(
+            .about,
+            title: "About Runlet",
+            contentSize: NSSize(
+                width: AppSize.aboutPanelWidth,
+                height: AppSize.aboutPanelHeight
+            ),
+            resizable: false
+        ) {
+            AboutView { [weak self] in self?.openLicense() }
+        }
+    }
+
+    private func openLicense() {
+        openUtilityWindow(
+            .license,
+            title: "Runlet License",
+            contentSize: NSSize(
+                width: AppSize.licensePanelWidth,
+                height: AppSize.licensePanelHeight
+            ),
+            resizable: true
+        ) {
+            LicenseView()
+        }
+    }
+
+    /// Panels that are pure SwiftUI content: one per `UtilityPanel`, reused
+    /// while open, rebuilt after close (AppKit must not free the window behind
+    /// our back, and closing drops our reference so the next open gets a live
+    /// window).
+    private func openUtilityWindow<Content: View>(
+        _ panel: UtilityPanel,
+        title: String,
+        contentSize: NSSize,
+        resizable: Bool,
+        @ViewBuilder content: () -> Content
+    ) {
+        if let window = utilityWindows[panel] {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate()
+            return
+        }
+        var styleMask: NSWindow.StyleMask = [.titled, .closable, .fullSizeContentView]
+        if resizable {
+            styleMask.insert([.miniaturizable, .resizable])
+        }
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: contentSize),
+            styleMask: styleMask,
+            backing: .buffered,
+            defer: false
+        )
+        window.title = title
+        window.contentView = NSHostingView(rootView: content())
+        window.backgroundColor = AppColor.windowBackgroundNS
+        // Like the main windows: the bar draws no background of its own, so it
+        // shows the themed window background underneath.
+        window.titlebarAppearsTransparent = true
+        window.isReleasedWhenClosed = false
+        window.tabbingMode = .disallowed
+        window.minSize = contentSize
+        let delegate = WindowDelegate { [weak self, weak window] in
+            window?.delegate = nil
+            if let self, let window {
+                self.delegateManager.removeDelegate(for: window)
+                self.utilityWindows[panel] = nil
+            }
+        }
+        window.delegate = delegate
+        delegateManager.setDelegate(delegate, for: window)
+        window.center()
+        currentAppearance.applyToWindow(window)
+        utilityWindows[panel] = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate()
     }
 
     @objc func setAppearance(_ sender: NSMenuItem) {
