@@ -20,6 +20,9 @@ struct ConnectionHubView: View {
                 }
             }
         }
+        // Same content layer as the connected workspace: the hub's detail area
+        // (welcome hero, connection editor) sits on the secondary background.
+        .background(AppColor.secondaryBackground)
         .onChange(of: tab.connectionPanel) { _, newValue in
             cachedPanel = newValue
         }

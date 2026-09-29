@@ -96,7 +96,7 @@ struct SetDetailView: View {
                         Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(AppColor.windowBackground)
+                    .background(AppColor.secondaryBackground)
                 }
             }
 

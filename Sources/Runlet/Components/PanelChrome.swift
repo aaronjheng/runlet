@@ -41,7 +41,9 @@ struct PanelFooterBar<Content: View>: View {
         .padding(.horizontal, AppSpacing.small)
         .frame(minHeight: AppSize.footerHeight)
         .frame(maxWidth: .infinity)
-        .background(AppColor.secondaryBackground)
+        // Frame chrome, like the titlebar: the status bar reads as part of the
+        // window frame, not as another content surface.
+        .background(AppColor.windowBackground)
     }
 }
 

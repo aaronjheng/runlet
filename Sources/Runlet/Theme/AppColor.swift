@@ -46,8 +46,9 @@ enum AppColor {
     /// scroll view backgrounds.
     static let secondaryBackgroundNS = paletteNSColor(\.secondaryBackground)
 
-    /// Sidebar base. Tracks the window color in light mode (plus
-    /// `sidebarTint` below); the dark palette pins it to the flat #212121.
+    /// Sidebar base. Light tracks the window color, dark the secondary base;
+    /// `sidebarTint` below supplies the step that keeps the sidebar distinct
+    /// from both the page and the content layer.
     static let sidebarBackground = paletteColor(\.sidebarBackground)
 
     /// Raised pill/track surfaces (segmented pickers, refresh pills, dropdown
@@ -72,9 +73,10 @@ enum AppColor {
     /// Hairline stroke for custom control chrome (button borders, panel outlines).
     static let subtleBorder = paletteWash(\.subtleBorder)
 
-    /// Tint layered over the sidebar's opaque base so it stays visually
-    /// distinct from the content area in light mode. The dark palette pins
-    /// the sidebar to the flat base instead, so no tint is applied.
+    /// Tint layered over the sidebar's opaque base so the sidebar reads with
+    /// a step of its own instead of echoing the content surface: light steps
+    /// darker than the #F9F9F9 page, dark steps lighter than the #212121
+    /// content.
     static let sidebarTint = paletteWash(\.sidebarTint)
 
     /// Highlight background for selected rows/items in lists and tables.

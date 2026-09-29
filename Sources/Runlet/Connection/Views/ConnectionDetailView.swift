@@ -302,7 +302,7 @@ struct ConnectionDetailView: View {
                 }
                 .formStyle(.grouped)
                 .scrollContentBackground(.hidden)
-                .background(AppColor.windowBackground)
+                .background(AppColor.secondaryBackground)
             }
             .onChange(of: tab.connectionPanel) { _, newValue in
                 loadConfig(from: newValue)

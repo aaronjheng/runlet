@@ -435,7 +435,7 @@ struct ShellHistoryRow: View, Equatable {
         }
         .padding(.horizontal, AppSpacing.large)
         .padding(.vertical, AppSpacing.small)
-        .background(AppColor.windowBackground)
+        .background(AppColor.secondaryBackground)
     }
 
     /// Copies the entry's output; the right-click menu still covers copying the

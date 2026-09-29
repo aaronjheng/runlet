@@ -17,6 +17,10 @@ struct WorkspaceView: View {
             case .serverInfo: ServerInfoView().transition(.opacity)
             }
         }
+        // The content column sits on the secondary background: every section's
+        // panes (lists, tables, editors) share this layer, while the frame -
+        // titlebar and sidebar - stays on the main background.
+        .background(AppColor.secondaryBackground)
         .animation(.default, value: tab.currentSection)
     }
 }
