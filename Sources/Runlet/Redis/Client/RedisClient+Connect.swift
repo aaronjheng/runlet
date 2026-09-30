@@ -224,6 +224,9 @@ extension RedisClient {
 
     /// Deletes the temporary keychain backing the client TLS identity (if any)
     /// and drops the retained bundle so the private key is no longer kept alive.
+    /// `SecKeychainDelete` is deprecated in favour of the `SecItem` API, which
+    /// does not manage file-backed keychains like the one deleted here.
+    @diagnose(DeprecatedDeclaration, as: ignored)
     private func clearClientIdentity() {
         if let keychain = clientIdentityBundle.withLock({ $0?.keychain }) {
             SecKeychainDelete(keychain)

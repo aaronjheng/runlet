@@ -149,7 +149,9 @@ private struct FullWidthTableRepresentable<Row: Identifiable>: NSViewRepresentab
 
 /// Data source, delegate, and menu target for `FullWidthTable`. The table's
 /// generic row type is erased into the closures assigned by `apply(parent:)`,
-/// so the ObjC-visible pieces stay non-generic.
+/// so the ObjC-visible pieces stay non-generic. Every entry point is an AppKit
+/// callback on the main thread, so the whole type is main-actor isolated.
+@MainActor
 final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableViewDelegate {
     var rowCount: () -> Int = { 0 }
     var rowIDs: () -> [AnyHashable] = { [] }

@@ -93,6 +93,11 @@ func loadClientIdentity(certificatePath: String, keyPath: String) throws -> Load
     }
 }
 
+/// Creates the throwaway, file-backed keychain that holds the imported
+/// identity. `SecKeychainCreate` is deprecated in favour of the `SecItem` API,
+/// but that API only writes to the data protection keychain, which is not
+/// somewhere a temporary, connection-scoped identity belongs.
+@diagnose(DeprecatedDeclaration, as: ignored)
 private func createTemporaryKeychain() throws -> (SecKeychain, String) {
     let fileURL = FileManager.default.temporaryDirectory
         .appendingPathComponent("runlet-tls-\(UUID().uuidString).keychain")
