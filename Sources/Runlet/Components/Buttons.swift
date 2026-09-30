@@ -1,6 +1,25 @@
 import AppKit
 import SwiftUI
 
+// MARK: - Click cursor
+
+extension View {
+    /// Pointing hand for the app's own click chrome (list rows, tab pills,
+    /// icon buttons, panel rows, table footers). AppKit never put a hand on a
+    /// button and SwiftUI follows it, but every one of those targets is drawn
+    /// by hand rather than being a system control, so the affordance has to be
+    /// asked for. `.link` is the system pointing-hand style, applied through
+    /// the pointer-style machinery (a real tracking area) rather than
+    /// `NSCursor.push`/`pop`, which strands a stuck hand cursor whenever a
+    /// hovered view is removed before its exit event arrives.
+    ///
+    /// Disabled controls ask for `.default` back on purpose: they must not
+    /// promise a click, the same rule their hover chrome follows.
+    func clickCursor(isEnabled: Bool = true) -> some View {
+        pointerStyle(isEnabled ? .link : .default)
+    }
+}
+
 // MARK: - Stable screenshot button styles
 
 /// A primary button style that renders reliably in off-screen captures.
@@ -24,6 +43,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && isEnabled && !reduceMotion ? 0.97 : 1)
             .opacity(isEnabled ? 1 : 0.5)
             .onHover { isHovering = $0 }
+            .clickCursor(isEnabled: isEnabled)
             .animation(AppAnimation.quick, value: configuration.isPressed)
             .animation(AppAnimation.quick, value: isHovering)
     }
@@ -73,6 +93,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && isEnabled && !reduceMotion ? 0.97 : 1)
             .opacity(isEnabled ? 1 : 0.5)
             .onHover { isHovering = $0 }
+            .clickCursor(isEnabled: isEnabled)
             .animation(AppAnimation.quick, value: configuration.isPressed)
             .animation(AppAnimation.quick, value: isHovering)
     }
@@ -98,6 +119,7 @@ struct ToolbarButtonStyle: ButtonStyle {
             .contentShape(Rectangle())
             .opacity(isEnabled ? 1 : 0.5)
             .onHover { isHovering = $0 }
+            .clickCursor(isEnabled: isEnabled)
             .animation(AppAnimation.quick, value: isHovering)
             .animation(AppAnimation.quick, value: configuration.isPressed)
     }
@@ -160,6 +182,7 @@ struct IconButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && isEnabled && !reduceMotion ? 0.95 : 1)
             .opacity(isEnabled ? 1 : 0.5)
             .onHover { isHovering = $0 }
+            .clickCursor(isEnabled: isEnabled)
             .animation(AppAnimation.quick, value: configuration.isPressed)
             .animation(AppAnimation.quick, value: isHovering)
     }
@@ -208,13 +231,16 @@ private struct HoverBackgroundModifier: ViewModifier {
                 in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             )
             .onHover { isHovering = $0 }
+            .clickCursor()
             .animation(AppAnimation.quick, value: isHovering)
     }
 }
 
 extension View {
     /// Subtle hover wash for custom tappable rows/cards that don't use a
-    /// `ButtonStyle` (e.g. `onTapGesture` rows, section headers).
+    /// `ButtonStyle` (e.g. `onTapGesture` rows, section headers). The wash and
+    /// the pointing hand come together: whatever lights up under the pointer
+    /// here is a click target.
     func hoverBackground(
         cornerRadius: CGFloat = AppRadius.small
     ) -> some View {

@@ -85,6 +85,7 @@ private struct ToggleButton<Label: View>: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .clickCursor()
         .foregroundStyle(isSelected ? .primary : .secondary)
         .background(
             isSelected
@@ -220,6 +221,7 @@ private struct FilterFieldIconButton: View {
                 in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
             )
             .onHover { isHovering = $0 }
+            .clickCursor()
             .animation(AppAnimation.quick, value: isHovering)
             .help(helpText)
     }
@@ -266,6 +268,7 @@ struct OptionsPicker<Option: Hashable & Sendable>: View {
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
+            .clickCursor()
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)

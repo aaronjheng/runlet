@@ -22,6 +22,7 @@ struct KeyFlatList: View {
                     ForEach(keys) { entry in
                         KeyRow(entry: entry)
                             .fullWidthListRow(selected: selectedKey?.key == entry.key)
+                            .clickCursor()
                             .id(entry.key)
                             .contentShape(Rectangle())
                             .onTapGesture { selectedKey = entry }
@@ -62,6 +63,7 @@ struct KeyNamespaceList: View {
                     ForEach(tree.rootKeys) { entry in
                         KeyRow(entry: entry)
                             .fullWidthListRow(selected: selectedKey?.key == entry.key)
+                            .clickCursor()
                             .id(entry.key)
                             .contentShape(Rectangle())
                             .onTapGesture { selectedKey = entry }
@@ -125,6 +127,7 @@ struct KeyNamespaceNodeView: View {
         KeyNamespaceRow(namespace: namespace, isExpanded: isExpanded)
             .contentShape(Rectangle())
             .onTapGesture(perform: toggleExpansion)
+            .clickCursor()
             .padding(.leading, CGFloat(depth) * AppSpacing.small)
             .fullWidthListRow(selected: false)
             .id("folder:\(namespace.id)")
@@ -154,6 +157,7 @@ struct KeyNamespaceNodeView: View {
                 KeyRow(entry: entry, displayName: KeyNamespaceTree.leafName(for: entry.key, separator: separator))
                     .padding(.leading, childIndent)
                     .fullWidthListRow(selected: selectedKey?.key == entry.key)
+                    .clickCursor()
                     .id(entry.key)
                     .contentShape(Rectangle())
                     .onTapGesture { selectedKey = entry }

@@ -248,6 +248,7 @@ struct FunctionsView: View {
                             ForEach(filteredLibraries) { library in
                                 FunctionLibraryRow(library: library)
                                     .fullWidthListRow(selected: tab.selectedFunctionLibrary?.name == library.name)
+                                    .clickCursor()
                                     .id(library.name)
                                     .contentShape(Rectangle())
                                     .onTapGesture { tab.selectedFunctionLibrary = library }

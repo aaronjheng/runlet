@@ -110,6 +110,7 @@ struct ShellView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .clickCursor()
         .onHover { hovering in
             guard hovering else { return }
             // Only a pointer that has actually moved since the panel opened

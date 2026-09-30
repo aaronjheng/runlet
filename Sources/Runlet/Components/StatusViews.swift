@@ -210,6 +210,7 @@ struct RefreshControl: View {
                 )
         }
         .buttonStyle(.plain)
+        .clickCursor(isEnabled: !isLoading)
         .disabled(isLoading)
         .onHover { isRefreshHovering = $0 }
         .help("Refresh")
@@ -251,6 +252,7 @@ struct RefreshControl: View {
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
+            .clickCursor(isEnabled: !isLoading)
         }
         .overlay {
             UnevenRoundedRectangle(
@@ -311,6 +313,7 @@ struct RefreshButton: View {
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous))
         }
         .buttonStyle(.plain)
+        .clickCursor(isEnabled: !isLoading)
         .disabled(isLoading)
         .onHover { isHovering = $0 }
         .help("Refresh")

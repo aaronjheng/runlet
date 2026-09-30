@@ -427,6 +427,7 @@ private struct ProfilerEntryRow: View {
             .onHover { isHovering = $0 }
         }
         .buttonStyle(.plain)
+        .clickCursor()
         .accessibilityLabel("Profiler entry: \(entry.commandText)")
         .help("Select to preview raw line")
         .contextMenu {

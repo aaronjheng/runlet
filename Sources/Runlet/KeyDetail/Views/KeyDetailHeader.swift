@@ -18,6 +18,7 @@ private struct RenameKeyTitle: View {
             .truncationMode(.middle)
             .contentShape(Rectangle())
             .onTapGesture(perform: action)
+            .clickCursor()
             .background {
                 RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
                     .fill(isHovering ? AppColor.hoverBackground : Color.clear)
