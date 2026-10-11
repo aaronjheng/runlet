@@ -39,29 +39,6 @@ extension AppDelegate {
         fileMenu.addItem(closeTabItem)
         fileMenuItem.submenu = fileMenu
 
-        let windowMenuItem = NSMenuItem()
-        mainMenu.addItem(windowMenuItem)
-        let windowMenu = NSMenu(title: "Window")
-        let nextTabItem = NSMenuItem(title: "Show Next Tab", action: #selector(selectNextTab), keyEquivalent: "\u{2192}")
-        nextTabItem.keyEquivalentModifierMask = [.command]
-        windowMenu.addItem(nextTabItem)
-        let prevTabItem = NSMenuItem(title: "Show Previous Tab", action: #selector(selectPreviousTab), keyEquivalent: "\u{2190}")
-        prevTabItem.keyEquivalentModifierMask = [.command]
-        windowMenu.addItem(prevTabItem)
-        windowMenu.addItem(.separator())
-        for index in 1...tabShortcutLimit {
-            let item = NSMenuItem(
-                title: "Select Tab \(index)",
-                action: #selector(selectTabByNumber(_:)),
-                keyEquivalent: "\(index)"
-            )
-            item.tag = index
-            item.keyEquivalentModifierMask = [.command]
-            windowMenu.addItem(item)
-        }
-        windowMenuItem.submenu = windowMenu
-        NSApp.windowsMenu = windowMenu
-
         let editMenuItem = NSMenuItem()
         mainMenu.addItem(editMenuItem)
         let editMenu = NSMenu(title: "Edit")
@@ -94,6 +71,39 @@ extension AppDelegate {
             viewMenu.addItem(item)
         }
         viewMenuItem.submenu = viewMenu
+
+        let windowMenuItem = NSMenuItem()
+        mainMenu.addItem(windowMenuItem)
+        let windowMenu = NSMenu(title: "Window")
+        let nextTabItem = NSMenuItem(title: "Show Next Tab", action: #selector(selectNextTab), keyEquivalent: "\u{2192}")
+        nextTabItem.keyEquivalentModifierMask = [.command]
+        windowMenu.addItem(nextTabItem)
+        let prevTabItem = NSMenuItem(title: "Show Previous Tab", action: #selector(selectPreviousTab), keyEquivalent: "\u{2190}")
+        prevTabItem.keyEquivalentModifierMask = [.command]
+        windowMenu.addItem(prevTabItem)
+        windowMenu.addItem(.separator())
+        for index in 1...tabShortcutLimit {
+            let item = NSMenuItem(
+                title: "Select Tab \(index)",
+                action: #selector(selectTabByNumber(_:)),
+                keyEquivalent: "\(index)"
+            )
+            item.tag = index
+            item.keyEquivalentModifierMask = [.command]
+            windowMenu.addItem(item)
+        }
+        windowMenuItem.submenu = windowMenu
+        NSApp.windowsMenu = windowMenu
+
+        let helpMenuItem = NSMenuItem()
+        mainMenu.addItem(helpMenuItem)
+        let helpMenu = NSMenu(title: "Help")
+        let helpItem = NSMenuItem(title: "Runlet Help", action: #selector(openHelp), keyEquivalent: "?")
+        helpItem.keyEquivalentModifierMask = [.command]
+        helpItem.target = self
+        helpMenu.addItem(helpItem)
+        helpMenuItem.submenu = helpMenu
+        NSApp.helpMenu = helpMenu
 
         NSApp.mainMenu = mainMenu
     }

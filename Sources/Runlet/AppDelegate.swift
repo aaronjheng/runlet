@@ -215,6 +215,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
+    @objc func openHelp() {
+        guard let url = URL(string: "https://github.com/aaronjheng/runlet") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     private func openLicense() {
         openUtilityWindow(
             .license,
