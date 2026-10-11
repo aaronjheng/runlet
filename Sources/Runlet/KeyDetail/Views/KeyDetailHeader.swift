@@ -21,7 +21,11 @@ private struct RenameKeyTitle: View {
             .clickCursor()
             .background {
                 RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
-                    .fill(isHovering ? AppColor.hoverBackground : Color.clear)
+                    // Hover lifts toward the field-hover surface (white over
+                    // the #F9F9F9 chrome in light, a charcoal step up in
+                    // dark) instead of a darkening wash, matching the
+                    // brighten-on-hover language everywhere else.
+                    .fill(isHovering ? AppColor.fieldHoverBackground : Color.clear)
                     .padding(-AppSpacing.xxSmall)
             }
             .overlay {
