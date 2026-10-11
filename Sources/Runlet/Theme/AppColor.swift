@@ -73,6 +73,11 @@ enum AppColor {
     /// Hairline stroke for custom control chrome (button borders, panel outlines).
     static let subtleBorder = paletteWash(\.subtleBorder)
 
+    /// Hover border for input fields (Canoe's `fieldHoverBorder`): a
+    /// 24% primary stroke that reads as a clear highlight over the resting
+    /// separator in both appearances (dark over #212121, light over white).
+    static let fieldHoverBorder: Color = Color.primary.opacity(0.24)
+
     /// Tint layered over the sidebar's opaque base so the sidebar reads with
     /// a step of its own instead of echoing the content surface: light steps
     /// darker than the #F9F9F9 page, dark steps lighter than the #212121

@@ -128,7 +128,7 @@ struct FilterField: View {
         if isFocused {
             return .accentColor
         }
-        return isHovering ? AppColor.subtleBorder : Color(nsColor: .separatorColor)
+        return isHovering ? AppColor.fieldHoverBorder : Color(nsColor: .separatorColor)
     }
 
     var body: some View {
@@ -177,13 +177,11 @@ struct FilterField: View {
         .padding(.trailing, AppSpacing.small)
         .padding(.vertical, AppSpacing.mini)
         .background {
+            // Field surface stays constant across hover (white in light,
+            // #212121 in dark): no darkening wash — hover reads through the
+            // border brightening and the trailing icon buttons.
             RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
                 .fill(AppColor.codeBackground)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
-                .fill(isHovering && !isFocused ? AppColor.hoverBackground : Color.clear)
-                .allowsHitTesting(false)
         }
         .overlay {
             RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
