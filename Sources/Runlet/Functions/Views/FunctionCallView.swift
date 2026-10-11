@@ -82,7 +82,7 @@ struct FunctionCallView: View {
             .help("Close (Esc)")
         }
         .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.mini)
+        .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.xSmall)
     }
 

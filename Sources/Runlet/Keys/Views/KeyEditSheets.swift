@@ -50,7 +50,7 @@ struct AddHashFieldSheet: View {
             }
         }
         .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.mini)
+        .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { fieldFocused = true }
@@ -101,7 +101,7 @@ struct AddListElementSheet: View {
             }
         }
         .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.mini)
+        .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { valueFocused = true }
@@ -147,7 +147,7 @@ struct AddSetMemberSheet: View {
             }
         }
         .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.mini)
+        .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { memberFocused = true }
@@ -197,7 +197,7 @@ struct AddZSetMemberSheet: View {
             }
         }
         .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.mini)
+        .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { scoreFocused = true }
@@ -295,7 +295,7 @@ struct AddKeySheet: View {
             .help("Close (Esc)")
         }
         .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.mini)
+        .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.xSmall)
     }
 
