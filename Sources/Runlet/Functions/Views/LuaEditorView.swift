@@ -250,6 +250,7 @@ struct LuaEditorView: View {
                 ProgressView().controlSize(.small)
             }
             Button("Cancel", role: .cancel) { dismiss() }
+                .buttonStyle(SecondaryButtonStyle())
                 .keyboardShortcut(.cancelAction)
                 .disabled(isWorking)
             Button {
