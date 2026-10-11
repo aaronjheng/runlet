@@ -214,10 +214,18 @@ private struct FilterFieldIconButton: View {
                 maxWidth: AppSize.filterFieldIconWidth
             )
             .contentShape(Rectangle())
-            .background(
-                isHovering ? AppColor.iconHoverBackground : Color.clear,
-                in: RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
-            )
+            .background {
+                // Square hover pill painted behind the glyph: fixed
+                // `filterFieldHoverSquare` side so it reads as a proper
+                // square (not a glyph-hugging sliver) without growing the
+                // field's layout.
+                RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                    .fill(isHovering ? AppColor.iconHoverBackground : Color.clear)
+                    .frame(
+                        width: AppSize.filterFieldHoverSquare,
+                        height: AppSize.filterFieldHoverSquare
+                    )
+            }
             .onHover { isHovering = $0 }
             .clickCursor()
             .animation(AppAnimation.quick, value: isHovering)

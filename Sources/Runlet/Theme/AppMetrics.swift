@@ -76,6 +76,10 @@ enum AppSize {
     static let sidebarSelectionInset: CGFloat = 10
     /// Width of the trailing icon buttons inside `FilterField`.
     static let filterFieldIconWidth: CGFloat = 22
+    /// Side of the hover highlight square painted behind `FilterField`'s
+    /// trailing icon buttons: a Canoe-style square pill that overflows the
+    /// glyph without affecting layout (the button's footprint stays 22pt).
+    static let filterFieldHoverSquare: CGFloat = 26
     /// Fixed width of the settings sidebar column.
     static let settingsSidebarWidth: CGFloat = 215
     /// Minimum width of the settings detail column.
