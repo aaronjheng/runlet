@@ -29,7 +29,6 @@ struct FunctionCallView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             configurationSection
             Divider()
             resultSection
@@ -76,13 +75,15 @@ struct FunctionCallView: View {
             } label: {
                 Image(systemName: "xmark")
             }
-            .buttonStyle(IconButtonStyle())
+            .buttonStyle(IconButtonStyle(size: .tableAction))
             .foregroundStyle(.secondary)
             .keyboardShortcut(.cancelAction)
             .accessibilityLabel("Close")
             .help("Close (Esc)")
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.xSmall)
     }
 
     // MARK: Configuration
@@ -200,15 +201,17 @@ struct FunctionCallView: View {
             }
             ForEach(keys.indices, id: \.self) { index in
                 HStack(spacing: AppSpacing.small) {
-                    TextField(
-                        "key \(index + 1)",
-                        text: Binding(
-                            get: { keys[index] },
-                            set: { keys[index] = $0 }
+                    OwnFocusField { rowFocused in
+                        TextField(
+                            "key \(index + 1)",
+                            text: Binding(
+                                get: { keys[index] },
+                                set: { keys[index] = $0 }
+                            )
                         )
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .font(AppFont.monoSubheadline)
+                        .font(AppFont.monoSubheadline)
+                        .focused(rowFocused)
+                    }
                     Button {
                         removeLine(at: index, from: &keys)
                     } label: {

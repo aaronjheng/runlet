@@ -48,8 +48,8 @@ struct ProductionConfirmView: View {
             }
 
             TextField("", text: $input)
-                .textFieldStyle(.roundedBorder)
                 .focused($isInputFocused)
+                .formFieldChrome(isFocused: $isInputFocused)
                 .onSubmit(confirmIfValid)
 
             HStack {

@@ -233,6 +233,96 @@ private struct FilterFieldIconButton: View {
     }
 }
 
+// MARK: - Form Field Chrome
+
+/// Hover/focus chrome for fields inside sheets and grouped forms, tracking
+/// Canoe's field tiers: idle draws nothing so the form cell shows through;
+/// hover lifts to `fieldHoverBackground` with a `fieldHoverBorder` outline;
+/// focus switches to the accent ring over `fieldFocusBackground`. Call sites
+/// pass their own `@FocusState` binding so sheet initial-focus keeps working.
+private struct FormFieldChrome: ViewModifier {
+    @FocusState.Binding var isFocused: Bool
+    @State private var isHovering = false
+    /// Standalone layouts (custom sheet rows, popovers) have no container of
+    /// their own, so the chrome draws a rest hairline to keep the field
+    /// visible. Inside a grouped `Form` the cell IS the visible box — an
+    /// added rest border would nest a second rectangle inside it — so those
+    /// call sites pass `false` and only hover/focus draw.
+    var idleBorder: Bool = true
+
+    func body(content: Content) -> some View {
+        content
+            // The system focus effect (a thick blue glow hugging the field)
+            // would sit outside the themed border and dwarf it — the same
+            // reason `FilterField` disables it. The chrome's own accent ring
+            // carries the focus signal instead.
+            .focusEffectDisabled()
+            // Fields wrapped by the chrome must never draw a bezel of their
+            // own: the default automatic style inside a grouped `Form` (and
+            // on multiline fields) paints a second hairline box nested
+            // inside the chrome border — the double-box artifact.
+            .textFieldStyle(.plain)
+            .scrollContentBackground(.hidden)
+            // Bezel inset: keeps the text off the drawn border the way the
+            // system rounded bezel does, and lands single-line rows on the
+            // same 28pt rhythm as `OptionsPicker`/`RefreshControl`.
+            .padding(.horizontal, AppSpacing.xSmall)
+            .padding(.vertical, AppSpacing.mini)
+            .background {
+                RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                    .fill(fieldBackground)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                    .strokeBorder(
+                        fieldBorderColor,
+                        lineWidth: isFocused ? AppBorderWidth.focused : AppBorderWidth.regular
+                    )
+                    .allowsHitTesting(false)
+            }
+            .onHover { isHovering = $0 }
+            .animation(AppAnimation.quick, value: isHovering)
+            .animation(AppAnimation.quick, value: isFocused)
+    }
+
+    private var fieldBackground: Color {
+        if isFocused { return AppColor.fieldFocusBackground }
+        if isHovering { return AppColor.fieldHoverBackground }
+        // Rest keeps the field's own surface (white in light, the #212121
+        // content base in dark) so fields read as solid boxes on the page.
+        return AppColor.codeBackground
+    }
+
+    private var fieldBorderColor: Color {
+        if isFocused { return .accentColor }
+        if isHovering { return AppColor.fieldHoverBorder }
+        // Rest: a visible hairline box (FilterField's rest language) when
+        // standalone; clear inside grouped cells, which box the field
+        // themselves.
+        return idleBorder ? Color(nsColor: .separatorColor) : .clear
+    }
+}
+
+extension View {
+    /// Applies sheet/form field chrome; see `FormFieldChrome`.
+    func formFieldChrome(isFocused: FocusState<Bool>.Binding, idleBorder: Bool = true) -> some View {
+        modifier(FormFieldChrome(isFocused: isFocused, idleBorder: idleBorder))
+    }
+}
+
+/// Field chrome that owns its focus, for dynamic rows inside `ForEach`
+/// where a sheet-level `FocusState` can't tell which row is focused.
+struct OwnFocusField<Field: View>: View {
+    @FocusState private var isFocused: Bool
+    var idleBorder = true
+    @ViewBuilder let field: (FocusState<Bool>.Binding) -> Field
+
+    var body: some View {
+        field($isFocused)
+            .formFieldChrome(isFocused: $isFocused, idleBorder: idleBorder)
+    }
+}
+
 /// A small dropdown-style picker drawn entirely in SwiftUI.
 /// Use for a small number of text options where a native pop-up button would
 /// otherwise render as a white block off-screen.

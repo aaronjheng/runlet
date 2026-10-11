@@ -56,7 +56,6 @@ struct LuaEditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             nameRow
             Divider()
             editor
@@ -133,13 +132,15 @@ struct LuaEditorView: View {
             } label: {
                 Image(systemName: "xmark")
             }
-            .buttonStyle(IconButtonStyle())
+            .buttonStyle(IconButtonStyle(size: .tableAction))
             .foregroundStyle(.secondary)
             .keyboardShortcut(.cancelAction)
             .accessibilityLabel("Close")
             .help("Close (Esc)")
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.xSmall)
     }
 
     // MARK: Name + replace
@@ -151,9 +152,9 @@ struct LuaEditorView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 TextField("library name", text: $libraryName)
-                    .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 220)
                     .focused($libraryNameFocused)
+                    .formFieldChrome(isFocused: $libraryNameFocused)
                     .onChange(of: libraryName) { _, _ in
                         syncShebang()
                     }
@@ -161,6 +162,10 @@ struct LuaEditorView: View {
             Spacer()
             if !mode.isEdit {
                 Toggle("Replace existing", isOn: $replace)
+                    // Default checkbox style renders unchecked as a flat gray
+                    // square that reads as disabled; a switch keeps the knob
+                    // affordance in both states.
+                    .toggleStyle(.switch)
                     .help("Overwrite a library with the same name (FUNCTION LOAD REPLACE)")
             }
         }

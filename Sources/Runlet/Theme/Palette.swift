@@ -84,6 +84,12 @@ struct Palette {
     let pillBackground: NSColor
     /// Code and monospace text surfaces.
     let codeBackground: NSColor
+    /// Input field hover fill (Canoe's `fieldHoverBackground`): white in
+    /// light, one charcoal step above the #212121 content base in dark.
+    let fieldHoverBackground: NSColor
+    /// Input field focus fill (Canoe's `fieldFocusBackground`): the
+    /// brightest raised surface under the accent ring.
+    let fieldFocusBackground: NSColor
     /// Sidebar base.
     let sidebarBackground: NSColor
 
@@ -146,6 +152,8 @@ extension Palette {
         // subtle or too strong.
         pillBackground: NSColor(srgbRed: 239.0 / 255.0, green: 239.0 / 255.0, blue: 239.0 / 255.0, alpha: 1),
         codeBackground: NSColor(srgbRed: 255.0 / 255.0, green: 255.0 / 255.0, blue: 255.0 / 255.0, alpha: 1),
+        fieldHoverBackground: NSColor(srgbRed: 255.0 / 255.0, green: 255.0 / 255.0, blue: 255.0 / 255.0, alpha: 1),
+        fieldFocusBackground: NSColor(srgbRed: 255.0 / 255.0, green: 255.0 / 255.0, blue: 255.0 / 255.0, alpha: 1),
         sidebarBackground: NSColor(srgbRed: 249.0 / 255.0, green: 249.0 / 255.0, blue: 249.0 / 255.0, alpha: 1),
         subtleBackground: 0.08,
         trackBackground: 0.12,
@@ -174,6 +182,8 @@ extension Palette {
         secondaryBackground: NSColor(srgbRed: 33.0 / 255.0, green: 33.0 / 255.0, blue: 33.0 / 255.0, alpha: 1),
         pillBackground: NSColor(srgbRed: 46.0 / 255.0, green: 46.0 / 255.0, blue: 46.0 / 255.0, alpha: 1),
         codeBackground: NSColor(srgbRed: 33.0 / 255.0, green: 33.0 / 255.0, blue: 33.0 / 255.0, alpha: 1),
+        fieldHoverBackground: NSColor(srgbRed: 46.0 / 255.0, green: 46.0 / 255.0, blue: 46.0 / 255.0, alpha: 1),
+        fieldFocusBackground: NSColor(srgbRed: 48.0 / 255.0, green: 48.0 / 255.0, blue: 48.0 / 255.0, alpha: 1),
         sidebarBackground: NSColor(srgbRed: 33.0 / 255.0, green: 33.0 / 255.0, blue: 33.0 / 255.0, alpha: 1),
         subtleBackground: 0.12,
         trackBackground: 0.18,

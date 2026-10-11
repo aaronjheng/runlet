@@ -59,6 +59,14 @@ enum AppColor {
     static let codeBackground = paletteColor(\.codeBackground)
     static let controlBackground: Color = secondaryBackground
 
+    /// Input field hover fill (Canoe's `fieldHoverBackground`): white in
+    /// light, one charcoal step above the dark content base in dark.
+    static let fieldHoverBackground = paletteColor(\.fieldHoverBackground)
+
+    /// Input field focus fill (Canoe's `fieldFocusBackground`): the
+    /// brightest raised surface under the accent focus ring.
+    static let fieldFocusBackground = paletteColor(\.fieldFocusBackground)
+
     /// Light fill for badges and secondary chrome.
     static let subtleBackground = paletteWash(\.subtleBackground)
 

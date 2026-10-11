@@ -15,15 +15,19 @@ struct AddHashFieldSheet: View {
     @FocusState private var fieldFocused: Bool
 
     var body: some View {
-        VStack(spacing: AppSpacing.large) {
+        VStack(spacing: AppSpacing.small) {
             Text("Add Hash Field")
                 .font(.headline)
 
             Form {
                 TextField("Field name", text: $field)
                     .focused($fieldFocused)
-                TextField("Value", text: $value, axis: .vertical)
-                    .lineLimit(3...6)
+                    .formFieldChrome(isFocused: $fieldFocused, idleBorder: false)
+                OwnFocusField(idleBorder: false) { hashValueFocused in
+                    TextField("Value", text: $value, axis: .vertical)
+                        .lineLimit(3...6)
+                        .focused(hashValueFocused)
+                }
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
@@ -45,7 +49,9 @@ struct AddHashFieldSheet: View {
                     .help(field.isEmpty ? "Enter a field name to enable" : "Add field")
             }
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { fieldFocused = true }
     }
@@ -60,7 +66,7 @@ struct AddListElementSheet: View {
     @FocusState private var valueFocused: Bool
 
     var body: some View {
-        VStack(spacing: AppSpacing.large) {
+        VStack(spacing: AppSpacing.small) {
             Text("Add List Element")
                 .font(.headline)
 
@@ -68,6 +74,7 @@ struct AddListElementSheet: View {
                 TextField("Value", text: $value, axis: .vertical)
                     .lineLimit(3...6)
                     .focused($valueFocused)
+                    .formFieldChrome(isFocused: $valueFocused, idleBorder: false)
                 Picker("Position", selection: $position) {
                     Text("Head (LPUSH)").tag(ListInsertPosition.head)
                     Text("Tail (RPUSH)").tag(ListInsertPosition.tail)
@@ -93,7 +100,9 @@ struct AddListElementSheet: View {
                     .help(value.isEmpty ? "Enter a value to enable" : "Add element")
             }
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { valueFocused = true }
     }
@@ -107,7 +116,7 @@ struct AddSetMemberSheet: View {
     @FocusState private var memberFocused: Bool
 
     var body: some View {
-        VStack(spacing: AppSpacing.large) {
+        VStack(spacing: AppSpacing.small) {
             Text("Add Set Member")
                 .font(.headline)
 
@@ -115,6 +124,7 @@ struct AddSetMemberSheet: View {
                 TextField("Member", text: $member, axis: .vertical)
                     .lineLimit(3...6)
                     .focused($memberFocused)
+                    .formFieldChrome(isFocused: $memberFocused, idleBorder: false)
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
@@ -136,7 +146,9 @@ struct AddSetMemberSheet: View {
                     .help(member.isEmpty ? "Enter a member to enable" : "Add member")
             }
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { memberFocused = true }
     }
@@ -151,14 +163,18 @@ struct AddZSetMemberSheet: View {
     @FocusState private var scoreFocused: Bool
 
     var body: some View {
-        VStack(spacing: AppSpacing.large) {
+        VStack(spacing: AppSpacing.small) {
             Text("Add Sorted Set Member")
                 .font(.headline)
 
             Form {
                 TextField("Score", text: $score)
                     .focused($scoreFocused)
-                TextField("Member", text: $member)
+                    .formFieldChrome(isFocused: $scoreFocused, idleBorder: false)
+                OwnFocusField(idleBorder: false) { zsetMemberFocused in
+                    TextField("Member", text: $member)
+                        .focused(zsetMemberFocused)
+                }
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
@@ -180,7 +196,9 @@ struct AddZSetMemberSheet: View {
                     .help(member.isEmpty || score.isEmpty ? "Enter a score and member to enable" : "Add member")
             }
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
         .onAppear { scoreFocused = true }
     }
@@ -249,7 +267,6 @@ struct AddKeySheet: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             formSection
         }
         .frame(width: AppSize.addKeySheetWidth)
@@ -272,12 +289,14 @@ struct AddKeySheet: View {
             } label: {
                 Image(systemName: "xmark")
             }
-            .buttonStyle(IconButtonStyle())
+            .buttonStyle(IconButtonStyle(size: .tableAction))
             .foregroundStyle(.secondary)
             .keyboardShortcut(.cancelAction)
             .help("Close (Esc)")
         }
-        .padding(AppSpacing.large)
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.mini)
+        .padding(.bottom, AppSpacing.xSmall)
     }
 
     // MARK: Form
@@ -317,9 +336,9 @@ struct AddKeySheet: View {
                 .foregroundStyle(.secondary)
                 .frame(width: AppSize.formLabelWidthCompact, alignment: .leading)
             TextField("Key name", text: $keyName)
-                .textFieldStyle(.roundedBorder)
                 .font(AppFont.monoSubheadline)
                 .focused($keyNameFocused)
+                .formFieldChrome(isFocused: $keyNameFocused)
         }
     }
 
@@ -391,10 +410,12 @@ struct AddKeySheet: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(width: AppSize.formLabelWidthCompact, alignment: .leading)
-            TextField("Value", text: $keyValue, axis: .vertical)
-                .lineLimit(3...6)
-                .textFieldStyle(.roundedBorder)
-                .font(AppFont.monoSubheadline)
+            OwnFocusField { stringValueFocused in
+                TextField("Value", text: $keyValue, axis: .vertical)
+                    .lineLimit(3...6)
+                    .font(AppFont.monoSubheadline)
+                    .focused(stringValueFocused)
+            }
         }
     }
 
@@ -413,15 +434,17 @@ struct AddKeySheet: View {
             }
             ForEach(values.wrappedValue.indices, id: \.self) { index in
                 HStack(spacing: AppSpacing.small) {
-                    TextField(
-                        placeholder(index),
-                        text: Binding(
-                            get: { values.wrappedValue[index] },
-                            set: { values.wrappedValue[index] = $0 }
+                    OwnFocusField { rowFocused in
+                        TextField(
+                            placeholder(index),
+                            text: Binding(
+                                get: { values.wrappedValue[index] },
+                                set: { values.wrappedValue[index] = $0 }
+                            )
                         )
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .font(AppFont.monoSubheadline)
+                        .font(AppFont.monoSubheadline)
+                        .focused(rowFocused)
+                    }
                     removeButton(disabled: values.wrappedValue.count <= 1) {
                         values.wrappedValue.remove(at: index)
                     }
@@ -447,25 +470,29 @@ struct AddKeySheet: View {
             }
             ForEach(pairs.wrappedValue.indices, id: \.self) { index in
                 HStack(spacing: AppSpacing.small) {
-                    TextField(
-                        firstPlaceholder,
-                        text: Binding(
-                            get: { pairs.wrappedValue[index].first },
-                            set: { pairs.wrappedValue[index].first = $0 }
+                    OwnFocusField { firstFocused in
+                        TextField(
+                            firstPlaceholder,
+                            text: Binding(
+                                get: { pairs.wrappedValue[index].first },
+                                set: { pairs.wrappedValue[index].first = $0 }
+                            )
                         )
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .font(AppFont.monoSubheadline)
+                        .font(AppFont.monoSubheadline)
+                        .focused(firstFocused)
+                    }
                     .modifier(ConditionalWidth(width: firstWidth))
-                    TextField(
-                        secondPlaceholder,
-                        text: Binding(
-                            get: { pairs.wrappedValue[index].second },
-                            set: { pairs.wrappedValue[index].second = $0 }
+                    OwnFocusField { secondFocused in
+                        TextField(
+                            secondPlaceholder,
+                            text: Binding(
+                                get: { pairs.wrappedValue[index].second },
+                                set: { pairs.wrappedValue[index].second = $0 }
+                            )
                         )
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .font(AppFont.monoSubheadline)
+                        .font(AppFont.monoSubheadline)
+                        .focused(secondFocused)
+                    }
                     removeButton(disabled: pairs.wrappedValue.count <= 1) {
                         pairs.wrappedValue.remove(at: index)
                     }
