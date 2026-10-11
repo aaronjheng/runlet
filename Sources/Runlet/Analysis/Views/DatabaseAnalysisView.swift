@@ -224,7 +224,10 @@ struct DatabaseAnalysisView: View {
                     }
                 }
                 .padding(AppSpacing.small)
-                .background(Color(red: 245.0 / 255.0, green: 245.0 / 255.0, blue: 245.0 / 255.0))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                        .stroke(AppColor.subtleBorder.opacity(0.5), lineWidth: 0.5)
+                )
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
             }
         }
@@ -252,7 +255,10 @@ struct DatabaseAnalysisView: View {
                     }
                 }
                 .padding(AppSpacing.small)
-                .background(Color(red: 245.0 / 255.0, green: 245.0 / 255.0, blue: 245.0 / 255.0))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                        .stroke(AppColor.subtleBorder.opacity(0.5), lineWidth: 0.5)
+                )
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
             }
         }
@@ -303,7 +309,10 @@ struct DatabaseAnalysisView: View {
                     }
                 }
                 .padding(AppSpacing.small)
-                .background(Color(red: 245.0 / 255.0, green: 245.0 / 255.0, blue: 245.0 / 255.0))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                        .stroke(AppColor.subtleBorder.opacity(0.5), lineWidth: 0.5)
+                )
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
             }
         }
