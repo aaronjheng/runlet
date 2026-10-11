@@ -56,6 +56,7 @@ struct DatabaseAnalysisView: View {
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(tab.analysis == nil)
+
             }
             .panelToolbar(horizontalPadding: AppSpacing.small)
 
@@ -223,7 +224,7 @@ struct DatabaseAnalysisView: View {
                     }
                 }
                 .padding(AppSpacing.small)
-                .background(AppColor.controlBackground)
+                .background(Color(red: 245.0 / 255.0, green: 245.0 / 255.0, blue: 245.0 / 255.0))
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
             }
         }
@@ -251,7 +252,7 @@ struct DatabaseAnalysisView: View {
                     }
                 }
                 .padding(AppSpacing.small)
-                .background(AppColor.controlBackground)
+                .background(Color(red: 245.0 / 255.0, green: 245.0 / 255.0, blue: 245.0 / 255.0))
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
             }
         }
@@ -302,7 +303,7 @@ struct DatabaseAnalysisView: View {
                     }
                 }
                 .padding(AppSpacing.small)
-                .background(AppColor.controlBackground)
+                .background(Color(red: 245.0 / 255.0, green: 245.0 / 255.0, blue: 245.0 / 255.0))
                 .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
             }
         }

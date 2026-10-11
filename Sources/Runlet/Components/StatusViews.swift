@@ -115,7 +115,6 @@ struct Card<Content: View>: View {
         }
         .padding(AppSpacing.large)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppColor.pillBackground)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.large))
     }
 }
