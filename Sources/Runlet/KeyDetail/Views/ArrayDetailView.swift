@@ -120,7 +120,7 @@ struct ArrayDetailView: View {
                         Spacer()
                         ContentUnavailableView(
                             "No elements",
-                            systemImage: "list.number",
+                            systemImage: "square.grid.2x2",
                             description: Text("This array holds no elements")
                         )
                         Spacer()

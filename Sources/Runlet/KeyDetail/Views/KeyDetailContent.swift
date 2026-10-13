@@ -69,7 +69,6 @@ extension KeyDetailView {
             )
             .sheet(isPresented: $showingAddHashField) {
                 AddHashFieldSheet(
-                    key: key.key,
                     onSave: { pairs in
                         showingAddHashField = false
                         guardProductionWrite(
@@ -128,7 +127,6 @@ extension KeyDetailView {
             )
             .sheet(isPresented: $showingAddListElement) {
                 AddListElementSheet(
-                    key: key.key,
                     onSave: { values, position in
                         showingAddListElement = false
                         guardProductionWrite(
@@ -174,7 +172,6 @@ extension KeyDetailView {
             )
             .sheet(isPresented: $showingAddSetMember) {
                 AddSetMemberSheet(
-                    key: key.key,
                     onSave: { members in
                         showingAddSetMember = false
                         guardProductionWrite(
@@ -237,7 +234,6 @@ extension KeyDetailView {
             )
             .sheet(isPresented: $showingAddZSetMember) {
                 AddZSetMemberSheet(
-                    key: key.key,
                     onSave: { members in
                         showingAddZSetMember = false
                         guardProductionWrite(
@@ -296,14 +292,18 @@ extension KeyDetailView {
             )
             .sheet(isPresented: $showingAddArrayElement) {
                 AddArrayElementSheet(
-                    key: key.key,
                     onSave: { entries in
                         showingAddArrayElement = false
-                        let appendedCount = entries.filter { $0.index == nil }.count
-                        let indexDescription =
-                            appendedCount == entries.count
-                            ? "the end"
-                            : "\(entries.count - appendedCount) explicit index(es)"
+                        let allExplicit = entries.allSatisfy { $0.index != nil }
+                        let allAppend = entries.allSatisfy { $0.index == nil }
+                        let indexDescription: String
+                        if allExplicit {
+                            indexDescription = "explicit index\(entries.count > 1 ? "es" : "")"
+                        } else if allAppend {
+                            indexDescription = "the end"
+                        } else {
+                            indexDescription = "mixed index/append positions"
+                        }
                         guardProductionWrite(
                             title: "Add Elements?",
                             message: "This will add \(entries.count) elements at \(indexDescription) to \"\(key.key)\" on"

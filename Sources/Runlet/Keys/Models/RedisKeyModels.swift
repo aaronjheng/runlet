@@ -28,7 +28,7 @@ class RedisKeyEntry: Identifiable, Hashable {
         case "hash": return "tablecells"
         case "set": return "circle.grid.cross"
         case "zset": return "arrow.up.arrow.down.circle"
-        case "array": return "list.number"
+        case "array": return "square.grid.2x2"
         default: return "questionmark.circle"
         }
     }

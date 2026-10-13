@@ -62,6 +62,7 @@ private struct AddMemberSheetScaffold<Content: View>: View {
             Spacer()
             Button("Add") { onAdd() }
                 .buttonStyle(PrimaryButtonStyle())
+                .accessibilityLabel("Add")
                 .disabled(!addEnabled)
                 .keyboardShortcut(.defaultAction)
         }
@@ -107,8 +108,16 @@ private func editSheetValueRows(
                     TextField(
                         placeholder(index),
                         text: Binding(
-                            get: { values.wrappedValue[index] },
-                            set: { values.wrappedValue[index] = $0 }
+                            get: {
+                                guard values.wrappedValue.indices.contains(index) else {
+                                    return values.wrappedValue.first ?? ""
+                                }
+                                return values.wrappedValue[index]
+                            },
+                            set: { newValue in
+                                guard values.wrappedValue.indices.contains(index) else { return }
+                                values.wrappedValue[index] = newValue
+                            }
                         )
                     )
                     .font(AppFont.monoSubheadline)
@@ -146,8 +155,16 @@ private func editSheetPairRows(
                     TextField(
                         firstPlaceholder,
                         text: Binding(
-                            get: { pairs.wrappedValue[index].first },
-                            set: { pairs.wrappedValue[index].first = $0 }
+                            get: {
+                                guard pairs.wrappedValue.indices.contains(index) else {
+                                    return pairs.wrappedValue.first?.first ?? ""
+                                }
+                                return pairs.wrappedValue[index].first
+                            },
+                            set: { newValue in
+                                guard pairs.wrappedValue.indices.contains(index) else { return }
+                                pairs.wrappedValue[index].first = newValue
+                            }
                         )
                     )
                     .font(AppFont.monoSubheadline)
@@ -158,8 +175,16 @@ private func editSheetPairRows(
                     TextField(
                         secondPlaceholder,
                         text: Binding(
-                            get: { pairs.wrappedValue[index].second },
-                            set: { pairs.wrappedValue[index].second = $0 }
+                            get: {
+                                guard pairs.wrappedValue.indices.contains(index) else {
+                                    return pairs.wrappedValue.first?.second ?? ""
+                                }
+                                return pairs.wrappedValue[index].second
+                            },
+                            set: { newValue in
+                                guard pairs.wrappedValue.indices.contains(index) else { return }
+                                pairs.wrappedValue[index].second = newValue
+                            }
                         )
                     )
                     .font(AppFont.monoSubheadline)
@@ -202,7 +227,6 @@ private func editSheetRemoveButton(disabled: Bool, action: @escaping () -> Void)
 }
 
 struct AddHashFieldSheet: View {
-    let key: String
     let onSave: ([(field: String, value: String)]) -> Void
     let onCancel: () -> Void
 
@@ -236,7 +260,6 @@ struct AddHashFieldSheet: View {
 }
 
 struct AddListElementSheet: View {
-    let key: String
     let onSave: ([String], ListInsertPosition) -> Void
     let onCancel: () -> Void
 
@@ -272,7 +295,6 @@ struct AddListElementSheet: View {
 }
 
 struct AddArrayElementSheet: View {
-    let key: String
     let onSave: ([(index: Int?, value: String)]) -> Void
     let onCancel: () -> Void
 
@@ -323,7 +345,6 @@ struct AddArrayElementSheet: View {
 }
 
 struct AddSetMemberSheet: View {
-    let key: String
     let onSave: ([String]) -> Void
     let onCancel: () -> Void
 
@@ -349,7 +370,6 @@ struct AddSetMemberSheet: View {
 }
 
 struct AddZSetMemberSheet: View {
-    let key: String
     let onSave: ([(score: String, member: String)]) -> Void
     let onCancel: () -> Void
 
