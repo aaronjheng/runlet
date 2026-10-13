@@ -75,6 +75,9 @@ enum RedisClusterCommandKeys {
     ]
 
     private static let firstKeyCommands: Set<String> = [
+        "ARCOUNT", "ARDEL", "ARDELRANGE", "ARGET", "ARGETRANGE", "ARINFO", "ARINSERT",
+        "ARLASTITEMS", "ARLEN", "ARMGET", "ARMSET", "ARNEXT", "ARRING", "ARSCAN",
+        "ARSEEK", "ARSET",
         "APPEND", "BITCOUNT", "BITFIELD", "BITPOS", "DECR", "DECRBY", "DUMP",
         "EXPIRE", "EXPIREAT", "GET", "GETBIT", "GETDEL", "GETEX", "GETRANGE", "GETSET",
         "HDEL", "HEXISTS", "HGET", "HGETALL", "HINCRBY", "HINCRBYFLOAT", "HKEYS", "HLEN",

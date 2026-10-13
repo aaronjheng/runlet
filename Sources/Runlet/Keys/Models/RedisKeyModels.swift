@@ -28,6 +28,7 @@ class RedisKeyEntry: Identifiable, Hashable {
         case "hash": return "tablecells"
         case "set": return "circle.grid.cross"
         case "zset": return "arrow.up.arrow.down.circle"
+        case "array": return "list.number"
         default: return "questionmark.circle"
         }
     }
@@ -64,6 +65,7 @@ func redisKeyTypeTitle(_ type: String) -> String {
     case "hash": "Hash"
     case "set": "Set"
     case "zset": "ZSet"
+    case "array": "Array"
     default: type
     }
 }

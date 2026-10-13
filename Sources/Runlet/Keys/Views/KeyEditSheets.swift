@@ -108,6 +108,63 @@ struct AddListElementSheet: View {
     }
 }
 
+struct AddArrayElementSheet: View {
+    let key: String
+    @Binding var index: String
+    @Binding var value: String
+    let onSave: (Int?, String) -> Void
+    let onCancel: () -> Void
+    @FocusState private var valueFocused: Bool
+
+    var body: some View {
+        VStack(spacing: AppSpacing.small) {
+            Text("Add Array Element")
+                .font(.headline)
+
+            Form {
+                TextField("Index (empty appends at end)", text: $index)
+                    .font(AppFont.monoSubheadline)
+                OwnFocusField(idleBorder: false) { arrayValueFocused in
+                    TextField("Value", text: $value, axis: .vertical)
+                        .lineLimit(3...6)
+                        .font(AppFont.monoSubheadline)
+                        .focused(arrayValueFocused)
+                }
+            }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+
+            HStack {
+                Button("Cancel") { onCancel() }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                if value.isEmpty {
+                    Text("Enter a value.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if !index.isEmpty, Int(index) == nil {
+                    Text("Index must be a number.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Button("Add") {
+                    onSave(index.isEmpty ? nil : Int(index), value)
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(value.isEmpty || (!index.isEmpty && Int(index) == nil))
+                .keyboardShortcut(.defaultAction)
+                .help(value.isEmpty ? "Enter a value to enable" : "Add element")
+            }
+        }
+        .padding(.horizontal, AppSpacing.large)
+        .padding(.top, AppSpacing.small)
+        .padding(.bottom, AppSpacing.mini)
+        .presentationSurface()
+        .onAppear { valueFocused = true }
+    }
+}
+
 struct AddSetMemberSheet: View {
     let key: String
     @Binding var member: String
@@ -226,9 +283,10 @@ struct AddKeySheet: View {
     @State private var hashPairs: [(field: String, value: String)] = [("", "")]
     @State private var setMembers: [String] = [""]
     @State private var zsetPairs: [(score: String, member: String)] = [("", "")]
+    @State private var arrayPairs: [(index: String, value: String)] = [("", "")]
     @FocusState private var keyNameFocused: Bool
 
-    private static let typeOptions = ["string", "list", "hash", "set", "zset"]
+    private static let typeOptions = ["string", "list", "hash", "set", "zset", "array"]
 
     /// Why the Add button is disabled, if it is. Empty means submittable.
     private var disabledReason: String {
@@ -244,6 +302,8 @@ struct AddKeySheet: View {
             return "Add at least one member."
         case "zset" where !hasValidMembers:
             return "Add at least one member with a score."
+        case "array" where !hasValidMembers:
+            return "Add at least one element with a numeric index."
         default:
             return ""
         }
@@ -259,6 +319,8 @@ struct AddKeySheet: View {
             return setMembers.contains { !$0.isEmpty }
         case "zset":
             return zsetPairs.contains { !$0.score.isEmpty && !$0.member.isEmpty }
+        case "array":
+            return arrayPairs.contains { Int($0.index) != nil && !$0.value.isEmpty }
         default:
             return true
         }
@@ -397,6 +459,18 @@ struct AddKeySheet: View {
                 firstPlaceholder: "Score",
                 secondPlaceholder: "Member",
                 addLabel: "Add Member",
+                firstWidth: AppSize.formFieldWidth
+            )
+        case "array":
+            pairRows(
+                pairs: Binding(
+                    get: { arrayPairs.map { (first: $0.index, second: $0.value) } },
+                    set: { arrayPairs = $0.map { (index: $0.first, value: $0.second) } }
+                ),
+                heading: "Elements",
+                firstPlaceholder: "Index",
+                secondPlaceholder: "Value",
+                addLabel: "Add Element",
                 firstWidth: AppSize.formFieldWidth
             )
         default:
@@ -540,6 +614,9 @@ struct AddKeySheet: View {
             onSave(keyName, keyType, setMembers.joined(separator: "\n"))
         case "zset":
             let pairs = zsetPairs.map { "\($0.score):\($0.member)" }.joined(separator: "\n")
+            onSave(keyName, keyType, pairs)
+        case "array":
+            let pairs = arrayPairs.map { "\($0.index):\($0.value)" }.joined(separator: "\n")
             onSave(keyName, keyType, pairs)
         default:
             onSave(keyName, keyType, keyValue)

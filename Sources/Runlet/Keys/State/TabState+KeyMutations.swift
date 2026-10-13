@@ -159,6 +159,52 @@ extension TabState {
         }
     }
 
+    /// Appends a value at the end of an array. The append point is `ARINFO`'s
+    /// `len` (max index + 1), not `ARNEXT`, because the insert cursor only
+    /// tracks `ARINSERT`/`ARRING` and would be 0 for arrays built via `ARSET`.
+    func addArrayElement(key: String, index: Int?, value: String) async {
+        guard let client = activeSession else { return }
+        do {
+            let targetIndex: Int
+            if let index {
+                targetIndex = index
+            } else {
+                let infoResult = try await client.send("ARINFO", key)
+                try throwIfRedisError(infoResult)
+                let info = Dictionary(
+                    uniqueKeysWithValues: infoResult.keyValuePairs.compactMap { pair -> (String, Int)? in
+                        guard let name = pair.key.string, let value = pair.value.intValue else { return nil }
+                        return (name, value)
+                    })
+                targetIndex = info["len"] ?? 0
+            }
+            let result = try await client.send("ARSET", key, "\(targetIndex)", value)
+            try throwIfRedisError(result)
+        } catch {
+            reportKeyOperationError(error)
+        }
+    }
+
+    func updateArrayElement(key: String, index: Int, value: String) async {
+        guard let client = activeSession else { return }
+        do {
+            let result = try await client.send("ARMSET", key, "\(index)", value)
+            try throwIfRedisError(result)
+        } catch {
+            reportKeyOperationError(error)
+        }
+    }
+
+    func deleteArrayElement(key: String, index: Int) async {
+        guard let client = activeSession else { return }
+        do {
+            let result = try await client.send("ARDEL", key, "\(index)")
+            try throwIfRedisError(result)
+        } catch {
+            reportKeyOperationError(error)
+        }
+    }
+
     func addSetMember(key: String, member: String) async {
         guard let client = activeSession else { return }
         do {

@@ -104,6 +104,8 @@ extension TabState {
                 try await loadSetDetail(key: entry.key, append: append, using: client, token: token)
             case "zset":
                 try await loadZSetDetail(key: entry.key, append: append, using: client, token: token)
+            case "array":
+                try await loadArrayDetail(key: entry.key, append: append, using: client, token: token)
             default:
                 let lengthResult = try await client.send("STRLEN", entry.key)
                 try throwIfRedisError(lengthResult)
@@ -172,6 +174,9 @@ extension TabState {
         case "hash": command = ["HLEN", key]
         case "set": command = ["SCARD", key]
         case "zset": command = ["ZCARD", key]
+        // ARCOUNT (non-empty elements), not ARLEN (max index + 1): arrays are
+        // sparse, so a single high index would inflate the logical length.
+        case "array": command = ["ARCOUNT", key]
         default: command = nil
         }
         guard let command, let result = try? await client.send(command) else { return nil }
@@ -238,6 +243,52 @@ extension TabState {
         }
         keyDetailOffset = loadedCount + rows.count
         keyDetailHasMoreRows = keyDetailOffset < totalCount
+    }
+
+    /// Loads an array window with `ARSCAN`, which returns only the existing
+    /// index-value pairs in a range (empty slots are skipped), so paging works
+    /// for sparse arrays. Descending order uses the reversed-range form
+    /// (`start > end`), continuing from the last returned index per page.
+    private func loadArrayDetail(key: String, append: Bool, using client: any RedisSession, token: Int) async throws {
+        let descending = keyDetailOrder == .descending
+        var start: Int
+        if descending {
+            if append, let lastRow = keyDetailRows.last, let lastIndex = Int(lastRow.0) {
+                start = lastIndex - 1
+            } else {
+                start = Int.max
+            }
+        } else {
+            start = append ? keyDetailOffset : 0
+        }
+        guard start >= 0 else {
+            keyDetailHasMoreRows = false
+            return
+        }
+
+        let end = descending ? "0" : "\(Int.max)"
+        let response = try await client.send("ARSCAN", key, "\(start)", end, "LIMIT", "\(keyDetailPageSize)")
+        try throwIfRedisError(response)
+        guard token == keyDetailGeneration else { return }
+        let rows = response.arrayValues.compactMap { pair -> (String, String)? in
+            guard case .array(let entry) = pair, entry.count >= 2,
+                let index = entry[0]?.intValue
+            else { return nil }
+            return ("\(index)", entry[1]?.string ?? entry[1]?.displayString ?? "")
+        }
+        if append {
+            keyDetailRows.append(contentsOf: rows)
+        } else {
+            keyDetailRows = rows
+        }
+        if !descending, let lastRow = keyDetailRows.last, let lastIndex = Int(lastRow.0) {
+            keyDetailOffset = lastIndex + 1
+        }
+        if let keyDetailTotalCount {
+            keyDetailHasMoreRows = keyDetailRows.count < keyDetailTotalCount
+        } else {
+            keyDetailHasMoreRows = rows.count == keyDetailPageSize
+        }
     }
 
     private func loadHashDetail(key: String, append: Bool, using client: any RedisSession, token: Int) async throws {

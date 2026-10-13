@@ -9,7 +9,10 @@ import Foundation
 /// which keeps it usable from anywhere (and trivially testable).
 enum RedisCommandCatalog {
     private static let commands = [
-        "APPEND", "AUTH", "BGREWRITEAOF", "BGSAVE", "BITCOUNT", "BITOP", "BITPOS",
+        "APPEND", "ARCOUNT", "ARDEL", "ARDELRANGE", "ARGET", "ARGETRANGE", "ARINFO",
+        "ARINSERT", "ARLASTITEMS", "ARLEN", "ARMGET", "ARMSET", "ARNEXT", "ARRING",
+        "ARSCAN", "ARSEEK", "ARSET", "AUTH", "BGREWRITEAOF", "BGSAVE", "BITCOUNT",
+        "BITOP", "BITPOS",
         "BLPOP", "BRPOP", "BRPOPLPUSH", "CLIENT", "CLUSTER", "CONFIG", "DBSIZE",
         "DEBUG", "DECR", "DECRBY", "DEL", "DISCARD", "DUMP", "ECHO", "EVAL", "EVALSHA",
         "EXEC", "EXISTS", "EXPIRE", "EXPIREAT", "FCALL", "FCALL_RO",

@@ -24,6 +24,9 @@ struct KeyDetailView: View {
     @State var showingAddZSetMember = false
     @State var newZSetMember = ""
     @State var newZSetScore = ""
+    @State var showingAddArrayElement = false
+    @State var newArrayIndex = ""
+    @State var newArrayElement = ""
     @State var keyPendingDeletion: RedisKeyEntry?
     @State var showingTTLEditor = false
     @State var ttlInput = ""

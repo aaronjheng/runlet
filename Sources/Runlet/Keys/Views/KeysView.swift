@@ -61,7 +61,7 @@ struct KeysView: View {
                         OptionsPicker(
                             "Filter by key type",
                             selection: $tab.keyTypeFilter,
-                            options: ["", "string", "list", "hash", "set", "zset"],
+                            options: ["", "string", "list", "hash", "set", "zset", "array"],
                             label: { typeFilterTitle($0) }
                         )
                         .frame(height: AppSize.refreshControlHeight)

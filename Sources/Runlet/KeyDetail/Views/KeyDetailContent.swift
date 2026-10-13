@@ -263,6 +263,68 @@ extension KeyDetailView {
                 .presentationSizing(.form)
             }
 
+        case "array":
+            ArrayDetailView(
+                key: key.key,
+                rows: tab.keyDetailRows,
+                totalCount: tab.keyDetailTotalCount ?? key.length,
+                order: tab.keyDetailOrder,
+                hasMoreRows: tab.keyDetailHasMoreRows,
+                isProduction: isProduction,
+                onLoadMore: {
+                    Task { await tab.loadMoreSelectedKeyDetailRows() }
+                },
+                onOrderChange: { order in
+                    Task { await tab.updateSelectedKeyOrder(order) }
+                },
+                onAddElement: { showingAddArrayElement = true },
+                onSaveElement: { index, value in
+                    guardProductionWrite(
+                        title: "Overwrite Element?",
+                        message: "This will overwrite element \(index) of \"\(key.key)\""
+                            + "on a production server. This action cannot be undone.",
+                        confirmText: "OVERWRITE",
+                        confirmButtonTitle: "Overwrite"
+                    ) {
+                        Task {
+                            await tab.updateArrayElement(key: key.key, index: index, value: value)
+                            await tab.refreshSelectedKey()
+                        }
+                    }
+                },
+                onDeleteElement: { index, _ in
+                    Task {
+                        await tab.deleteArrayElement(key: key.key, index: index)
+                        await tab.refreshSelectedKey()
+                    }
+                }
+            )
+            .sheet(isPresented: $showingAddArrayElement) {
+                AddArrayElementSheet(
+                    key: key.key,
+                    index: $newArrayIndex,
+                    value: $newArrayElement,
+                    onSave: { index, value in
+                        showingAddArrayElement = false
+                        let indexDescription = index.map(String.init) ?? "end"
+                        guardProductionWrite(
+                            title: "Add Element?",
+                            message: "This will add an element at index \(indexDescription) to \"\(key.key)\" on"
+                                + "a production server. This action cannot be undone.",
+                            confirmText: "ADD",
+                            confirmButtonTitle: "Add Element"
+                        ) {
+                            Task {
+                                await tab.addArrayElement(key: key.key, index: index, value: value)
+                                await tab.refreshSelectedKey()
+                            }
+                        }
+                    },
+                    onCancel: { showingAddArrayElement = false }
+                )
+                .presentationSizing(.form)
+            }
+
         default:
             if tab.keyDetailRows.isEmpty {
                 emptyValueView

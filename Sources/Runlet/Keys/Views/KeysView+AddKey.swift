@@ -80,6 +80,28 @@ extension KeysView {
                 }
                 let result = try await client.send(args)
                 try throwIfRedisError(result)
+            case "array":
+                var args = ["ARMSET", name]
+                for (offset, line) in value.split(separator: "\n", omittingEmptySubsequences: true).enumerated() {
+                    let parts = line.split(separator: ":", maxSplits: 1)
+                    if parts.count == 2, let index = Int(parts[0]) {
+                        args.append("\(index)")
+                        args.append(String(parts[1]))
+                    } else {
+                        // Blank form rows produce a bare ":" — skip those, but never
+                        // silently drop a line the user actually typed.
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty, trimmed != ":" {
+                            throw RedisError.commandError(
+                                "Line \(offset + 1) needs \"index:value\" format")
+                        }
+                    }
+                }
+                guard args.count > 2 else {
+                    throw RedisError.commandError("Array key requires at least one element")
+                }
+                let result = try await client.send(args)
+                try throwIfRedisError(result)
             default:
                 let result = try await client.send("SET", name, value, "NX")
                 try throwIfRedisError(result)
