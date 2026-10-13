@@ -6,269 +6,380 @@ enum ListInsertPosition {
     case head, tail
 }
 
-struct AddHashFieldSheet: View {
-    let key: String
-    @Binding var field: String
-    @Binding var value: String
-    let onSave: (String, String) -> Void
+// MARK: - Add Member Sheet Scaffold
+
+/// Shared chrome for the small "add member" sheets: icon + title header,
+/// label/field rows, and a footer with the validation hint and Add button.
+/// Mirrors the Add Key sheet's style so all creation dialogs read the same.
+private struct AddMemberSheetScaffold<Content: View>: View {
+    let title: String
+    let hint: String?
+    let addEnabled: Bool
+    let onAdd: () -> Void
     let onCancel: () -> Void
-    @FocusState private var fieldFocused: Bool
+    @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(spacing: AppSpacing.small) {
-            Text("Add Hash Field")
-                .font(.headline)
-
-            Form {
-                TextField("Field name", text: $field)
-                    .focused($fieldFocused)
-                    .formFieldChrome(isFocused: $fieldFocused, idleBorder: false)
-                OwnFocusField(idleBorder: false) { hashValueFocused in
-                    TextField("Value", text: $value, axis: .vertical)
-                        .lineLimit(3...6)
-                        .focused(hashValueFocused)
-                }
-            }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-
-            HStack {
-                Button("Cancel") { onCancel() }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                if field.isEmpty {
-                    Text("Enter a field name.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Button("Add") { onSave(field, value) }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(field.isEmpty)
-                    .keyboardShortcut(.defaultAction)
-                    .help(field.isEmpty ? "Enter a field name to enable" : "Add field")
-            }
+        VStack(spacing: AppSpacing.medium) {
+            header
+            content()
+            footer
         }
         .padding(.horizontal, AppSpacing.large)
         .padding(.top, AppSpacing.small)
         .padding(.bottom, AppSpacing.mini)
         .presentationSurface()
-        .onAppear { fieldFocused = true }
+    }
+
+    private var header: some View {
+        HStack(spacing: AppSpacing.small) {
+            Image(systemName: "plus.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.tint)
+            Text(title)
+                .font(.headline)
+            Spacer()
+            Button {
+                onCancel()
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(IconButtonStyle(size: .tableAction))
+            .foregroundStyle(.secondary)
+            .keyboardShortcut(.cancelAction)
+            .accessibilityLabel("Close")
+            .help("Close (Esc)")
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: AppSpacing.small) {
+            if let hint {
+                Text(hint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Add") { onAdd() }
+                .buttonStyle(PrimaryButtonStyle())
+                .disabled(!addEnabled)
+                .keyboardShortcut(.defaultAction)
+        }
+    }
+}
+
+/// Label + field row used inside `AddMemberSheetScaffold`.
+@ViewBuilder
+@MainActor
+private func addMemberSheetRow<Content: View>(
+    alignment: VerticalAlignment = .center,
+    label: String,
+    @ViewBuilder field: () -> Content
+) -> some View {
+    HStack(alignment: alignment, spacing: AppSpacing.medium) {
+        Text(label)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .frame(width: AppSize.formLabelWidthCompact, alignment: .leading)
+        field()
+    }
+}
+
+/// Editable single-value rows shared by the Add Key and add-member sheets.
+@ViewBuilder
+@MainActor
+private func editSheetValueRows(
+    values: Binding<[String]>,
+    heading: String,
+    placeholder: @escaping (Int) -> String,
+    addLabel: String
+) -> some View {
+    VStack(alignment: .leading, spacing: AppSpacing.small) {
+        editSheetSectionHeader(
+            title: "\(heading) (\(values.wrappedValue.count))",
+            addLabel: addLabel
+        ) {
+            values.wrappedValue.append("")
+        }
+        ForEach(values.wrappedValue.indices, id: \.self) { index in
+            HStack(spacing: AppSpacing.small) {
+                OwnFocusField { rowFocused in
+                    TextField(
+                        placeholder(index),
+                        text: Binding(
+                            get: { values.wrappedValue[index] },
+                            set: { values.wrappedValue[index] = $0 }
+                        )
+                    )
+                    .font(AppFont.monoSubheadline)
+                    .focused(rowFocused)
+                }
+                editSheetRemoveButton(disabled: values.wrappedValue.count <= 1) {
+                    values.wrappedValue.remove(at: index)
+                }
+            }
+        }
+    }
+}
+
+/// Editable first/second pair rows shared by the Add Key and add-member sheets.
+@ViewBuilder
+@MainActor
+private func editSheetPairRows(
+    pairs: Binding<[(first: String, second: String)]>,
+    heading: String,
+    firstPlaceholder: String,
+    secondPlaceholder: String,
+    addLabel: String,
+    firstWidth: CGFloat? = nil
+) -> some View {
+    VStack(alignment: .leading, spacing: AppSpacing.small) {
+        editSheetSectionHeader(
+            title: "\(heading) (\(pairs.wrappedValue.count))",
+            addLabel: addLabel
+        ) {
+            pairs.wrappedValue.append(("", ""))
+        }
+        ForEach(pairs.wrappedValue.indices, id: \.self) { index in
+            HStack(spacing: AppSpacing.small) {
+                OwnFocusField { firstFocused in
+                    TextField(
+                        firstPlaceholder,
+                        text: Binding(
+                            get: { pairs.wrappedValue[index].first },
+                            set: { pairs.wrappedValue[index].first = $0 }
+                        )
+                    )
+                    .font(AppFont.monoSubheadline)
+                    .focused(firstFocused)
+                }
+                .modifier(ConditionalWidth(width: firstWidth))
+                OwnFocusField { secondFocused in
+                    TextField(
+                        secondPlaceholder,
+                        text: Binding(
+                            get: { pairs.wrappedValue[index].second },
+                            set: { pairs.wrappedValue[index].second = $0 }
+                        )
+                    )
+                    .font(AppFont.monoSubheadline)
+                    .focused(secondFocused)
+                }
+                editSheetRemoveButton(disabled: pairs.wrappedValue.count <= 1) {
+                    pairs.wrappedValue.remove(at: index)
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+private func editSheetSectionHeader(title: String, addLabel: String, action: @escaping () -> Void) -> some View {
+    HStack {
+        Text(title)
+            .font(.subheadline.weight(.medium))
+        Spacer()
+        Button(action: action) {
+            Label(addLabel, systemImage: "plus")
+        }
+        .buttonStyle(.plain)
+        .font(.caption)
+        .foregroundStyle(.tint)
+        .hoverBackground()
+        .help(addLabel)
+    }
+}
+
+@MainActor
+private func editSheetRemoveButton(disabled: Bool, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+        Image(systemName: "minus.circle")
+    }
+    .buttonStyle(IconButtonStyle(size: .row))
+    .foregroundStyle(.secondary)
+    .disabled(disabled)
+    .help("Remove row")
+}
+
+struct AddHashFieldSheet: View {
+    let key: String
+    let onSave: ([(field: String, value: String)]) -> Void
+    let onCancel: () -> Void
+
+    @State private var pairs: [(first: String, second: String)] = [("", "")]
+
+    private var validPairs: [(field: String, value: String)] {
+        pairs.compactMap { pair in
+            guard !pair.first.isEmpty, !pair.second.isEmpty else { return nil }
+            return (field: pair.first, value: pair.second)
+        }
+    }
+
+    var body: some View {
+        AddMemberSheetScaffold(
+            title: "Add Hash Fields",
+            hint: validPairs.isEmpty ? "Add at least one field with a value." : nil,
+            addEnabled: !validPairs.isEmpty,
+            onAdd: { onSave(validPairs) },
+            onCancel: onCancel,
+            content: {
+                editSheetPairRows(
+                    pairs: $pairs,
+                    heading: "Fields",
+                    firstPlaceholder: "Field",
+                    secondPlaceholder: "Value",
+                    addLabel: "Add Field"
+                )
+            }
+        )
     }
 }
 
 struct AddListElementSheet: View {
     let key: String
-    @Binding var value: String
-    @Binding var position: ListInsertPosition
-    let onSave: (String, ListInsertPosition) -> Void
+    let onSave: ([String], ListInsertPosition) -> Void
     let onCancel: () -> Void
-    @FocusState private var valueFocused: Bool
+
+    @State private var values: [String] = [""]
+    @State private var position: ListInsertPosition = .head
 
     var body: some View {
-        VStack(spacing: AppSpacing.small) {
-            Text("Add List Element")
-                .font(.headline)
-
-            Form {
-                TextField("Value", text: $value, axis: .vertical)
-                    .lineLimit(3...6)
-                    .focused($valueFocused)
-                    .formFieldChrome(isFocused: $valueFocused, idleBorder: false)
-                Picker("Position", selection: $position) {
-                    Text("Head (LPUSH)").tag(ListInsertPosition.head)
-                    Text("Tail (RPUSH)").tag(ListInsertPosition.tail)
+        AddMemberSheetScaffold(
+            title: "Add List Elements",
+            hint: values.contains { !$0.isEmpty } ? nil : "Add at least one element.",
+            addEnabled: values.contains { !$0.isEmpty },
+            onAdd: { onSave(values.filter { !$0.isEmpty }, position) },
+            onCancel: onCancel,
+            content: {
+                editSheetValueRows(
+                    values: $values,
+                    heading: "Elements",
+                    placeholder: { "Element \($0 + 1)" },
+                    addLabel: "Add Element"
+                )
+                addMemberSheetRow(label: "Position") {
+                    OptionsPicker(
+                        "Insert position",
+                        selection: $position,
+                        options: [ListInsertPosition.head, .tail],
+                        label: { $0 == .head ? "Head (LPUSH)" : "Tail (RPUSH)" }
+                    )
+                    .frame(maxWidth: 200, alignment: .leading)
                 }
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-
-            HStack {
-                Button("Cancel") { onCancel() }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                if value.isEmpty {
-                    Text("Enter a value.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Button("Add") { onSave(value, position) }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(value.isEmpty)
-                    .keyboardShortcut(.defaultAction)
-                    .help(value.isEmpty ? "Enter a value to enable" : "Add element")
-            }
-        }
-        .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.small)
-        .padding(.bottom, AppSpacing.mini)
-        .presentationSurface()
-        .onAppear { valueFocused = true }
+        )
     }
 }
 
 struct AddArrayElementSheet: View {
     let key: String
-    @Binding var index: String
-    @Binding var value: String
-    let onSave: (Int?, String) -> Void
+    let onSave: ([(index: Int?, value: String)]) -> Void
     let onCancel: () -> Void
-    @FocusState private var valueFocused: Bool
+
+    @State private var pairs: [(first: String, second: String)] = [("", "")]
+
+    /// A row is valid when the value is non-empty and the index is empty
+    /// (append) or numeric.
+    private var validEntries: [(index: Int?, value: String)] {
+        pairs.compactMap { pair in
+            guard !pair.second.isEmpty else { return nil }
+            if pair.first.isEmpty {
+                return (index: nil, value: pair.second)
+            }
+            guard let index = Int(pair.first) else { return nil }
+            return (index: index, value: pair.second)
+        }
+    }
+
+    private var hint: String? {
+        if validEntries.isEmpty {
+            return "Add at least one element; empty index appends."
+        }
+        let hasInvalidIndex = pairs.contains { pair in
+            !pair.second.isEmpty && !pair.first.isEmpty && Int(pair.first) == nil
+        }
+        return hasInvalidIndex ? "Index must be a number." : nil
+    }
 
     var body: some View {
-        VStack(spacing: AppSpacing.small) {
-            Text("Add Array Element")
-                .font(.headline)
-
-            Form {
-                TextField("Index (empty appends at end)", text: $index)
-                    .font(AppFont.monoSubheadline)
-                OwnFocusField(idleBorder: false) { arrayValueFocused in
-                    TextField("Value", text: $value, axis: .vertical)
-                        .lineLimit(3...6)
-                        .font(AppFont.monoSubheadline)
-                        .focused(arrayValueFocused)
-                }
+        AddMemberSheetScaffold(
+            title: "Add Array Elements",
+            hint: hint,
+            addEnabled: !validEntries.isEmpty,
+            onAdd: { onSave(validEntries) },
+            onCancel: onCancel,
+            content: {
+                editSheetPairRows(
+                    pairs: $pairs,
+                    heading: "Elements",
+                    firstPlaceholder: "Index",
+                    secondPlaceholder: "Value",
+                    addLabel: "Add Element",
+                    firstWidth: AppSize.formFieldWidth
+                )
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-
-            HStack {
-                Button("Cancel") { onCancel() }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                if value.isEmpty {
-                    Text("Enter a value.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if !index.isEmpty, Int(index) == nil {
-                    Text("Index must be a number.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Button("Add") {
-                    onSave(index.isEmpty ? nil : Int(index), value)
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(value.isEmpty || (!index.isEmpty && Int(index) == nil))
-                .keyboardShortcut(.defaultAction)
-                .help(value.isEmpty ? "Enter a value to enable" : "Add element")
-            }
-        }
-        .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.small)
-        .padding(.bottom, AppSpacing.mini)
-        .presentationSurface()
-        .onAppear { valueFocused = true }
+        )
     }
 }
 
 struct AddSetMemberSheet: View {
     let key: String
-    @Binding var member: String
-    let onSave: (String) -> Void
+    let onSave: ([String]) -> Void
     let onCancel: () -> Void
-    @FocusState private var memberFocused: Bool
+
+    @State private var members: [String] = [""]
 
     var body: some View {
-        VStack(spacing: AppSpacing.small) {
-            Text("Add Set Member")
-                .font(.headline)
-
-            Form {
-                TextField("Member", text: $member, axis: .vertical)
-                    .lineLimit(3...6)
-                    .focused($memberFocused)
-                    .formFieldChrome(isFocused: $memberFocused, idleBorder: false)
+        AddMemberSheetScaffold(
+            title: "Add Set Members",
+            hint: members.contains { !$0.isEmpty } ? nil : "Add at least one member.",
+            addEnabled: members.contains { !$0.isEmpty },
+            onAdd: { onSave(members.filter { !$0.isEmpty }) },
+            onCancel: onCancel,
+            content: {
+                editSheetValueRows(
+                    values: $members,
+                    heading: "Members",
+                    placeholder: { "Member \($0 + 1)" },
+                    addLabel: "Add Member"
+                )
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-
-            HStack {
-                Button("Cancel") { onCancel() }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                if member.isEmpty {
-                    Text("Enter a member.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Button("Add") { onSave(member) }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(member.isEmpty)
-                    .keyboardShortcut(.defaultAction)
-                    .help(member.isEmpty ? "Enter a member to enable" : "Add member")
-            }
-        }
-        .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.small)
-        .padding(.bottom, AppSpacing.mini)
-        .presentationSurface()
-        .onAppear { memberFocused = true }
+        )
     }
 }
 
 struct AddZSetMemberSheet: View {
     let key: String
-    @Binding var member: String
-    @Binding var score: String
-    let onSave: (String, String) -> Void
+    let onSave: ([(score: String, member: String)]) -> Void
     let onCancel: () -> Void
-    @FocusState private var scoreFocused: Bool
+
+    @State private var pairs: [(first: String, second: String)] = [("", "")]
+
+    private var validMembers: [(score: String, member: String)] {
+        pairs.compactMap { pair in
+            guard !pair.first.isEmpty, !pair.second.isEmpty else { return nil }
+            return (score: pair.first, member: pair.second)
+        }
+    }
 
     var body: some View {
-        VStack(spacing: AppSpacing.small) {
-            Text("Add Sorted Set Member")
-                .font(.headline)
-
-            Form {
-                TextField("Score", text: $score)
-                    .focused($scoreFocused)
-                    .formFieldChrome(isFocused: $scoreFocused, idleBorder: false)
-                OwnFocusField(idleBorder: false) { zsetMemberFocused in
-                    TextField("Member", text: $member)
-                        .focused(zsetMemberFocused)
-                }
+        AddMemberSheetScaffold(
+            title: "Add Sorted Set Members",
+            hint: validMembers.isEmpty ? "Add at least one member with a score." : nil,
+            addEnabled: !validMembers.isEmpty,
+            onAdd: { onSave(validMembers) },
+            onCancel: onCancel,
+            content: {
+                editSheetPairRows(
+                    pairs: $pairs,
+                    heading: "Members",
+                    firstPlaceholder: "Score",
+                    secondPlaceholder: "Member",
+                    addLabel: "Add Member",
+                    firstWidth: AppSize.formFieldWidth
+                )
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-
-            HStack {
-                Button("Cancel") { onCancel() }
-                    .buttonStyle(SecondaryButtonStyle())
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                if member.isEmpty || score.isEmpty {
-                    Text("Enter a score and member.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Button("Add") { onSave(member, score) }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .disabled(member.isEmpty || score.isEmpty)
-                    .keyboardShortcut(.defaultAction)
-                    .help(member.isEmpty || score.isEmpty ? "Enter a score and member to enable" : "Add member")
-            }
-        }
-        .padding(.horizontal, AppSpacing.large)
-        .padding(.top, AppSpacing.small)
-        .padding(.bottom, AppSpacing.mini)
-        .presentationSurface()
-        .onAppear { scoreFocused = true }
-    }
-}
-
-// MARK: - Editable Identifiers
-
-extension ListInsertPosition: Identifiable {
-    var id: Int {
-        switch self {
-        case .head: return 0
-        case .tail: return 1
-        }
+        )
     }
 }
 
@@ -425,14 +536,14 @@ struct AddKeySheet: View {
     private var valueSection: some View {
         switch keyType {
         case "list":
-            valueRows(
+            editSheetValueRows(
                 values: $listValues,
                 heading: "Elements",
                 placeholder: { "Element \($0 + 1)" },
                 addLabel: "Add Element"
             )
         case "hash":
-            pairRows(
+            editSheetPairRows(
                 pairs: Binding(
                     get: { hashPairs.map { (first: $0.field, second: $0.value) } },
                     set: { hashPairs = $0.map { (field: $0.first, value: $0.second) } }
@@ -443,14 +554,14 @@ struct AddKeySheet: View {
                 addLabel: "Add Field"
             )
         case "set":
-            valueRows(
+            editSheetValueRows(
                 values: $setMembers,
                 heading: "Members",
                 placeholder: { "Member \($0 + 1)" },
                 addLabel: "Add Member"
             )
         case "zset":
-            pairRows(
+            editSheetPairRows(
                 pairs: Binding(
                     get: { zsetPairs.map { (first: $0.score, second: $0.member) } },
                     set: { zsetPairs = $0.map { (score: $0.first, member: $0.second) } }
@@ -462,7 +573,7 @@ struct AddKeySheet: View {
                 firstWidth: AppSize.formFieldWidth
             )
         case "array":
-            pairRows(
+            editSheetPairRows(
                 pairs: Binding(
                     get: { arrayPairs.map { (first: $0.index, second: $0.value) } },
                     set: { arrayPairs = $0.map { (index: $0.first, value: $0.second) } }
@@ -491,114 +602,6 @@ struct AddKeySheet: View {
                     .focused(stringValueFocused)
             }
         }
-    }
-
-    private func valueRows(
-        values: Binding<[String]>,
-        heading: String,
-        placeholder: @escaping (Int) -> String,
-        addLabel: String
-    ) -> some View {
-        VStack(alignment: .leading, spacing: AppSpacing.small) {
-            sectionHeader(
-                title: "\(heading) (\(values.wrappedValue.count))",
-                addLabel: addLabel
-            ) {
-                values.wrappedValue.append("")
-            }
-            ForEach(values.wrappedValue.indices, id: \.self) { index in
-                HStack(spacing: AppSpacing.small) {
-                    OwnFocusField { rowFocused in
-                        TextField(
-                            placeholder(index),
-                            text: Binding(
-                                get: { values.wrappedValue[index] },
-                                set: { values.wrappedValue[index] = $0 }
-                            )
-                        )
-                        .font(AppFont.monoSubheadline)
-                        .focused(rowFocused)
-                    }
-                    removeButton(disabled: values.wrappedValue.count <= 1) {
-                        values.wrappedValue.remove(at: index)
-                    }
-                }
-            }
-        }
-    }
-
-    private func pairRows(
-        pairs: Binding<[(first: String, second: String)]>,
-        heading: String,
-        firstPlaceholder: String,
-        secondPlaceholder: String,
-        addLabel: String,
-        firstWidth: CGFloat? = nil
-    ) -> some View {
-        VStack(alignment: .leading, spacing: AppSpacing.small) {
-            sectionHeader(
-                title: "\(heading) (\(pairs.wrappedValue.count))",
-                addLabel: addLabel
-            ) {
-                pairs.wrappedValue.append(("", ""))
-            }
-            ForEach(pairs.wrappedValue.indices, id: \.self) { index in
-                HStack(spacing: AppSpacing.small) {
-                    OwnFocusField { firstFocused in
-                        TextField(
-                            firstPlaceholder,
-                            text: Binding(
-                                get: { pairs.wrappedValue[index].first },
-                                set: { pairs.wrappedValue[index].first = $0 }
-                            )
-                        )
-                        .font(AppFont.monoSubheadline)
-                        .focused(firstFocused)
-                    }
-                    .modifier(ConditionalWidth(width: firstWidth))
-                    OwnFocusField { secondFocused in
-                        TextField(
-                            secondPlaceholder,
-                            text: Binding(
-                                get: { pairs.wrappedValue[index].second },
-                                set: { pairs.wrappedValue[index].second = $0 }
-                            )
-                        )
-                        .font(AppFont.monoSubheadline)
-                        .focused(secondFocused)
-                    }
-                    removeButton(disabled: pairs.wrappedValue.count <= 1) {
-                        pairs.wrappedValue.remove(at: index)
-                    }
-                }
-            }
-        }
-    }
-
-    private func sectionHeader(title: String, addLabel: String, action: @escaping () -> Void) -> some View {
-        HStack {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-            Spacer()
-            Button(action: action) {
-                Label(addLabel, systemImage: "plus")
-            }
-            .buttonStyle(.plain)
-            .font(.caption)
-            .foregroundStyle(.tint)
-            .hoverBackground()
-            .help(addLabel)
-        }
-    }
-
-    private func removeButton(disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "minus.circle")
-        }
-        .buttonStyle(IconButtonStyle(size: .row))
-        .foregroundStyle(.secondary)
-        .disabled(disabled)
-        .help("Remove row")
     }
 
     // MARK: Actions

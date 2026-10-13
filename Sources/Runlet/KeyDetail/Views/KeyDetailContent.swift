@@ -70,19 +70,17 @@ extension KeyDetailView {
             .sheet(isPresented: $showingAddHashField) {
                 AddHashFieldSheet(
                     key: key.key,
-                    field: $newHashField,
-                    value: $newHashValue,
-                    onSave: { field, value in
+                    onSave: { pairs in
                         showingAddHashField = false
                         guardProductionWrite(
-                            title: "Add Field?",
-                            message: "This will add field \"\(field)\" to \"\(key.key)\" on"
+                            title: "Add Fields?",
+                            message: "This will add \(pairs.count) fields to \"\(key.key)\" on"
                                 + "a production server. This action cannot be undone.",
                             confirmText: "ADD",
-                            confirmButtonTitle: "Add Field"
+                            confirmButtonTitle: "Add Fields"
                         ) {
                             Task {
-                                await tab.addHashField(key: key.key, field: field, value: value)
+                                await tab.addHashFields(key: key.key, pairs: pairs)
                                 await tab.refreshSelectedKey()
                             }
                         }
@@ -131,18 +129,18 @@ extension KeyDetailView {
             .sheet(isPresented: $showingAddListElement) {
                 AddListElementSheet(
                     key: key.key,
-                    value: $newListElement,
-                    position: $newListInsertPosition,
-                    onSave: { value, position in
+                    onSave: { values, position in
                         showingAddListElement = false
                         guardProductionWrite(
-                            title: "Add Element?",
-                            message: "This will add an element to \"\(key.key)\" on a production server. This action cannot be undone.",
+                            title: "Add Elements?",
+                            message:
+                                "This will add \(values.count) elements to \"\(key.key)\" on a production server. "
+                                + "This action cannot be undone.",
                             confirmText: "ADD",
-                            confirmButtonTitle: "Add Element"
+                            confirmButtonTitle: "Add Elements"
                         ) {
                             Task {
-                                await tab.addListElement(key: key.key, value: value, tail: position == .tail)
+                                await tab.addListElements(key: key.key, values: values, tail: position == .tail)
                                 await tab.refreshSelectedKey()
                             }
                         }
@@ -177,18 +175,17 @@ extension KeyDetailView {
             .sheet(isPresented: $showingAddSetMember) {
                 AddSetMemberSheet(
                     key: key.key,
-                    member: $newSetMember,
-                    onSave: { member in
+                    onSave: { members in
                         showingAddSetMember = false
                         guardProductionWrite(
-                            title: "Add Member?",
-                            message: "This will add member \"\(member)\" to \"\(key.key)\" on"
+                            title: "Add Members?",
+                            message: "This will add \(members.count) members to \"\(key.key)\" on"
                                 + "a production server. This action cannot be undone.",
                             confirmText: "ADD",
-                            confirmButtonTitle: "Add Member"
+                            confirmButtonTitle: "Add Members"
                         ) {
                             Task {
-                                await tab.addSetMember(key: key.key, member: member)
+                                await tab.addSetMembers(key: key.key, members: members)
                                 await tab.refreshSelectedKey()
                             }
                         }
@@ -241,19 +238,17 @@ extension KeyDetailView {
             .sheet(isPresented: $showingAddZSetMember) {
                 AddZSetMemberSheet(
                     key: key.key,
-                    member: $newZSetMember,
-                    score: $newZSetScore,
-                    onSave: { member, score in
+                    onSave: { members in
                         showingAddZSetMember = false
                         guardProductionWrite(
-                            title: "Add Member?",
-                            message: "This will add member \"\(member)\" to \"\(key.key)\" on"
+                            title: "Add Members?",
+                            message: "This will add \(members.count) members to \"\(key.key)\" on"
                                 + "a production server. This action cannot be undone.",
                             confirmText: "ADD",
-                            confirmButtonTitle: "Add Member"
+                            confirmButtonTitle: "Add Members"
                         ) {
                             Task {
-                                await tab.addZSetMember(key: key.key, member: member, score: score)
+                                await tab.addZSetMembers(key: key.key, members: members)
                                 await tab.refreshSelectedKey()
                             }
                         }
@@ -302,20 +297,22 @@ extension KeyDetailView {
             .sheet(isPresented: $showingAddArrayElement) {
                 AddArrayElementSheet(
                     key: key.key,
-                    index: $newArrayIndex,
-                    value: $newArrayElement,
-                    onSave: { index, value in
+                    onSave: { entries in
                         showingAddArrayElement = false
-                        let indexDescription = index.map(String.init) ?? "end"
+                        let appendedCount = entries.filter { $0.index == nil }.count
+                        let indexDescription =
+                            appendedCount == entries.count
+                            ? "the end"
+                            : "\(entries.count - appendedCount) explicit index(es)"
                         guardProductionWrite(
-                            title: "Add Element?",
-                            message: "This will add an element at index \(indexDescription) to \"\(key.key)\" on"
+                            title: "Add Elements?",
+                            message: "This will add \(entries.count) elements at \(indexDescription) to \"\(key.key)\" on"
                                 + "a production server. This action cannot be undone.",
                             confirmText: "ADD",
-                            confirmButtonTitle: "Add Element"
+                            confirmButtonTitle: "Add Elements"
                         ) {
                             Task {
-                                await tab.addArrayElement(key: key.key, index: index, value: value)
+                                await tab.addArrayElements(key: key.key, entries: entries)
                                 await tab.refreshSelectedKey()
                             }
                         }

@@ -14,19 +14,10 @@ struct KeyDetailView: View {
     @Environment(TabState.self) var tab
     @State var didCopyKey = false
     @State var showingAddHashField = false
-    @State var newHashField = ""
-    @State var newHashValue = ""
     @State var showingAddListElement = false
-    @State var newListElement = ""
-    @State var newListInsertPosition: ListInsertPosition = .head
     @State var showingAddSetMember = false
-    @State var newSetMember = ""
     @State var showingAddZSetMember = false
-    @State var newZSetMember = ""
-    @State var newZSetScore = ""
     @State var showingAddArrayElement = false
-    @State var newArrayIndex = ""
-    @State var newArrayElement = ""
     @State var keyPendingDeletion: RedisKeyEntry?
     @State var showingTTLEditor = false
     @State var ttlInput = ""

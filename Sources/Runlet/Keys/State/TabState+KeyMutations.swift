@@ -103,9 +103,18 @@ extension TabState {
     }
 
     func addHashField(key: String, field: String, value: String) async {
-        guard let client = activeSession else { return }
+        await addHashFields(key: key, pairs: [(field: field, value: value)])
+    }
+
+    func addHashFields(key: String, pairs: [(field: String, value: String)]) async {
+        guard !pairs.isEmpty, let client = activeSession else { return }
+        var args = ["HSET", key]
+        for pair in pairs {
+            args.append(pair.field)
+            args.append(pair.value)
+        }
         do {
-            let result = try await client.send("HSET", key, field, value)
+            let result = try await client.send(args)
             try throwIfRedisError(result)
         } catch {
             reportKeyOperationError(error)
@@ -126,10 +135,13 @@ extension TabState {
         }
     }
 
-    func addListElement(key: String, value: String, tail: Bool = false) async {
-        guard let client = activeSession else { return }
+    func addListElements(key: String, values: [String], tail: Bool = false) async {
+        guard !values.isEmpty, let client = activeSession else { return }
+        // LPUSHX places the last argument at the head, so a head push reverses
+        // the batch to keep the entered order from the head down.
+        let ordered = tail ? values : values.reversed()
         do {
-            let result = try await client.send(tail ? "RPUSHX" : "LPUSHX", key, value)
+            let result = try await client.send([tail ? "RPUSHX" : "LPUSHX", key] + ordered)
             try throwIfRedisError(result)
         } catch {
             reportKeyOperationError(error)
@@ -159,16 +171,15 @@ extension TabState {
         }
     }
 
-    /// Appends a value at the end of an array. The append point is `ARINFO`'s
-    /// `len` (max index + 1), not `ARNEXT`, because the insert cursor only
-    /// tracks `ARINSERT`/`ARRING` and would be 0 for arrays built via `ARSET`.
-    func addArrayElement(key: String, index: Int?, value: String) async {
-        guard let client = activeSession else { return }
+    /// Appends values to an array. Entries without an explicit index append
+    /// sequentially from `ARINFO`'s `len` (max index + 1), not `ARNEXT`, because
+    /// the insert cursor only tracks `ARINSERT`/`ARRING` and would be 0 for
+    /// arrays built via `ARSET`. All entries land in a single `ARMSET`.
+    func addArrayElements(key: String, entries: [(index: Int?, value: String)]) async {
+        guard !entries.isEmpty, let client = activeSession else { return }
         do {
-            let targetIndex: Int
-            if let index {
-                targetIndex = index
-            } else {
+            var nextAppendIndex: Int?
+            if entries.contains(where: { $0.index == nil }) {
                 let infoResult = try await client.send("ARINFO", key)
                 try throwIfRedisError(infoResult)
                 let info = Dictionary(
@@ -176,9 +187,22 @@ extension TabState {
                         guard let name = pair.key.string, let value = pair.value.intValue else { return nil }
                         return (name, value)
                     })
-                targetIndex = info["len"] ?? 0
+                nextAppendIndex = info["len"] ?? 0
             }
-            let result = try await client.send("ARSET", key, "\(targetIndex)", value)
+
+            var args = ["ARMSET", key]
+            for entry in entries {
+                let index: Int
+                if let explicit = entry.index {
+                    index = explicit
+                } else {
+                    index = nextAppendIndex ?? 0
+                    nextAppendIndex = index + 1
+                }
+                args.append("\(index)")
+                args.append(entry.value)
+            }
+            let result = try await client.send(args)
             try throwIfRedisError(result)
         } catch {
             reportKeyOperationError(error)
@@ -205,10 +229,10 @@ extension TabState {
         }
     }
 
-    func addSetMember(key: String, member: String) async {
-        guard let client = activeSession else { return }
+    func addSetMembers(key: String, members: [String]) async {
+        guard !members.isEmpty, let client = activeSession else { return }
         do {
-            let result = try await client.send("SADD", key, member)
+            let result = try await client.send(["SADD", key] + members)
             try throwIfRedisError(result)
         } catch {
             reportKeyOperationError(error)
@@ -225,14 +249,16 @@ extension TabState {
         }
     }
 
-    func addZSetMember(key: String, member: String, score: String) async {
-        guard let client = activeSession else { return }
+    func addZSetMembers(key: String, members: [(score: String, member: String)]) async {
+        guard !members.isEmpty, let client = activeSession else { return }
+        var args = ["ZADD", key, "NX"]
+        for member in members {
+            args.append(member.score)
+            args.append(member.member)
+        }
         do {
-            let result = try await client.send("ZADD", key, "NX", score, member)
+            let result = try await client.send(args)
             try throwIfRedisError(result)
-            guard result.intValue != 0 else {
-                throw RedisError.commandError("Sorted set member already exists")
-            }
         } catch {
             reportKeyOperationError(error)
         }
