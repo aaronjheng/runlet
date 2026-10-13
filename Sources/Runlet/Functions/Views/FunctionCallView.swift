@@ -311,7 +311,7 @@ struct FunctionCallView: View {
                     }
                 }
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(AppColor.codeBackground)
         }
     }
