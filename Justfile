@@ -40,3 +40,9 @@ install: build
     @rm -rf ~/Applications/Runlet.app
     @cp -R '{{ app_bundle }}' ~/Applications/Runlet.app
     @echo 'Installed to ~/Applications/Runlet.app'
+
+uninstall:
+    @osascript -e 'quit app "Runlet"' 2>/dev/null || true
+    @n=0; while pgrep -x Runlet >/dev/null 2>&1 && [ $n -lt 50 ]; do sleep 0.1; n=$((n+1)); done
+    @rm -rf ~/Applications/Runlet.app
+    @echo 'Uninstalled ~/Applications/Runlet.app'
