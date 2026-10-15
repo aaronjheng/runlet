@@ -100,6 +100,8 @@ enum AppSize {
     static let tableActionsWidthSingle: CGFloat = 60
     /// Width of a table Actions column with edit + delete buttons.
     static let tableActionsWidthDouble: CGFloat = 80
+    /// Width of a table Actions column with view + edit + delete buttons.
+    static let tableActionsWidthTriple: CGFloat = 100
     /// Height of a table header cell, matching `NSTableHeaderView` metrics.
     static let tableHeaderHeight: CGFloat = 28
     /// Height of a `FullWidthTable` data row: one monospaced text line plus the

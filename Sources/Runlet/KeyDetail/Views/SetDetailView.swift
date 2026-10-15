@@ -18,11 +18,16 @@ struct SetDetailView: View {
     let onLoadMore: () -> Void
     let onAddMember: () -> Void
     let onDeleteMember: (String) -> Void
+    let onDeleteMembers: ([String]) -> Void
+    /// Scroll-triggered incremental paging hook from `FullWidthTable`.
+    var autoLoadMore: (() -> Void)?
 
     @State private var pendingSearchText = ""
     @State private var memberPendingDeletion: String?
     @State private var productionConfirmText = ""
     @State private var selection = Set<String>()
+    @State private var memberViewer: MemberValueContext?
+    @State private var bulkDeleteArmed = false
 
     private var setEntries: [SetEntry] {
         rows.map { SetEntry(member: $0.1) }
@@ -51,21 +56,43 @@ struct SetDetailView: View {
                     },
                     FullWidthTable.Column(
                         title: "Actions",
-                        width: AppSize.tableActionsWidthSingle,
+                        width: AppSize.tableActionsWidthDouble,
                         resizable: false
                     ) { row in
                         AnyView(
-                            DeleteIconButton(
-                                action: { memberPendingDeletion = row.member },
-                                helpText: "Delete member",
-                                size: .tableAction
-                            )
+                            HStack(spacing: AppSpacing.small) {
+                                Button("View Value", systemImage: "eye") {
+                                    memberViewer = MemberValueContext(
+                                        label: "Member: \(row.member)",
+                                        value: row.member,
+                                        onEdit: nil
+                                    )
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .tableAction))
+                                .help("View full value")
+
+                                DeleteIconButton(
+                                    action: { memberPendingDeletion = row.member },
+                                    helpText: "Delete member",
+                                    size: .tableAction
+                                )
+                            }
                         )
                     },
                 ],
                 selection: $selection,
                 contextMenu: { row in
                     let menu = NSMenu()
+                    menu.addItem(
+                        NSMenuItem("View Value") {
+                            memberViewer = MemberValueContext(
+                                label: "Member: \(row.member)",
+                                value: row.member,
+                                onEdit: nil
+                            )
+                        }
+                    )
                     menu.addItem(NSMenuItem("Copy Member") { copyToPasteboard(row.member) })
                     menu.addItem(NSMenuItem("Copy Row") { copyToPasteboard(row.member) })
                     menu.addItem(.separator())
@@ -73,7 +100,8 @@ struct SetDetailView: View {
                         NSMenuItem("Delete Member") { memberPendingDeletion = row.member }
                     )
                     return menu
-                }
+                },
+                onNearBottom: autoLoadMore
             )
             .overlay {
                 if setEntries.isEmpty {
@@ -115,6 +143,18 @@ struct SetDetailView: View {
                     .hoverBackground()
                 }
 
+                if !selection.isEmpty {
+                    Button {
+                        bulkDeleteArmed = true
+                    } label: {
+                        Label("Delete \(selection.count) selected", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .hoverBackground()
+                    .foregroundStyle(AppColor.error)
+                    .help("Delete the selected members")
+                }
+
                 Spacer()
 
                 Button("Add Member", systemImage: "plus") {
@@ -125,6 +165,20 @@ struct SetDetailView: View {
                 .help("Add member")
             }
         }
+        .bulkMemberDeleteConfirmation(
+            isArmed: $bulkDeleteArmed,
+            context: BulkMemberDeleteContext(
+                isProduction: isProduction,
+                count: selection.count,
+                noun: "member",
+                keyName: key,
+                onConfirm: {
+                    let members = Array(selection)
+                    selection.removeAll()
+                    onDeleteMembers(members)
+                }
+            )
+        )
         .onAppear {
             pendingSearchText = searchText
         }
@@ -181,6 +235,9 @@ struct SetDetailView: View {
                 )
                 .presentationSizing(.form)
             }
+        }
+        .sheet(item: $memberViewer) { context in
+            MemberValueViewerSheet(keyName: key, context: context)
         }
     }
 }

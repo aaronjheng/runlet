@@ -444,6 +444,7 @@
 				<string>8E0D34DB5EC24BE09B051E35</string>
 				<string>0140843B7E8440A4BD9E2BF8</string>
 				<string>46DA3BCB49C04DF0AFC01EB4</string>
+				<string>F1E2A3B4C5D6E7F8A9B0C6D2</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -611,6 +612,7 @@
 			<key>children</key>
 			<array>
 				<string>08DBD70AE6A83DFEA63990E8</string>
+				<string>F1E2A3B4C5D6E7F8A9B0C4D2</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -633,6 +635,8 @@
 				<string>E2D767E06402B486180E8833</string>
 				<string>A157CCBF9ADB6B699C6416FA</string>
 				<string>7A4E51C2D93B8F0615A2C4D7</string>
+				<string>F1E2A3B4C5D6E7F8A9B0C1D2</string>
+				<string>F1E2A3B4C5D6E7F8A9B0C5D2</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -8568,6 +8572,11 @@
 				<string>A70E1002A1B1000000000002</string>
 				<string>A70E1002A1B1000000000003</string>
 			<string>FA1B2C3D4E5F60718293A4B6</string>
+			<string>F1E2A3B4C5D6E7F8A9B0C6D3</string>
+			<string>F1E2A3B4C5D6E7F8A9B0C5D3</string>
+			<string>F1E2A3B4C5D6E7F8A9B0C1D3</string>
+			<string>F1E2A3B4C5D6E7F8A9B0C2D3</string>
+			<string>F1E2A3B4C5D6E7F8A9B0C3D3</string>
 			</array>
 			<key>isa</key>
 			<string>PBXSourcesBuildPhase</string>
@@ -10021,6 +10030,110 @@
 			<string>ConnectionDetailView.swift</string>
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C1D2</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>MemberValueViewerSheet.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C1D3</key>
+		<dict>
+			<key>fileRef</key>
+			<string>F1E2A3B4C5D6E7F8A9B0C1D2</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C2D2</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>StringValueFormatter.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C2D3</key>
+		<dict>
+			<key>fileRef</key>
+			<string>F1E2A3B4C5D6E7F8A9B0C2D2</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C3D2</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>MessagePackDecoder.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C3D3</key>
+		<dict>
+			<key>fileRef</key>
+			<string>F1E2A3B4C5D6E7F8A9B0C3D2</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C4D2</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>F1E2A3B4C5D6E7F8A9B0C2D2</string>
+				<string>F1E2A3B4C5D6E7F8A9B0C3D2</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Models</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C5D2</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>BulkMemberDeleteConfirmation.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C5D3</key>
+		<dict>
+			<key>fileRef</key>
+			<string>F1E2A3B4C5D6E7F8A9B0C5D2</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C6D2</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>TextExportDocument.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>F1E2A3B4C5D6E7F8A9B0C6D3</key>
+		<dict>
+			<key>fileRef</key>
+			<string>F1E2A3B4C5D6E7F8A9B0C6D2</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
 		</dict>
 	</dict>
 	<key>rootObject</key>

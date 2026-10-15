@@ -95,6 +95,9 @@ class TabState {
     /// wrong connection key.
     var shellHistoryConnectionID: UUID?
     var shellInput: String = ""
+    /// Command handed over by "Open in Shell" actions elsewhere (Slow Log,
+    /// Profiler). Consumed by `ShellView` on appear/change.
+    var shellPendingCommand: String?
     var shellSession: (any RedisSession)?
 
     var slowLogEntries: [SlowLogEntry] = []

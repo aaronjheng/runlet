@@ -111,13 +111,30 @@ struct FilterField: View {
     @Binding var text: String
     let placeholder: String
     var onSearch: (() -> Void)?
-    @FocusState private var isFocused: Bool
+    /// Optional externally-owned focus binding (e.g. ⌘F from the parent).
+    /// When provided it replaces the internal focus state entirely.
+    private var externalFocus: FocusState<Bool>.Binding?
+    @FocusState private var internalFocus: Bool
     @State private var isHovering = false
 
-    init(_ placeholder: String, text: Binding<String>, onSearch: (() -> Void)? = nil) {
+    init(
+        _ placeholder: String,
+        text: Binding<String>,
+        focus: FocusState<Bool>.Binding? = nil,
+        onSearch: (() -> Void)? = nil
+    ) {
         self.placeholder = placeholder
         self._text = text
         self.onSearch = onSearch
+        self.externalFocus = focus
+    }
+
+    private var isFocused: Bool {
+        externalFocus?.wrappedValue ?? internalFocus
+    }
+
+    private var focusBinding: FocusState<Bool>.Binding {
+        externalFocus ?? $internalFocus
     }
 
     /// Right-side icon slots: clear button (when text is non-empty) + search/focus button.
@@ -139,7 +156,7 @@ struct FilterField: View {
                 // labels, so the field always matches same-row button height
                 // without a hardcoded frame.
                 .font(.system(.body, design: .default))
-                .focused($isFocused)
+                .focused(focusBinding)
                 .focusEffectDisabled()
                 .onSubmit { onSearch?() }
                 .lineLimit(1)
@@ -169,7 +186,7 @@ struct FilterField: View {
                     systemImage: "magnifyingglass",
                     helpText: "Focus filter field"
                 ) {
-                    isFocused = true
+                    focusBinding.wrappedValue = true
                 }
             }
         }
@@ -189,7 +206,7 @@ struct FilterField: View {
                 .allowsHitTesting(false)
         }
         .contentShape(Rectangle())
-        .onTapGesture { isFocused = true }
+        .onTapGesture { focusBinding.wrappedValue = true }
         .onHover { isHovering = $0 }
         .animation(AppAnimation.quick, value: isHovering)
         .animation(AppAnimation.quick, value: isFocused)

@@ -135,6 +135,17 @@ extension TabState {
         }
     }
 
+    /// Bulk variant: one `HDEL` carries every selected field.
+    func deleteHashFields(key: String, fields: [String]) async {
+        guard !fields.isEmpty, let client = activeSession else { return }
+        do {
+            let result = try await client.send(["HDEL", key] + fields)
+            try throwIfRedisError(result)
+        } catch {
+            reportKeyOperationError(error)
+        }
+    }
+
     func addListElements(key: String, values: [String], tail: Bool = false) async {
         guard !values.isEmpty, let client = activeSession else { return }
         // LPUSHX places the last argument at the head, so a head push reverses
@@ -168,6 +179,15 @@ extension TabState {
             try throwIfRedisError(removeResult)
         } catch {
             reportKeyOperationError(error)
+        }
+    }
+
+    /// Bulk variant: deletes highest index first, so earlier removals never
+    /// shift the remaining target indexes.
+    func deleteListElements(key: String, indexes: [Int]) async {
+        guard !indexes.isEmpty, let client = activeSession else { return }
+        for index in indexes.sorted(by: >) {
+            await deleteListElement(key: key, index: index)
         }
     }
 
@@ -229,6 +249,16 @@ extension TabState {
         }
     }
 
+    /// Bulk variant; deletes highest index first, which is correct whether
+    /// or not `ARDEL` compacts remaining indexes, and deterministic regardless
+    /// of `Set` iteration order.
+    func deleteArrayElements(key: String, indexes: [Int]) async {
+        guard !indexes.isEmpty, let client = activeSession else { return }
+        for index in indexes.sorted(by: >) {
+            await deleteArrayElement(key: key, index: index)
+        }
+    }
+
     func addSetMembers(key: String, members: [String]) async {
         guard !members.isEmpty, let client = activeSession else { return }
         do {
@@ -243,6 +273,17 @@ extension TabState {
         guard let client = activeSession else { return }
         do {
             let result = try await client.send("SREM", key, member)
+            try throwIfRedisError(result)
+        } catch {
+            reportKeyOperationError(error)
+        }
+    }
+
+    /// Bulk variant: one `SREM` carries every selected member.
+    func deleteSetMembers(key: String, members: [String]) async {
+        guard !members.isEmpty, let client = activeSession else { return }
+        do {
+            let result = try await client.send(["SREM", key] + members)
             try throwIfRedisError(result)
         } catch {
             reportKeyOperationError(error)
@@ -284,6 +325,17 @@ extension TabState {
         guard let client = activeSession else { return }
         do {
             let result = try await client.send("ZREM", key, member)
+            try throwIfRedisError(result)
+        } catch {
+            reportKeyOperationError(error)
+        }
+    }
+
+    /// Bulk variant: one `ZREM` carries every selected member.
+    func deleteZSetMembers(key: String, members: [String]) async {
+        guard !members.isEmpty, let client = activeSession else { return }
+        do {
+            let result = try await client.send(["ZREM", key] + members)
             try throwIfRedisError(result)
         } catch {
             reportKeyOperationError(error)

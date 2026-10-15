@@ -63,6 +63,13 @@ struct WorkspaceSidebarView: View {
             Divider()
 
             PanelFooterBar {
+                Button("Reconnect", systemImage: "arrow.clockwise") {
+                    Task { await tab.reconnect() }
+                }
+                .buttonStyle(IconButtonStyle())
+                .help("Reconnect")
+                .disabled(tab.isConnecting)
+
                 Button("Disconnect", systemImage: "power") {
                     tab.disconnect()
                 }

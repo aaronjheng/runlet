@@ -120,6 +120,10 @@ struct SlowLogView: View {
                 .contextMenu(forSelectionType: Int.self) { ids in
                     if ids.count == 1, let id = ids.first {
                         if let entry = filtered.first(where: { $0.id == id }) {
+                            Button("Open in Shell") {
+                                tab.openInShell(entry.commandText)
+                            }
+                            Divider()
                             Button("Copy Command") {
                                 copyToPasteboard(entry.commandText)
                             }

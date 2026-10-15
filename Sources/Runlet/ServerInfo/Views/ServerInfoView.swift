@@ -10,6 +10,26 @@ struct ServerInfoView: View {
     }
 
     @State private var showTopology = false
+    @State private var filterText = ""
+
+    /// Sections + rows filtered by the header search field (local, server
+    /// info is already in memory). Sections with no matching rows drop out
+    /// while a query is active.
+    private var filteredSections: [(name: String, items: [(key: String, value: String)])] {
+        let query = filterText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let names = sections.filter { query.isEmpty || $0.lowercased().contains(query) }
+        return
+            names
+            .map { name in
+                let items = (tab.serverInfo[name] ?? [:])
+                    .keys
+                    .sorted()
+                    .map { (key: $0, value: tab.serverInfo[name]?[$0] ?? "") }
+                    .filter { query.isEmpty || $0.key.lowercased().contains(query) || $0.value.lowercased().contains(query) }
+                return (name: name, items: items)
+            }
+            .filter { query.isEmpty || !$0.items.isEmpty }
+    }
 
     private var isClusterMode: Bool {
         tab.selectedConnection?.mode == .cluster || !tab.clusterNodes.isEmpty
@@ -19,6 +39,8 @@ struct ServerInfoView: View {
         VStack(spacing: 0) {
             // Header
             HStack(spacing: AppSpacing.medium) {
+                FilterField("Filter keys and values", text: $filterText)
+                    .frame(maxWidth: 280)
                 Spacer()
                 if tab.isLoadingServerInfo {
                     ProgressView()
@@ -65,7 +87,9 @@ struct ServerInfoView: View {
             Divider()
             PanelFooterBar {
                 StatusFooterView(
-                    countText: "\(sections.count) sections",
+                    countText: filterText.isEmpty
+                        ? "\(sections.count) sections"
+                        : "\(filteredSections.count) of \(sections.count) sections",
                     sizeText: tab.serverCapabilities.isEmpty ? nil : "\(tab.serverCapabilities.count) modules"
                 )
                 Spacer()
@@ -184,12 +208,25 @@ struct ServerInfoView: View {
         List {
             capabilitiesSection
 
-            ForEach(sections, id: \.self) { section in
-                Section(header: Text(section)) {
-                    if let items = tab.serverInfo[section] {
-                        ForEach(items.keys.sorted(), id: \.self) { key in
-                            infoRow(key, items[key] ?? "")
+            ForEach(filteredSections, id: \.name) { section in
+                Section {
+                    ForEach(section.items, id: \.key) { item in
+                        infoRow(item.key, item.value)
+                    }
+                } header: {
+                    HStack(spacing: AppSpacing.xSmall) {
+                        Text(section.name)
+                        Spacer()
+                        Button {
+                            copyToPasteboard(section.items.map { "\($0.key): \($0.value)" }.joined(separator: "\n"))
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption2)
                         }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .hoverBackground()
+                        .help("Copy section")
                     }
                 }
             }

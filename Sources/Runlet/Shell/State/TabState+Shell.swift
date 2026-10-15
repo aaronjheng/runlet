@@ -3,6 +3,14 @@ import Foundation
 extension TabState {
     // MARK: - Shell
 
+    /// Hands a command to the Shell view: switches to the Shell section and
+    /// fills the input without executing. Consumed by `ShellView` via
+    /// `shellPendingCommand`.
+    func openInShell(_ command: String) {
+        shellPendingCommand = command
+        currentSection = .shell
+    }
+
     func connectShellClient() async {
         guard let config = selectedConnection else { return }
         shellSession?.disconnect()

@@ -17,12 +17,17 @@ struct ArrayDetailView: View {
     let onAddElement: () -> Void
     let onSaveElement: (Int, String) -> Void
     let onDeleteElement: (Int, String) -> Void
+    let onDeleteElements: ([Int]) -> Void
+    /// Scroll-triggered incremental paging hook from `FullWidthTable`.
+    var autoLoadMore: (() -> Void)?
 
     @State private var editingIndex: Int?
     @State private var editValue = ""
     @State private var elementPendingDeletion: ListEntry?
     @State private var productionConfirmText = ""
     @State private var selection = Set<Int>()
+    @State private var memberViewer: MemberValueContext?
+    @State private var bulkDeleteArmed = false
 
     private var arrayEntries: [ListEntry] {
         rows.compactMap { row in
@@ -67,11 +72,25 @@ struct ArrayDetailView: View {
                     },
                     FullWidthTable.Column(
                         title: "Actions",
-                        width: AppSize.tableActionsWidthDouble,
+                        width: AppSize.tableActionsWidthTriple,
                         resizable: false
                     ) { row in
                         AnyView(
                             HStack(spacing: AppSpacing.small) {
+                                Button("View Value", systemImage: "eye") {
+                                    memberViewer = MemberValueContext(
+                                        label: "Index \(row.index)",
+                                        value: row.value,
+                                        onEdit: {
+                                            editingIndex = row.index
+                                            editValue = row.value
+                                        }
+                                    )
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .tableAction))
+                                .help("View full value")
+
                                 Button("Edit Element", systemImage: "square.and.pencil") {
                                     editingIndex = row.index
                                     editValue = row.value
@@ -97,6 +116,18 @@ struct ArrayDetailView: View {
                 },
                 contextMenu: { row in
                     let menu = NSMenu()
+                    menu.addItem(
+                        NSMenuItem("View Value") {
+                            memberViewer = MemberValueContext(
+                                label: "Index \(row.index)",
+                                value: row.value,
+                                onEdit: {
+                                    editingIndex = row.index
+                                    editValue = row.value
+                                }
+                            )
+                        }
+                    )
                     menu.addItem(NSMenuItem("Copy Value") { copyToPasteboard(row.value) })
                     menu.addItem(
                         NSMenuItem("Copy Row") { copyToPasteboard("\(row.index)\t\(row.value)") }
@@ -112,7 +143,8 @@ struct ArrayDetailView: View {
                         NSMenuItem("Delete Element") { elementPendingDeletion = row }
                     )
                     return menu
-                }
+                },
+                onNearBottom: autoLoadMore
             )
             .overlay {
                 if arrayEntries.isEmpty {
@@ -145,6 +177,18 @@ struct ArrayDetailView: View {
                     .hoverBackground()
                 }
 
+                if !selection.isEmpty {
+                    Button {
+                        bulkDeleteArmed = true
+                    } label: {
+                        Label("Delete \(selection.count) selected", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .hoverBackground()
+                    .foregroundStyle(AppColor.error)
+                    .help("Delete the selected elements")
+                }
+
                 Spacer()
 
                 Button("Add Element", systemImage: "plus") {
@@ -155,6 +199,20 @@ struct ArrayDetailView: View {
                 .help("Add element")
             }
         }
+        .bulkMemberDeleteConfirmation(
+            isArmed: $bulkDeleteArmed,
+            context: BulkMemberDeleteContext(
+                isProduction: isProduction,
+                count: selection.count,
+                noun: "element",
+                keyName: key,
+                onConfirm: {
+                    let indexes = Array(selection)
+                    selection.removeAll()
+                    onDeleteElements(indexes)
+                }
+            )
+        )
         .confirmationDialog(
             "Delete Element",
             isPresented: Binding(
@@ -205,6 +263,9 @@ struct ArrayDetailView: View {
                 )
                 .presentationSizing(.form)
             }
+        }
+        .sheet(item: $memberViewer) { context in
+            MemberValueViewerSheet(keyName: key, context: context)
         }
     }
 }

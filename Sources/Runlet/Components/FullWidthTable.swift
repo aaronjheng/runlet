@@ -78,6 +78,10 @@ struct FullWidthTable<Row: Identifiable>: View {
     /// Context menu for a right-clicked row. Right-clicking an unselected row
     /// selects it first, like a native table.
     var contextMenu: ((Row) -> NSMenu?)?
+    /// Invoked when the table's scroll position comes near the bottom, for
+    /// incremental "load more" paging. Edge-triggered: fires when the view
+    /// crosses into the bottom threshold, not on every scroll tick.
+    var onNearBottom: (() -> Void)?
 
     var body: some View {
         GeometryReader { proxy in
@@ -135,6 +139,7 @@ private struct FullWidthTableRepresentable<Row: Identifiable>: NSViewRepresentab
         scrollView.borderType = .noBorder
         scrollView.automaticallyAdjustsContentInsets = false
         scrollView.contentInsets = NSEdgeInsetsZero
+        context.coordinator.observeScrollBottom(of: scrollView)
         return scrollView
     }
 
@@ -142,6 +147,10 @@ private struct FullWidthTableRepresentable<Row: Identifiable>: NSViewRepresentab
         context.coordinator.apply(parent: parent)
         context.coordinator.availableWidth = availableWidth
         context.coordinator.update()
+    }
+
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: FullWidthTableCoordinator) {
+        coordinator.removeScrollBottomObserver()
     }
 }
 
@@ -162,6 +171,7 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
     var selectionDidChange: (IndexSet) -> Void = { _ in }
     var contextMenuForRow: (Int) -> NSMenu? = { _ in nil }
     var doubleClick: (Int, Int) -> Void = { _, _ in }
+    var onNearBottom: (() -> Void)?
     var availableWidth: CGFloat = 0
 
     private weak var tableView: FullWidthTableView?
@@ -170,6 +180,8 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
     private var lastColumnSignature = ""
     private var isApplyingSelection = false
     private var isSizingFlexibleColumn = false
+    private var scrollBottomObserver: NSObjectProtocol?
+    private var wasNearBottom = false
 
     func attach(to tableView: FullWidthTableView) {
         self.tableView = tableView
@@ -241,6 +253,48 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
             guard rows.indices.contains(row) else { return }
             onDoubleClick?(rows[row], column)
         }
+        onNearBottom = parent.onNearBottom
+    }
+
+    // MARK: Scroll-bottom watching
+
+    /// Watches live scroll position and fires `onNearBottom` when the view
+    /// crosses into the bottom threshold. Used by detail tables to page in
+    /// more rows without reaching for the footer button.
+    func observeScrollBottom(of scrollView: NSScrollView) {
+        // Scroll movement reaches here through the clip view's bounds-change
+        // notification; `NSScrollView` itself has no live-scroll-position
+        // notification on macOS.
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        scrollBottomObserver = NotificationCenter.default.addObserver(
+            forName: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkScrollBottom(in: scrollView)
+            }
+        }
+    }
+
+    func removeScrollBottomObserver() {
+        if let observer = scrollBottomObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        scrollBottomObserver = nil
+        wasNearBottom = false
+    }
+
+    private func checkScrollBottom(in scrollView: NSScrollView) {
+        guard let onNearBottom else { return }
+        let visibleHeight = scrollView.contentView.bounds.height
+        let documentHeight = scrollView.documentView?.bounds.height ?? 0
+        let distanceFromBottom = documentHeight - scrollView.contentView.bounds.origin.y - visibleHeight
+        let isNearBottom = distanceFromBottom < 120
+        if isNearBottom && !wasNearBottom {
+            onNearBottom()
+        }
+        wasNearBottom = isNearBottom
     }
 
     func update() {

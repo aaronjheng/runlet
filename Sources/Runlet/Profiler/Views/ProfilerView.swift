@@ -8,6 +8,8 @@ struct ProfilerView: View {
     @State private var selectedEntryID: RedisProfilerEntry.ID?
     @State private var libraryColumnEnabled = false
     @State private var showingProductionWarning = false
+    @State private var isExporting = false
+    @State private var exportDocument: TextExportDocument?
 
     private var isProduction: Bool {
         tab.selectedConnection?.environment == .production
@@ -58,8 +60,10 @@ struct ProfilerView: View {
                 isStarting: tab.isProfilerStarting,
                 isRunning: tab.isProfilerRunning,
                 hasEntries: !tab.profilerEntries.isEmpty,
+                canExport: !filtered.isEmpty,
                 onToggleCapture: toggleCapture,
-                onClear: clearProfiler
+                onClear: clearProfiler,
+                onExport: exportCSV
             )
 
             if let error = tab.profilerError {
@@ -110,6 +114,40 @@ struct ProfilerView: View {
                     + "This can slow busy servers and may capture sensitive data "
                     + "such as passwords.")
         }
+        .fileExporter(
+            isPresented: $isExporting,
+            document: exportDocument,
+            contentType: .plainText,
+            defaultFilename: exportDocument?.defaultFilename
+        ) { _ in }
+    }
+
+    // MARK: - Export
+
+    /// Exports the currently visible (filtered) capture as CSV.
+    private func exportCSV() {
+        let formatter = ISO8601DateFormatter()
+        var lines = ["timestamp,database,node,source,command"]
+        for entry in filteredEntries {
+            let fields = [
+                formatter.string(from: entry.timestamp),
+                entry.database.map(String.init) ?? "",
+                entry.nodeText,
+                entry.source,
+                entry.commandText,
+            ]
+            lines.append(fields.map(csvEscaped).joined(separator: ","))
+        }
+        exportDocument = TextExportDocument(
+            text: lines.joined(separator: "\n"),
+            defaultFilename: "profiler-capture.csv"
+        )
+        isExporting = true
+    }
+
+    private func csvEscaped(_ field: String) -> String {
+        guard field.contains(",") || field.contains("\"") || field.contains("\n") else { return field }
+        return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
     private func toggleCapture() {
@@ -223,8 +261,10 @@ private struct ProfilerToolbarView: View {
     let isStarting: Bool
     let isRunning: Bool
     let hasEntries: Bool
+    let canExport: Bool
     let onToggleCapture: () -> Void
     let onClear: () -> Void
+    let onExport: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -255,6 +295,13 @@ private struct ProfilerToolbarView: View {
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(!hasEntries)
+
+                Button(action: onExport) {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(!canExport)
+                .help("Export the visible capture as CSV")
             }
             .panelToolbar(horizontalPadding: AppSpacing.small)
 
@@ -378,6 +425,7 @@ private struct ProfilerEntryRow: View {
     let onSelect: () -> Void
     @State private var isHovering = false
     @Environment(\.controlActiveState) private var controlActiveState
+    @Environment(TabState.self) private var tab
 
     private var libraryText: String? {
         entry.fcallLibraryName(in: libraries)
@@ -431,6 +479,10 @@ private struct ProfilerEntryRow: View {
         .accessibilityLabel("Profiler entry: \(entry.commandText)")
         .help("Select to preview raw line")
         .contextMenu {
+            Button("Open in Shell") {
+                tab.openInShell(entry.commandText)
+            }
+            Divider()
             Button("Copy Raw Line") {
                 copyToPasteboard(entry.rawLine)
             }

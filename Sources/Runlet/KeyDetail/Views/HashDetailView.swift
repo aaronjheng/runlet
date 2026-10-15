@@ -20,6 +20,9 @@ struct HashDetailView: View {
     let onAddField: () -> Void
     let onSaveField: (String, String) -> Void
     let onDeleteField: (String) -> Void
+    let onDeleteFields: ([String]) -> Void
+    /// Scroll-triggered incremental paging hook from `FullWidthTable`.
+    var autoLoadMore: (() -> Void)?
 
     @State private var editingField: String?
     @State private var editValue = ""
@@ -27,6 +30,8 @@ struct HashDetailView: View {
     @State private var fieldPendingDeletion: String?
     @State private var productionConfirmText = ""
     @State private var selection = Set<String>()
+    @State private var memberViewer: MemberValueContext?
+    @State private var bulkDeleteArmed = false
 
     private var hashEntries: [HashEntry] {
         rows.map { HashEntry(field: $0.0, value: $0.1) }
@@ -71,11 +76,25 @@ struct HashDetailView: View {
                     },
                     FullWidthTable.Column(
                         title: "Actions",
-                        width: AppSize.tableActionsWidthDouble,
+                        width: AppSize.tableActionsWidthTriple,
                         resizable: false
                     ) { row in
                         AnyView(
                             HStack(spacing: AppSpacing.small) {
+                                Button("View Value", systemImage: "eye") {
+                                    memberViewer = MemberValueContext(
+                                        label: "Field: \(row.field)",
+                                        value: row.value,
+                                        onEdit: {
+                                            editingField = row.field
+                                            editValue = row.value
+                                        }
+                                    )
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .tableAction))
+                                .help("View full value")
+
                                 Button("Edit Field", systemImage: "square.and.pencil") {
                                     editingField = row.field
                                     editValue = row.value
@@ -101,6 +120,18 @@ struct HashDetailView: View {
                 },
                 contextMenu: { row in
                     let menu = NSMenu()
+                    menu.addItem(
+                        NSMenuItem("View Value") {
+                            memberViewer = MemberValueContext(
+                                label: "Field: \(row.field)",
+                                value: row.value,
+                                onEdit: {
+                                    editingField = row.field
+                                    editValue = row.value
+                                }
+                            )
+                        }
+                    )
                     menu.addItem(NSMenuItem("Copy Field") { copyToPasteboard(row.field) })
                     menu.addItem(
                         NSMenuItem("Copy Row") { copyToPasteboard("\(row.field)\t\(row.value)") }
@@ -116,7 +147,8 @@ struct HashDetailView: View {
                         NSMenuItem("Delete Field") { fieldPendingDeletion = row.field }
                     )
                     return menu
-                }
+                },
+                onNearBottom: autoLoadMore
             )
             .overlay {
                 if hashEntries.isEmpty {
@@ -158,6 +190,18 @@ struct HashDetailView: View {
                     .hoverBackground()
                 }
 
+                if !selection.isEmpty {
+                    Button {
+                        bulkDeleteArmed = true
+                    } label: {
+                        Label("Delete \(selection.count) selected", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .hoverBackground()
+                    .foregroundStyle(AppColor.error)
+                    .help("Delete the selected fields")
+                }
+
                 Spacer()
 
                 Button("Add Field", systemImage: "plus") {
@@ -168,6 +212,20 @@ struct HashDetailView: View {
                 .help("Add Field")
             }
         }
+        .bulkMemberDeleteConfirmation(
+            isArmed: $bulkDeleteArmed,
+            context: BulkMemberDeleteContext(
+                isProduction: isProduction,
+                count: selection.count,
+                noun: "field",
+                keyName: key,
+                onConfirm: {
+                    let fields = Array(selection)
+                    selection.removeAll()
+                    onDeleteFields(fields)
+                }
+            )
+        )
         .onAppear {
             pendingSearchText = searchText
         }
@@ -224,6 +282,9 @@ struct HashDetailView: View {
                 )
                 .presentationSizing(.form)
             }
+        }
+        .sheet(item: $memberViewer) { context in
+            MemberValueViewerSheet(keyName: key, context: context)
         }
     }
 }

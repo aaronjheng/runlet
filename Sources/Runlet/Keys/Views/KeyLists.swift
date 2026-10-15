@@ -2,6 +2,11 @@ import SwiftUI
 
 // MARK: - Key Lists
 
+/// Keys shown per namespace page in tree view. Shared by the node view
+/// (which slices its rows) and KeysView (which walks the visible order for
+/// keyboard navigation).
+let keyNamespacePageSize = 500
+
 /// Flat and namespace-grouped key lists for the Keys pane's left panel.
 private func scrollToKey(_ key: String?, using proxy: ScrollViewProxy) {
     guard let key else { return }
@@ -12,6 +17,7 @@ struct KeyFlatList: View {
     let keys: [RedisKeyEntry]
     @Binding var selectedKey: RedisKeyEntry?
     let scrollTargetKey: String?
+    let onLoadMoreKeys: () -> Void
     let onDeleteKey: (RedisKeyEntry) -> Void
     let onCopyKey: (RedisKeyEntry) -> Void
 
@@ -38,6 +44,16 @@ struct KeyFlatList: View {
                     }
                 }
             }
+            .onScrollGeometryChange(for: CGFloat.self) { geo in
+                geo.contentSize.height - geo.contentOffset.y - geo.containerSize.height
+            } action: { _, distanceFromBottom in
+                // Incremental paging: fetch the next SCAN batch as the list
+                // approaches the bottom. The callback coalesces via TabState's
+                // scan re-entrancy guard, so repeat firings are harmless.
+                if distanceFromBottom < 200 && !keys.isEmpty {
+                    onLoadMoreKeys()
+                }
+            }
             .onAppear {
                 scrollToKey(scrollTargetKey, using: proxy)
             }
@@ -52,7 +68,9 @@ struct KeyNamespaceList: View {
     let tree: KeyNamespaceTree
     @Binding var selectedKey: RedisKeyEntry?
     @Binding var expandedNamespaces: Set<String>
+    @Binding var namespacePageCounts: [String: Int]
     let scrollTargetKey: String?
+    let onLoadMoreKeys: () -> Void
     let onDeleteKey: (RedisKeyEntry) -> Void
     let onCopyKey: (RedisKeyEntry) -> Void
 
@@ -85,10 +103,19 @@ struct KeyNamespaceList: View {
                             separator: tree.separator,
                             selectedKey: $selectedKey,
                             expandedNamespaces: $expandedNamespaces,
+                            namespacePageCounts: $namespacePageCounts,
+                            onLoadMoreKeys: onLoadMoreKeys,
                             onDeleteKey: onDeleteKey,
                             onCopyKey: onCopyKey
                         )
                     }
+                }
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { geo in
+                geo.contentSize.height - geo.contentOffset.y - geo.containerSize.height
+            } action: { _, distanceFromBottom in
+                if distanceFromBottom < 200 && !tree.allKeys.isEmpty {
+                    onLoadMoreKeys()
                 }
             }
             .onAppear {
@@ -107,11 +134,21 @@ struct KeyNamespaceNodeView: View {
     let separator: String
     @Binding var selectedKey: RedisKeyEntry?
     @Binding var expandedNamespaces: Set<String>
+    @Binding var namespacePageCounts: [String: Int]
+    let onLoadMoreKeys: () -> Void
     let onDeleteKey: (RedisKeyEntry) -> Void
     let onCopyKey: (RedisKeyEntry) -> Void
 
-    private let pageSize = 500
+    private let pageSize = keyNamespacePageSize
     private var isExpanded: Bool { expandedNamespaces.contains(namespace.id) }
+
+    /// Keys shown for this namespace: expanded page count × page size, capped
+    /// at what the scan has loaded. "Show more" bumps the page count locally;
+    /// the data is already in memory.
+    private var loadedKeyCount: Int {
+        let pages = max(namespacePageCounts[namespace.id] ?? 1, 1)
+        return min(namespace.keys.count, pages * pageSize)
+    }
 
     var body: some View {
         Group {
@@ -141,6 +178,8 @@ struct KeyNamespaceNodeView: View {
                 separator: separator,
                 selectedKey: $selectedKey,
                 expandedNamespaces: $expandedNamespaces,
+                namespacePageCounts: $namespacePageCounts,
+                onLoadMoreKeys: onLoadMoreKeys,
                 onDeleteKey: onDeleteKey,
                 onCopyKey: onCopyKey
             )
@@ -149,8 +188,8 @@ struct KeyNamespaceNodeView: View {
 
     private var keysSection: some View {
         let namespaceKeys = namespace.keys
-        let displayedKeys = Array(namespaceKeys.prefix(pageSize))
-        let hasMore = namespaceKeys.count > pageSize
+        let displayedKeys = Array(namespaceKeys.prefix(loadedKeyCount))
+        let hasMore = namespaceKeys.count > loadedKeyCount
         let childIndent = CGFloat(depth + 1) * AppSpacing.small
         return Group {
             ForEach(displayedKeys) { entry in
@@ -173,13 +212,24 @@ struct KeyNamespaceNodeView: View {
             }
 
             if hasMore {
-                HStack {
-                    Spacer()
-                    Text("\(namespaceKeys.count - pageSize) more keys…")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
+                // Previously a dead end: keys beyond the first page were
+                // unreachable. Bumping the page count reveals more from the
+                // already-scanned data, so this needs no server round trip.
+                Button {
+                    namespacePageCounts[namespace.id, default: 1] += 1
+                } label: {
+                    HStack(spacing: AppSpacing.xSmall) {
+                        Image(systemName: "chevron.down.circle")
+                        Text("Show \(namespaceKeys.count - loadedKeyCount) more keys…")
+                            .lineLimit(1)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .hoverBackground()
                 .padding(.vertical, AppSpacing.xSmall)
                 .padding(.leading, childIndent)
                 .fullWidthListRow(selected: false)

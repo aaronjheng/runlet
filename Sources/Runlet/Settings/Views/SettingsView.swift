@@ -49,6 +49,33 @@ struct SettingsView: View {
                     )
                 )
             }
+
+            Section {
+                HStack {
+                    Text("Namespace separator")
+                        .lineLimit(1)
+                    Spacer(minLength: AppSpacing.small)
+                    TextField(
+                        ":",
+                        text: Binding(
+                            get: { store.settings.namespaceSeparator },
+                            set: { newValue in
+                                // Only the first character is meaningful; clamp
+                                // the field to one so it can't accumulate input.
+                                let trimmed = String(newValue.prefix(1))
+                                store.settings.namespaceSeparator = trimmed.isEmpty ? ":" : trimmed
+                                store.save()
+                            }
+                        )
+                    )
+                    .multilineTextAlignment(.center)
+                    .frame(width: 60)
+                }
+            } header: {
+                Text("Keys")
+            } footer: {
+                Text("Character used to group keys into a tree in the browser. Only the first character counts.")
+            }
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)

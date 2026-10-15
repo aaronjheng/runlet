@@ -9,6 +9,14 @@ struct KeysView: View {
     @State var newKeyType = "string"
     @State var newKeyValue = ""
     @State private var expandedNamespaces: Set<String> = []
+    /// Extra 500-key pages revealed per namespace in tree view (see
+    /// `KeyNamespaceNodeView.loadedKeyCount`). Reset when grouping toggles or
+    /// the separator changes, both of which change namespace identities.
+    @State private var namespacePageCounts: [String: Int] = [:]
+    @FocusState private var keyListFocused: Bool
+    @FocusState private var filterFieldFocused: Bool
+    /// Debounced SCAN trigger for as-you-type filtering.
+    @State private var filterDebounceTask: Task<Void, Never>?
     @State var keyListScrollTarget: String?
     @State private var productionConfirmText = ""
     @State private var autoRefreshInterval: TimeInterval = 0
@@ -24,12 +32,28 @@ struct KeysView: View {
         VStack(spacing: 0) {
             // MARK: Header Bar
             HStack(spacing: AppSpacing.small) {
-                FilterField("Filter by key pattern (e.g. user:*)", text: $searchText) {
-                    tab.keyFilter = searchText.isEmpty ? "*" : searchText
-                    tab.keyScanCount = currentScanCount
-                    Task { await tab.scanKeys(reset: true) }
-                }
+                FilterField(
+                    "Filter by key pattern (e.g. user:*)",
+                    text: $searchText,
+                    focus: $filterFieldFocused,
+                    onSearch: {
+                        filterDebounceTask?.cancel()
+                        applyKeyFilter(searchText)
+                    }
+                )
                 .frame(maxWidth: .infinity)
+                .onChange(of: searchText) { _, newValue in
+                    // As-you-type filtering with a debounce, since SCAN is a
+                    // server-side round trip. Return still applies instantly.
+                    let effective = normalizedKeyFilter(newValue)
+                    guard effective != tab.keyFilter else { return }
+                    filterDebounceTask?.cancel()
+                    filterDebounceTask = Task {
+                        try? await Task.sleep(for: .milliseconds(350))
+                        guard !Task.isCancelled else { return }
+                        applyKeyFilter(newValue)
+                    }
+                }
 
                 Button {
                     newKeyName = ""
@@ -76,6 +100,7 @@ struct KeysView: View {
                                     tab.isNamespaceGroupingEnabled = isEnabled
                                     tab.keyScanCount = isEnabled ? treeScanCount : listScanCount
                                     expandedNamespaces = []
+                                    namespacePageCounts = [:]
                                     Task { await tab.scanKeys(reset: true) }
                                 }
                             ),
@@ -93,8 +118,7 @@ struct KeysView: View {
                             isLoading: tab.isLoadingKeys,
                             intervals: AutoRefreshInterval.options
                         ) {
-                            tab.keyScanCount = currentScanCount
-                            Task { await tab.scanKeys(reset: true) }
+                            refreshKeys()
                         }
                     }
                     .padding(.horizontal, AppSpacing.small)
@@ -133,7 +157,9 @@ struct KeysView: View {
                                     tree: tab.namespaceTree(for: displayedKeys),
                                     selectedKey: $tab.selectedKey,
                                     expandedNamespaces: $expandedNamespaces,
+                                    namespacePageCounts: $namespacePageCounts,
                                     scrollTargetKey: keyListScrollTarget,
+                                    onLoadMoreKeys: autoLoadMoreKeys,
                                     onDeleteKey: { keyPendingDeletion = $0 },
                                     onCopyKey: copyKeyToPasteboard
                                 )
@@ -142,10 +168,35 @@ struct KeysView: View {
                                     keys: displayedKeys,
                                     selectedKey: $tab.selectedKey,
                                     scrollTargetKey: keyListScrollTarget,
+                                    onLoadMoreKeys: autoLoadMoreKeys,
                                     onDeleteKey: { keyPendingDeletion = $0 },
                                     onCopyKey: copyKeyToPasteboard
                                 )
                             }
+                        }
+                        .focusable(interactions: .activate)
+                        .focused($keyListFocused)
+                        .focusEffectDisabled()
+                        .onKeyPress(.upArrow) {
+                            moveKeySelection(-1) ? .handled : .ignored
+                        }
+                        .onKeyPress(.downArrow) {
+                            moveKeySelection(1) ? .handled : .ignored
+                        }
+                        .onKeyPress(.delete) {
+                            guard tab.selectedKey != nil else { return .ignored }
+                            keyPendingDeletion = tab.selectedKey
+                            return .handled
+                        }
+                        .onKeyPress(characters: ["r"], phases: .down) { press in
+                            guard press.modifiers.contains(.command) else { return .ignored }
+                            refreshKeys()
+                            return .handled
+                        }
+                        .onKeyPress(characters: ["f"], phases: .down) { press in
+                            guard press.modifiers.contains(.command) else { return .ignored }
+                            filterFieldFocused = true
+                            return .handled
                         }
                         .onChange(of: tab.selectedKey) { _, newValue in
                             if let key = newValue {
@@ -240,6 +291,15 @@ struct KeysView: View {
         .onAppear {
             tab.keyScanCount = currentScanCount
             searchText = tab.keyFilter == "*" ? "" : tab.keyFilter
+            keyListFocused = true
+            tab.namespaceSeparator = SettingsStore.shared.settings.namespaceSeparator
+        }
+        .onChange(of: SettingsStore.shared.settings.namespaceSeparator) { _, newValue in
+            // Namespace identities change with the separator: collapse the
+            // tree and drop per-namespace paging state.
+            tab.namespaceSeparator = newValue
+            expandedNamespaces = []
+            namespacePageCounts = [:]
         }
         .sensoryFeedback(.success, trigger: deleteFeedbackTrigger)
         .sensoryFeedback(.success, trigger: copyFeedbackTrigger)
@@ -312,6 +372,72 @@ struct KeysView: View {
     func copyKeyToPasteboard(_ entry: RedisKeyEntry) {
         copyToPasteboard(entry.key)
         copyFeedbackTrigger.toggle()
+    }
+
+    /// Fetches the next SCAN batch for scroll-triggered incremental paging.
+    /// `scanKeys()` coalesces concurrent requests (`pendingLoadMore`), so this
+    /// can be called repeatedly from scroll callbacks.
+    func autoLoadMoreKeys() {
+        guard tab.hasMoreKeys, !tab.isLoadingKeys else { return }
+        tab.keyScanCount = currentScanCount
+        Task { await tab.scanKeys() }
+    }
+
+    func refreshKeys() {
+        tab.keyScanCount = currentScanCount
+        Task { await tab.scanKeys(reset: true) }
+    }
+
+    private func normalizedKeyFilter(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "*" : trimmed
+    }
+
+    private func applyKeyFilter(_ text: String) {
+        tab.keyFilter = normalizedKeyFilter(text)
+        tab.keyScanCount = currentScanCount
+        Task { await tab.scanKeys(reset: true) }
+    }
+
+    /// Keys in visible list order, for arrow-key navigation: the filtered flat
+    /// list, or a tree walk honoring expansion and per-namespace paging.
+    var selectableKeys: [RedisKeyEntry] {
+        guard tab.isNamespaceGroupingEnabled else { return filteredKeys }
+        return visibleTreeKeys(tab.namespaceTree(for: filteredKeys))
+    }
+
+    private func visibleTreeKeys(_ tree: KeyNamespaceTree) -> [RedisKeyEntry] {
+        var result: [RedisKeyEntry] = []
+        result.append(contentsOf: tree.rootKeys)
+        func walk(_ node: KeyNamespaceNode) {
+            guard expandedNamespaces.contains(node.id) else { return }
+            let pages = max(namespacePageCounts[node.id] ?? 1, 1)
+            result.append(contentsOf: node.keys.prefix(pages * keyNamespacePageSize))
+            node.children.forEach(walk)
+        }
+        tree.namespaces.forEach(walk)
+        return result
+    }
+
+    /// Moves the key-list selection with the arrow keys. Returns false when
+    /// there is nothing to select, so the press can fall through to scrolling.
+    func moveKeySelection(_ delta: Int) -> Bool {
+        let candidates = selectableKeys
+        guard !candidates.isEmpty else { return false }
+        let currentIndex = tab.selectedKey.flatMap { selected in
+            candidates.firstIndex { $0.key == selected.key }
+        }
+        let nextIndex: Int
+        switch currentIndex {
+        case nil:
+            nextIndex = delta > 0 ? 0 : candidates.count - 1
+        case .some(let index):
+            nextIndex = min(max(index + delta, 0), candidates.count - 1)
+        }
+        let entry = candidates[nextIndex]
+        tab.selectedKey = entry
+        keyListScrollTarget = entry.key
+        return true
     }
 
     func expandNamespaces(containing key: String) {

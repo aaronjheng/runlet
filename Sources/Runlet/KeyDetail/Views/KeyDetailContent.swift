@@ -6,6 +6,14 @@ import SwiftUI
 /// plus the generic fallback). Kept in an extension of the main view so the
 /// state properties stay owned by `KeyDetailView.swift`.
 extension KeyDetailView {
+    /// Scroll-triggered incremental paging for the type detail tables; passed
+    /// down as `autoLoadMore` so `FullWidthTable`'s near-bottom hook can page
+    /// rows in without the footer button.
+    func autoLoadMoreDetailRows() {
+        guard !tab.isLoadingDetail, tab.keyDetailHasMoreRows else { return }
+        Task { await tab.loadMoreSelectedKeyDetailRows() }
+    }
+
     @ViewBuilder
     func detailContent(key: RedisKeyEntry) -> some View {
         @Bindable var tab = tab
@@ -65,7 +73,14 @@ extension KeyDetailView {
                         await tab.deleteHashField(key: key.key, field: field)
                         await tab.refreshSelectedKey()
                     }
-                }
+                },
+                onDeleteFields: { fields in
+                    Task {
+                        await tab.deleteHashFields(key: key.key, fields: fields)
+                        await tab.refreshSelectedKey()
+                    }
+                },
+                autoLoadMore: autoLoadMoreDetailRows
             )
             .sheet(isPresented: $showingAddHashField) {
                 AddHashFieldSheet(
@@ -123,7 +138,14 @@ extension KeyDetailView {
                         await tab.deleteListElement(key: key.key, index: index)
                         await tab.refreshSelectedKey()
                     }
-                }
+                },
+                onDeleteElements: { indexes in
+                    Task {
+                        await tab.deleteListElements(key: key.key, indexes: indexes)
+                        await tab.refreshSelectedKey()
+                    }
+                },
+                autoLoadMore: autoLoadMoreDetailRows
             )
             .sheet(isPresented: $showingAddListElement) {
                 AddListElementSheet(
@@ -168,7 +190,14 @@ extension KeyDetailView {
                         await tab.deleteSetMember(key: key.key, member: member)
                         await tab.refreshSelectedKey()
                     }
-                }
+                },
+                onDeleteMembers: { members in
+                    Task {
+                        await tab.deleteSetMembers(key: key.key, members: members)
+                        await tab.refreshSelectedKey()
+                    }
+                },
+                autoLoadMore: autoLoadMoreDetailRows
             )
             .sheet(isPresented: $showingAddSetMember) {
                 AddSetMemberSheet(
@@ -230,7 +259,14 @@ extension KeyDetailView {
                         await tab.deleteZSetMember(key: key.key, member: member)
                         await tab.refreshSelectedKey()
                     }
-                }
+                },
+                onDeleteMembers: { members in
+                    Task {
+                        await tab.deleteZSetMembers(key: key.key, members: members)
+                        await tab.refreshSelectedKey()
+                    }
+                },
+                autoLoadMore: autoLoadMoreDetailRows
             )
             .sheet(isPresented: $showingAddZSetMember) {
                 AddZSetMemberSheet(
@@ -288,7 +324,14 @@ extension KeyDetailView {
                         await tab.deleteArrayElement(key: key.key, index: index)
                         await tab.refreshSelectedKey()
                     }
-                }
+                },
+                onDeleteElements: { indexes in
+                    Task {
+                        await tab.deleteArrayElements(key: key.key, indexes: indexes)
+                        await tab.refreshSelectedKey()
+                    }
+                },
+                autoLoadMore: autoLoadMoreDetailRows
             )
             .sheet(isPresented: $showingAddArrayElement) {
                 AddArrayElementSheet(

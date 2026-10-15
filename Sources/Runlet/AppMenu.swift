@@ -70,6 +70,29 @@ extension AppDelegate {
             item.state = currentAppearance == appearance ? .on : .off
             viewMenu.addItem(item)
         }
+
+        viewMenu.addItem(.separator())
+        let refreshItem = NSMenuItem(
+            title: "Refresh Current Section",
+            action: #selector(refreshCurrentSection),
+            keyEquivalent: "r"
+        )
+        refreshItem.keyEquivalentModifierMask = [.command]
+        refreshItem.target = self
+        viewMenu.addItem(refreshItem)
+
+        viewMenu.addItem(.separator())
+        for (index, section) in WorkspaceSection.allCases.enumerated() {
+            let item = NSMenuItem(
+                title: "Go to \(section.rawValue)",
+                action: #selector(goToSection(_:)),
+                keyEquivalent: "\(index + 1)"
+            )
+            item.keyEquivalentModifierMask = [.command, .shift]
+            item.tag = index + 1
+            item.target = self
+            viewMenu.addItem(item)
+        }
         viewMenuItem.submenu = viewMenu
 
         let windowMenuItem = NSMenuItem()

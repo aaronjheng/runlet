@@ -22,6 +22,9 @@ struct ZSetDetailView: View {
     let onAddMember: () -> Void
     let onSaveMember: (String, String) -> Void
     let onDeleteMember: (String) -> Void
+    let onDeleteMembers: ([String]) -> Void
+    /// Scroll-triggered incremental paging hook from `FullWidthTable`.
+    var autoLoadMore: (() -> Void)?
 
     @State private var editingMember: String?
     @State private var editScore = ""
@@ -29,6 +32,8 @@ struct ZSetDetailView: View {
     @State private var memberPendingDeletion: String?
     @State private var productionConfirmText = ""
     @State private var selection = Set<String>()
+    @State private var memberViewer: MemberValueContext?
+    @State private var bulkDeleteArmed = false
 
     private var zsetEntries: [ZSetEntry] {
         rows.map { ZSetEntry(score: $0.0, member: $0.1) }
@@ -90,11 +95,25 @@ struct ZSetDetailView: View {
                     },
                     FullWidthTable.Column(
                         title: "Actions",
-                        width: AppSize.tableActionsWidthDouble,
+                        width: AppSize.tableActionsWidthTriple,
                         resizable: false
                     ) { row in
                         AnyView(
                             HStack(spacing: AppSpacing.small) {
+                                Button("View Value", systemImage: "eye") {
+                                    memberViewer = MemberValueContext(
+                                        label: "Member: \(row.member)",
+                                        value: row.member,
+                                        onEdit: {
+                                            editingMember = row.member
+                                            editScore = row.score
+                                        }
+                                    )
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(IconButtonStyle(size: .tableAction))
+                                .help("View full value")
+
                                 Button("Edit Score", systemImage: "square.and.pencil") {
                                     editingMember = row.member
                                     editScore = row.score
@@ -120,6 +139,18 @@ struct ZSetDetailView: View {
                 },
                 contextMenu: { row in
                     let menu = NSMenu()
+                    menu.addItem(
+                        NSMenuItem("View Value") {
+                            memberViewer = MemberValueContext(
+                                label: "Member: \(row.member)",
+                                value: row.member,
+                                onEdit: {
+                                    editingMember = row.member
+                                    editScore = row.score
+                                }
+                            )
+                        }
+                    )
                     menu.addItem(NSMenuItem("Copy Member") { copyToPasteboard(row.member) })
                     menu.addItem(
                         NSMenuItem("Copy Row") { copyToPasteboard("\(row.score)\t\(row.member)") }
@@ -135,7 +166,8 @@ struct ZSetDetailView: View {
                         NSMenuItem("Delete Member") { memberPendingDeletion = row.member }
                     )
                     return menu
-                }
+                },
+                onNearBottom: autoLoadMore
             )
             .overlay {
                 if zsetEntries.isEmpty {
@@ -178,6 +210,18 @@ struct ZSetDetailView: View {
                     .hoverBackground()
                 }
 
+                if !selection.isEmpty {
+                    Button {
+                        bulkDeleteArmed = true
+                    } label: {
+                        Label("Delete \(selection.count) selected", systemImage: "trash")
+                    }
+                    .buttonStyle(.borderless)
+                    .hoverBackground()
+                    .foregroundStyle(AppColor.error)
+                    .help("Delete the selected members")
+                }
+
                 Spacer()
 
                 Button("Add Member", systemImage: "plus") {
@@ -188,6 +232,20 @@ struct ZSetDetailView: View {
                 .help("Add member")
             }
         }
+        .bulkMemberDeleteConfirmation(
+            isArmed: $bulkDeleteArmed,
+            context: BulkMemberDeleteContext(
+                isProduction: isProduction,
+                count: selection.count,
+                noun: "member",
+                keyName: key,
+                onConfirm: {
+                    let members = Array(selection)
+                    selection.removeAll()
+                    onDeleteMembers(members)
+                }
+            )
+        )
         .onAppear {
             pendingSearchText = searchText
         }
@@ -244,6 +302,9 @@ struct ZSetDetailView: View {
                 )
                 .presentationSizing(.form)
             }
+        }
+        .sheet(item: $memberViewer) { context in
+            MemberValueViewerSheet(keyName: key, context: context)
         }
     }
 }

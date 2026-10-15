@@ -133,6 +133,8 @@ struct DatabaseAnalysisView: View {
                 VStack(spacing: AppSpacing.small) {
                     // Type Distribution
                     typeDistributionSection(analysis)
+                    // Top Namespaces
+                    namespacesSection(analysis)
                     // Top Keys
                     topKeysSection(analysis)
                 }
@@ -188,6 +190,15 @@ struct DatabaseAnalysisView: View {
         .padding(.vertical, AppSpacing.small)
     }
 
+    /// Switches to the Keys section pre-filtered by a pattern, so analysis
+    /// findings (hot keys, namespaces, types) drill straight into the browser.
+    private func jumpToKeys(pattern: String, type: String = "") {
+        tab.keyTypeFilter = type
+        tab.keyFilter = pattern
+        tab.currentSection = .keys
+        Task { await tab.scanKeys(reset: true) }
+    }
+
     private func typeDistributionSection(_ analysis: DatabaseAnalysis) -> some View {
         Card(title: "Type Distribution") {
             let types = analysis.typeDistribution.keys.sorted()
@@ -196,31 +207,112 @@ struct DatabaseAnalysisView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
             } else {
+                let maxMemory = analysis.typeDistribution.values.map(\.memory).max() ?? 1
                 VStack(spacing: AppSpacing.xSmall) {
-                    HStack {
-                        Text("Type").font(.body).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
-                        Text("Count").font(.body).foregroundStyle(.secondary).frame(width: 70, alignment: .trailing)
-                        Text("Memory").font(.body).foregroundStyle(.secondary).frame(width: 120, alignment: .trailing)
-                        Text("Avg Bytes").font(.body).foregroundStyle(.secondary).frame(width: 100, alignment: .trailing)
-                    }
                     ForEach(types, id: \.self) { type in
                         if let stats = analysis.typeDistribution[type] {
-                            HStack {
+                            HStack(spacing: AppSpacing.small) {
+                                Image(systemName: typeIcon(type))
+                                    .foregroundStyle(typeColor(type))
+                                    .frame(width: 20)
                                 Text(redisKeyTypeTitle(type))
                                     .font(.body)
                                     .frame(width: 60, alignment: .leading)
+                                GeometryReader { geo in
+                                    ZStack(alignment: .leading) {
+                                        RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                                            .fill(AppColor.trackBackground)
+                                            .frame(height: AppSize.barHeight)
+                                        RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                                            .fill(typeColor(type))
+                                            .frame(
+                                                width: max(
+                                                    AppSize.barMinWidth,
+                                                    geo.size.width * CGFloat(stats.memory) / CGFloat(maxMemory)
+                                                ),
+                                                height: AppSize.barHeight
+                                            )
+                                    }
+                                }
+                                .frame(height: AppSize.barHeight)
                                 Text("\(stats.count)")
                                     .font(AppFont.dataCell)
+                                    .monospacedDigit()
                                     .frame(width: 70, alignment: .trailing)
                                 Text(ByteCountFormatter.string(fromByteCount: Int64(stats.memory), countStyle: .file))
                                     .font(AppFont.dataCell)
-                                    .frame(width: 120, alignment: .trailing)
-                                Text(ByteCountFormatter.string(fromByteCount: Int64(stats.avgSize), countStyle: .file))
-                                    .font(AppFont.dataCell)
                                     .foregroundStyle(.secondary)
-                                    .frame(width: 100, alignment: .trailing)
+                                    .frame(width: 120, alignment: .trailing)
                             }
+                            .contentShape(Rectangle())
+                            .hoverBackground()
+                            .clickCursor()
+                            .onTapGesture {
+                                jumpToKeys(pattern: "*", type: type)
+                            }
+                            .help("Browse \(redisKeyTypeTitle(type)) keys in the Keys view")
                         }
+                    }
+                }
+                .padding(AppSpacing.small)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppRadius.medium, style: .continuous)
+                        .stroke(AppColor.subtleBorder.opacity(0.5), lineWidth: 0.5)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.medium))
+            }
+        }
+    }
+
+    private func namespacesSection(_ analysis: DatabaseAnalysis) -> some View {
+        Card(title: "Top Namespaces") {
+            if analysis.topNamespaces.isEmpty {
+                Text("No data")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            } else {
+                let maxCount = analysis.topNamespaces.map(\.keyCount).max() ?? 1
+                VStack(spacing: AppSpacing.mini) {
+                    ForEach(analysis.topNamespaces) { namespace in
+                        HStack(spacing: AppSpacing.small) {
+                            Text(namespace.namespace)
+                                .font(AppFont.monoSubheadline)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(width: 140, alignment: .leading)
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                                        .fill(AppColor.trackBackground)
+                                        .frame(height: AppSize.barHeight)
+                                    RoundedRectangle(cornerRadius: AppRadius.small, style: .continuous)
+                                        .fill(Color.accentColor)
+                                        .frame(
+                                            width: max(
+                                                AppSize.barMinWidth,
+                                                geo.size.width * CGFloat(namespace.keyCount) / CGFloat(maxCount)
+                                            ),
+                                            height: AppSize.barHeight
+                                        )
+                                }
+                            }
+                            .frame(height: AppSize.barHeight)
+                            Text("\(namespace.keyCount)")
+                                .font(AppFont.dataCell)
+                                .monospacedDigit()
+                                .frame(width: 50, alignment: .trailing)
+                            Text(namespace.memoryText)
+                                .font(AppFont.dataCell)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 70, alignment: .trailing)
+                        }
+                        .contentShape(Rectangle())
+                        .hoverBackground()
+                        .clickCursor()
+                        .onTapGesture {
+                            jumpToKeys(pattern: "\(namespace.namespace)*")
+                        }
+                        .help("Browse \(namespace.namespace)* keys in the Keys view")
                     }
                 }
                 .padding(AppSpacing.small)
@@ -240,18 +332,37 @@ struct DatabaseAnalysisView: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
             } else {
-                Grid(horizontalSpacing: AppSpacing.small, verticalSpacing: AppSpacing.xxSmall) {
+                VStack(spacing: AppSpacing.xxSmall) {
                     ForEach(analysis.topKeysByMemory.prefix(10)) { entry in
-                        GridRow {
-                            Text(entry.key)
-                                .font(.body)
-                                .lineLimit(1)
-                                .gridColumnAlignment(.leading)
+                        HStack(spacing: AppSpacing.small) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.key)
+                                    .font(.body)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                if !entry.type.isEmpty {
+                                    Text(redisKeyTypeTitle(entry.type))
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer(minLength: AppSpacing.small)
                             Text(entry.memoryText)
                                 .font(AppFont.dataCell)
                                 .foregroundStyle(.secondary)
-                                .frame(width: AppSize.formFieldWidth, alignment: .trailing)
+                            Image(systemName: "arrow.up.forward")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
                         }
+                        .padding(.horizontal, AppSpacing.xSmall)
+                        .padding(.vertical, AppSpacing.mini)
+                        .contentShape(Rectangle())
+                        .hoverBackground()
+                        .clickCursor()
+                        .onTapGesture {
+                            jumpToKeys(pattern: entry.key)
+                        }
+                        .help("Browse this key in the Keys view")
                     }
                 }
                 .padding(AppSpacing.small)

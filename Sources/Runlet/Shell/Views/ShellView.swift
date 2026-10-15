@@ -49,10 +49,22 @@ struct ShellView: View {
         showCompletions && !filteredCompletions.isEmpty
     }
 
-    /// Height of one suggestion row and how many rows the panel shows before
-    /// it scrolls.
-    private static let completionRowHeight: CGFloat = 26
-    private static let maxVisibleCompletions = 6
+    /// Syntax of the command being typed, for the passive hint bar: shown only
+    /// while the completions panel is hidden (its rows already carry syntax)
+    /// and the first word is an exact catalog match.
+    private var syntaxHint: String? {
+        guard !completionsVisible, !input.isEmpty else { return nil }
+        guard let firstWord = input.split(whereSeparator: \.isWhitespace).first else { return nil }
+        return RedisCommandCatalog.signature(for: String(firstWord))
+    }
+
+    /// Height of one suggestion row (command name + syntax line) and how many
+    /// rows the panel shows before it scrolls.
+    private static let completionRowHeight: CGFloat = 42
+    private static let maxVisibleCompletions = 5
+
+    /// Height of the passive syntax hint bar shown while typing arguments.
+    private static let syntaxHintBarHeight: CGFloat = 28
 
     private var completionsBarHeight: CGFloat {
         CGFloat(min(filteredCompletions.count, Self.maxVisibleCompletions)) * Self.completionRowHeight
@@ -101,13 +113,23 @@ struct ShellView: View {
         return Button {
             acceptCompletion(at: index)
         } label: {
-            Text(cmd)
-                .font(AppFont.monoSubheadline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, AppSpacing.small)
-                .frame(minHeight: Self.completionRowHeight)
-                .background(completionIndex == index ? Color.accentColor.opacity(0.15) : Color.clear)
-                .contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: 1) {
+                Text(cmd)
+                    .font(AppFont.monoSubheadline)
+                    .foregroundStyle(.primary)
+                if let signature = RedisCommandCatalog.signature(for: cmd) {
+                    Text(signature)
+                        .font(AppFont.monoCaption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, AppSpacing.small)
+            .frame(minHeight: Self.completionRowHeight)
+            .background(completionIndex == index ? Color.accentColor.opacity(0.15) : Color.clear)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .clickCursor()
@@ -140,6 +162,33 @@ struct ShellView: View {
         guard count > 0 else { return }
         let current = completionIndex ?? (delta > 0 ? -1 : 0)
         completionIndex = (current + delta + count) % count
+    }
+
+    /// Passive one-line syntax reminder shown above the input strip while the
+    /// user fills in arguments. Same silhouette as the completions panel
+    /// (rounded top corners, bottom edge flush with the strip) so both read as
+    /// part of the input surface.
+    private func syntaxHintBar(_ signature: String) -> some View {
+        Text(signature)
+            .font(AppFont.monoCaption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, AppSpacing.small)
+            .frame(height: Self.syntaxHintBarHeight)
+            .background(AppColor.secondaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.large, style: .continuous))
+            .overlay(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: AppRadius.large,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: AppRadius.large,
+                    style: .continuous
+                )
+                .strokeBorder(AppColor.subtleBorder, lineWidth: 1)
+            )
     }
 
     var body: some View {
@@ -295,6 +344,9 @@ struct ShellView: View {
                     if completionsVisible {
                         completionsBar
                             .offset(y: -completionsBarHeight)
+                    } else if let hint = syntaxHint {
+                        syntaxHintBar(hint)
+                            .offset(y: -Self.syntaxHintBarHeight)
                     }
                 }
             }
@@ -309,7 +361,13 @@ struct ShellView: View {
                 Spacer()
             }
         }
-        .onAppear { inputFocused = true }
+        .onAppear {
+            inputFocused = true
+            consumePendingShellCommand()
+        }
+        .onChange(of: tab.shellPendingCommand) { _, _ in
+            consumePendingShellCommand()
+        }
         .alert("Dangerous Command", isPresented: $showDangerousCommandAlert) {
             Button("Cancel", role: .cancel) {
                 pendingCommand = ""
@@ -351,6 +409,14 @@ struct ShellView: View {
             )
             .presentationSizing(.form)
         }
+    }
+
+    /// Fills the input with a command handed over by "Open in Shell".
+    private func consumePendingShellCommand() {
+        guard let command = tab.shellPendingCommand else { return }
+        input = command
+        tab.shellPendingCommand = nil
+        inputFocused = true
     }
 
     private func executeCommand() {

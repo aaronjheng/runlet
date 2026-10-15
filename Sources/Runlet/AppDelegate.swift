@@ -295,9 +295,45 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
+    /// The tab state owning the key window, if any.
+    private var currentTabState: TabState? {
+        guard let window = NSApp.keyWindow,
+            let stateID = stateToWindow.first(where: { $0.value == window })?.key
+        else { return nil }
+        return tabManager.tabStates.first { $0.id == stateID }
+    }
+
+    @objc func goToSection(_ sender: NSMenuItem) {
+        let all = WorkspaceSection.allCases
+        guard sender.tag >= 1, sender.tag <= all.count,
+            let state = currentTabState
+        else { return }
+        state.currentSection = all[sender.tag - 1]
+    }
+
+    @objc func refreshCurrentSection() {
+        guard let state = currentTabState else { return }
+        switch state.currentSection {
+        case .keys:
+            // `keyScanCount` is whatever the Keys view last configured.
+            Task { await state.scanKeys(reset: true) }
+        case .slowLog:
+            Task { await state.fetchSlowLog() }
+        case .serverInfo:
+            Task { await state.loadServerInfo() }
+        case .functions:
+            Task { await state.fetchFunctionLibraries() }
+        case .shell, .profiler, .databaseAnalysis:
+            break
+        }
+    }
+
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(setAppearance(_:)) {
             menuItem.state = menuItem.tag == SettingsStore.shared.settings.appearance ? .on : .off
+        }
+        if menuItem.action == #selector(goToSection(_:)) || menuItem.action == #selector(refreshCurrentSection) {
+            return currentTabState?.activeSession?.isConnected == true
         }
         return true
     }

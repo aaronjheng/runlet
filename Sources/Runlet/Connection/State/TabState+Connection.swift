@@ -3,6 +3,14 @@ import Foundation
 extension TabState {
     // MARK: - Connect / Disconnect
 
+    /// Reconnects using the config the active session was established with,
+    /// falling back to the selected (possibly edited) connection.
+    func reconnect() async {
+        guard let config = connectedConfig ?? selectedConnection else { return }
+        AppLogger.info("reconnect requested name=\(config.name)", category: "Connection")
+        await connect(to: config)
+    }
+
     func connect(to config: RedisConnectionConfig) async {
         let resolvedConfig = config
         AppLogger.info(

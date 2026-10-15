@@ -81,6 +81,7 @@ enum StringValueFormat: String, CaseIterable, Identifiable, Codable {
     case raw
     case unicode
     case json
+    case msgpack
     case ascii
     case hex
     case base64
@@ -94,6 +95,7 @@ enum StringValueFormat: String, CaseIterable, Identifiable, Codable {
         case .raw: return "Raw"
         case .unicode: return "Unicode"
         case .json: return "JSON"
+        case .msgpack: return "MessagePack"
         case .ascii: return "ASCII"
         case .hex: return "Hex"
         case .base64: return "Base64"
