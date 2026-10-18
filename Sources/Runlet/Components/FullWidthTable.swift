@@ -35,7 +35,9 @@ struct FullWidthTable<Row: Identifiable>: View {
             var ascending: Bool
             var disabled = false
             var help: String?
-            let onToggle: () -> Void
+            /// Invoked when the user clicks the header, after the native
+            /// pipeline flipped the column; receives the new direction.
+            let onToggle: (_ ascending: Bool) -> Void
         }
 
         let title: String
@@ -165,7 +167,7 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
     var rowCount: () -> Int = { 0 }
     var rowIDs: () -> [AnyHashable] = { [] }
     var columnDescriptors: () -> [FullWidthTableColumnDescriptor] = { [] }
-    var sortActions: [(() -> Void)?] = []
+    var sortActions: [((Bool) -> Void)?] = []
     var cellContent: (Int, Int, Bool) -> AnyView = { _, _, _ in AnyView(EmptyView()) }
     var desiredSelection: () -> IndexSet = { IndexSet() }
     var selectionDidChange: (IndexSet) -> Void = { _ in }
@@ -180,6 +182,7 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
     private var lastColumnSignature = ""
     private var isApplyingSelection = false
     private var isSizingFlexibleColumn = false
+    private var isSyncingSortDescriptors = false
     private var scrollBottomObserver: NSObjectProtocol?
     private var wasNearBottom = false
 
@@ -357,12 +360,14 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
         }
     }
 
-    /// Pushes the current sort state into the header, so the indicator, hover
-    /// target, and tooltip follow state that changes without a column rebuild
-    /// (e.g. sorting disabled while filtering).
+    /// Pushes the current sort state into the header and the native sort
+    /// pipeline, so the indicator, hover target, sortability, and tooltip
+    /// follow state that changes without a column rebuild (e.g. sorting
+    /// disabled while filtering).
     private func applyHeaderState(in tableView: NSTableView) {
         let descriptors = columnDescriptors()
         let header = tableView.headerView as? FullWidthHeaderView
+        var enabledSortDescriptors: [NSSortDescriptor] = []
         for (index, column) in tableView.tableColumns.enumerated() where index < descriptors.count {
             guard let cell = column.headerCell as? FullWidthHeaderCell else { continue }
             let sort = descriptors[index].sort
@@ -370,18 +375,38 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
             cell.sortAscending = sort?.ascending ?? false
             cell.sortDisabled = sort?.disabled ?? false
             cell.isHovered = header?.hoveredColumn == index
+            // Native sort pipeline: the prototype makes the header clickable,
+            // and a click flips `sortDescriptors` into the delegate. Dropping
+            // the prototype while filtering disables the clicks, while the
+            // dimmed indicator keeps showing the current order.
+            if let sort, !sort.disabled {
+                let descriptor = NSSortDescriptor(
+                    key: column.identifier.rawValue,
+                    ascending: sort.ascending
+                )
+                column.sortDescriptorPrototype = descriptor
+                enabledSortDescriptors.append(descriptor)
+            } else {
+                column.sortDescriptorPrototype = nil
+            }
+            column.headerToolTip = sort?.help
         }
-        var sortColumns: [Int: ColumnSortState] = [:]
-        for (index, descriptor) in descriptors.enumerated() {
-            guard let sort = descriptor.sort else { continue }
-            sortColumns[index] = ColumnSortState(disabled: sort.disabled, help: sort.help)
-        }
-        header?.sortColumns = sortColumns
-        header?.onToggleSort = { [weak self] index in
-            guard let self, self.sortActions.indices.contains(index) else { return }
-            self.sortActions[index]?()
-        }
+        syncSortDescriptors(enabledSortDescriptors, of: tableView)
         header?.invalidateCells()
+    }
+
+    /// Mirrors the app's sort order into `sortDescriptors`, the state native
+    /// header clicks flip from. Programmatic sets can re-enter the delegate,
+    /// so guard them.
+    private func syncSortDescriptors(_ descriptors: [NSSortDescriptor], of tableView: NSTableView) {
+        let current = tableView.sortDescriptors
+        let changed =
+            current.count != descriptors.count
+            || zip(current, descriptors).contains { $0.key != $1.key || $0.ascending != $1.ascending }
+        guard changed else { return }
+        isSyncingSortDescriptors = true
+        tableView.sortDescriptors = descriptors
+        isSyncingSortDescriptors = false
     }
 
     private func applySelection(in tableView: NSTableView) {
@@ -459,6 +484,18 @@ final class FullWidthTableCoordinator: NSObject, NSTableViewDataSource, NSTableV
         guard !isApplyingSelection, let tableView else { return }
         selectionDidChange(tableView.selectedRowIndexes)
         refreshVisibleCells(in: tableView)
+    }
+
+    /// Native click-to-sort: the header flipped `sortDescriptors`; report the
+    /// column and its new direction to the column's action.
+    func tableView(_ tableView: NSTableView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
+        guard !isSyncingSortDescriptors, let descriptor = tableView.sortDescriptors.first,
+            let index = tableView.tableColumns.firstIndex(where: {
+                $0.sortDescriptorPrototype?.key == descriptor.key
+            }),
+            sortActions.indices.contains(index)
+        else { return }
+        sortActions[index]?(descriptor.ascending)
     }
 
     @objc func handleDoubleClick(_ sender: Any?) {
@@ -551,22 +588,16 @@ final class FullWidthTableView: NSTableView {
 
 // MARK: - Header
 
-/// AppKit-facing sort state of one header column.
-struct ColumnSortState {
-    let disabled: Bool
-    let help: String?
-}
-
-/// Header chrome for `FullWidthTable`: the gray bar, the hover wash and sort
-/// indicator of sortable columns, and the hairline along the bottom edge.
+/// Header chrome for `FullWidthTable`: the gray bar, the hover tracking that
+/// lights up sortable columns (no public API exists for header hover), and
+/// the hairline along the bottom edge. Click-to-sort and the header tooltip
+/// run on the native `sortDescriptorPrototype` / `headerToolTip` pipeline.
 ///
 /// The bar and hover washes are painted by the header cells rather than here:
 /// the system header draws its own background over anything painted before
 /// `super`, and the cells' frames tile the bar — including the intercell
 /// spacing each absorbs — so a hover wash reaches the column separator exactly.
 final class FullWidthHeaderView: NSTableHeaderView {
-    var onToggleSort: ((Int) -> Void)?
-    var sortColumns: [Int: ColumnSortState] = [:]
     private(set) var hoveredColumn = -1
 
     override func viewDidMoveToWindow() {
@@ -603,15 +634,6 @@ final class FullWidthHeaderView: NSTableHeaderView {
         setHoveredColumn(-1)
     }
 
-    override func mouseDown(with event: NSEvent) {
-        let column = self.column(at: convert(event.locationInWindow, from: nil))
-        if let sort = sortColumns[column], !sort.disabled {
-            onToggleSort?(column)
-            return
-        }
-        super.mouseDown(with: event)
-    }
-
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         NSColor.separatorColor.setFill()
@@ -626,14 +648,12 @@ final class FullWidthHeaderView: NSTableHeaderView {
     }
 
     private func setHoveredColumn(_ column: Int) {
-        let target = sortColumns[column] != nil ? column : -1
-        guard target != hoveredColumn else { return }
+        guard column != hoveredColumn else { return }
         let previous = hoveredColumn
-        hoveredColumn = target
-        for index in [previous, target] where index >= 0 {
-            cell(atColumn: index)?.isHovered = index == target
+        hoveredColumn = column
+        for index in [previous, column] where index >= 0 {
+            cell(atColumn: index)?.isHovered = index == column
         }
-        toolTip = target >= 0 ? sortColumns[target]?.help : nil
         needsDisplay = true
     }
 
@@ -687,13 +707,12 @@ final class FullWidthHeaderCell: NSTableHeaderCell {
         guard isSortable else { return }
         let name: NSImage.Name = sortAscending ? "NSAscendingSortIndicator" : "NSDescendingSortIndicator"
         guard let image = NSImage(named: name) else { return }
-        let size = image.size
-        let rect = NSRect(
-            x: cellFrame.maxX - AppSpacing.large - size.width,
-            y: cellFrame.midY - size.height / 2,
-            width: size.width,
-            height: size.height
-        )
+        // System placement via `sortIndicatorRect(forBounds:)` — the same
+        // geometry the stock header uses, so the indicator hugs the trailing
+        // separator as in Finder. Drawn here rather than through
+        // `drawSortIndicator(withFrame:...)` to keep the dimmed state for
+        // sorting disabled while filtering, which the system API lacks.
+        let rect = sortIndicatorRect(forBounds: cellFrame)
         image.draw(in: rect, from: .zero, operation: .sourceOver, fraction: sortDisabled ? 0.35 : 1)
     }
 

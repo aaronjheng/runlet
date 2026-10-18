@@ -70,8 +70,8 @@ struct ZSetDetailView: View {
                             help: pendingSearchText.isEmpty
                                 ? "Sort by score"
                                 : "Sort order unavailable while filtering"
-                        ) {
-                            onOrderChange(order == .ascending ? .descending : .ascending)
+                        ) { ascending in
+                            onOrderChange(ascending ? .ascending : .descending)
                         }
                     ) { row in
                         AnyView(

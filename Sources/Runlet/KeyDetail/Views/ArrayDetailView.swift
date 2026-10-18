@@ -48,8 +48,8 @@ struct ArrayDetailView: View {
                         sort: FullWidthTable.Column.Sort(
                             ascending: order == .ascending,
                             help: "Sort by index"
-                        ) {
-                            onOrderChange(order == .ascending ? .descending : .ascending)
+                        ) { ascending in
+                            onOrderChange(ascending ? .ascending : .descending)
                         }
                     ) { row in
                         AnyView(
