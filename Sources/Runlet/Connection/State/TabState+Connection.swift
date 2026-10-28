@@ -20,6 +20,7 @@ extension TabState {
             category: "Connection"
         )
         stopProfiler(clearEntries: true)
+        stopPubSub(clearEntries: true)
         connectTask?.cancel()
         activeSession?.disconnect()
         connectedConfig = nil
@@ -161,6 +162,7 @@ extension TabState {
     func cancelConnection() {
         AppLogger.info("cancel connection", category: "Connection")
         stopProfiler(clearEntries: true)
+        stopPubSub(clearEntries: true)
         connectTask?.cancel()
         connectTask = nil
         activeSession?.disconnect()
@@ -180,6 +182,7 @@ extension TabState {
     func disconnect() {
         AppLogger.info("disconnect current connection", category: "Connection")
         stopProfiler(clearEntries: true)
+        stopPubSub(clearEntries: true)
         disconnectShellClient()
         connectTask?.cancel()
         connectTask = nil

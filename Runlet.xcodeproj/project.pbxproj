@@ -288,6 +288,7 @@
 				<string>C39465B5838C811C986DBC6C</string>
 				<string>04A8244A5E9C5B0EAE9C7FE1</string>
 				<string>5DB576CD5EC78FFA42A0E020</string>
+				<string>E31A8F9B6C2D4A5F9012005A</string>
 				<string>B13C1808C402B2DFC24298D7</string>
 				<string>4A06D519A7A585DE38A3BC7C</string>
 				<string>50283CEBF5F61B2D4269040B</string>
@@ -660,6 +661,145 @@
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
 		</dict>
+		<key>E31A8F9B6C2D4A5F9012005A</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>E31A8F9B6C2D4A5F9012005B</string>
+				<string>E31A8F9B6C2D4A5F9012005C</string>
+				<string>E31A8F9B6C2D4A5F9012005D</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>PubSub</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F9012005B</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>E31A8F9B6C2D4A5F9012005F</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Models</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F9012005C</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>E31A8F9B6C2D4A5F90120061</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>State</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F9012005D</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>E31A8F9B6C2D4A5F90120063</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>Views</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F9012005E</key>
+		<dict>
+			<key>children</key>
+			<array>
+				<string>E31A8F9B6C2D4A5F90120065</string>
+			</array>
+			<key>isa</key>
+			<string>PBXGroup</string>
+			<key>path</key>
+			<string>PubSub</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F9012005F</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>PubSubModels.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120060</key>
+		<dict>
+			<key>fileRef</key>
+			<string>E31A8F9B6C2D4A5F9012005F</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120061</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>TabState+PubSub.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120062</key>
+		<dict>
+			<key>fileRef</key>
+			<string>E31A8F9B6C2D4A5F90120061</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120063</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>PubSubView.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120064</key>
+		<dict>
+			<key>fileRef</key>
+			<string>E31A8F9B6C2D4A5F90120063</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120065</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>RedisClient+PubSub.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>E31A8F9B6C2D4A5F90120066</key>
+		<dict>
+			<key>fileRef</key>
+			<string>E31A8F9B6C2D4A5F90120065</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
 		<key>F5C35D3994B6FF3DDE488811</key>
 		<dict>
 			<key>children</key>
@@ -705,6 +845,7 @@
 			<array>
 				<string>11D3FF39B01A5DCD8E6EBAC1</string>
 				<string>A776E3E6A1F56CE842BB2534</string>
+				<string>E31A8F9B6C2D4A5F9012005E</string>
 				<string>6855EF17C1BD155D7027CE45</string>
 			</array>
 			<key>isa</key>
@@ -8483,6 +8624,10 @@
 				<string>E31A8F9B6C2D4A5F90123456</string>
 				<string>0CDB668F1E8A810797CB0465</string>
 				<string>E31A8F9B6C2D4A5F90123458</string>
+				<string>E31A8F9B6C2D4A5F90120066</string>
+				<string>E31A8F9B6C2D4A5F90120060</string>
+				<string>E31A8F9B6C2D4A5F90120062</string>
+				<string>E31A8F9B6C2D4A5F90120064</string>
 				<string>6344D9938425496018D4A0B5</string>
 				<string>D6C7D69ABDED21BD3BD0090B</string>
 				<string>9465CADB220C48D59D813C20</string>

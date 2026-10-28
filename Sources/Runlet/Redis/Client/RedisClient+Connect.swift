@@ -208,6 +208,7 @@ extension RedisClient {
             // Finish cleanly first: `cancelConnectionOnQueue` below would
             // otherwise end the MONITOR stream with `notConnected`.
             self.finishMonitor(with: nil)
+            self.finishPubSub(with: nil)
             self.cancelConnectionOnQueue()
             self.clearClientIdentity()
         }

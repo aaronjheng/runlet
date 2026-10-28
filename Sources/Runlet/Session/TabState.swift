@@ -124,6 +124,27 @@ class TabState {
     var isProfilerRunning = false
     var isProfilerStarting = false
 
+    var pubSubEntries: [PubSubEntry] = []
+    var pubSubReceivedCount = 0
+    var pubSubError: String?
+    var isPubSubSubscribed = false
+    var isPubSubSubscribing = false
+    /// Active subscriptions as requested by the user (topics + mode).
+    var pubSubSubscriptions: [PubSubSubscription] = []
+    /// Publish-form draft handed over by "Publish Again" actions. Consumed by
+    /// `PubSubView` via `pubSubPendingPublish`.
+    var pubSubPendingPublish: PubSubPublishDraft?
+    var pubSubTask: Task<Void, Never>?
+    /// Ingest-side buffer: messages land here and are flushed into
+    /// `pubSubEntries` ~6×/s, so a busy channel causes one body evaluation
+    /// per batch instead of one per message.
+    var pubSubPendingEntries: [PubSubEntry] = []
+    var pubSubFlushTask: Task<Void, Never>?
+    var pubSubClient: RedisClient?
+    var pubSubSSHTunnel: SSHTunnel?
+    var pubSubClusterTunnelManager: SSHClusterTunnelManager?
+    var pubSubGeneration = 0
+
     var serverInfo: [String: [String: String]] = [:]
     var serverCapabilities: [RedisServerCapability] = []
     var clusterInfo: [String: String] = [:]
@@ -169,6 +190,7 @@ class TabState {
     var profilerClusterTunnelManager: SSHClusterTunnelManager?
     var profilerGeneration = 0
     let profilerMaxEntries = 2_000
+    let pubSubMaxEntries = 5_000
     let keyMetadataPipelineBatchSize = 200
     let keyDetailPageSize = 100
     let stringDetailTruncationLimit = 1_000_000

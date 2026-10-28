@@ -323,7 +323,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             Task { await state.loadServerInfo() }
         case .functions:
             Task { await state.fetchFunctionLibraries() }
-        case .shell, .profiler, .databaseAnalysis:
+        case .shell, .profiler, .databaseAnalysis, .pubSub:
             break
         }
     }

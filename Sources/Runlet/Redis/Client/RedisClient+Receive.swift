@@ -74,6 +74,7 @@ extension RedisClient {
                             $0.parser = RESPParser()
                         }
                         self.finishMonitor(with: finishError)
+                        self.finishPubSub(with: finishError)
                     }
                     self.updateConnectionState(isConnected: false, lastError: error?.localizedDescription)
                 }
@@ -103,6 +104,7 @@ extension RedisClient {
         connection?.cancel()
         completePendingCommands(with: error)
         finishMonitor(with: error)
+        finishPubSub(with: error)
     }
 
     func cancelConnectionForCancellation() {
@@ -127,12 +129,14 @@ extension RedisClient {
         let pushedMessages: [RESPValue]
         let monitorLines: [String]
         let monitorFailure: Error?
+        let pubSubMessages: [RedisPubSubPush]
         let protocolFailure: Error?
-        (completedCommands, pushedMessages, monitorLines, monitorFailure, protocolFailure) = state.withLock {
+        (completedCommands, pushedMessages, monitorLines, monitorFailure, pubSubMessages, protocolFailure) = state.withLock {
             var completedCommands: [(PendingCommand, RESPValue)] = []
             var pushedMessages: [RESPValue] = []
             var monitorLines: [String] = []
             var monitorFailure: Error?
+            var pubSubMessages: [RedisPubSubPush] = []
             var protocolFailure: Error?
             do {
                 while let message = try $0.parser.parse() {
@@ -147,6 +151,9 @@ extension RedisClient {
                             monitorLines.append(line)
                         } else if $0.isMonitoring, case .error(let message) = value {
                             monitorFailure = RedisError.commandError(message)
+                        } else if $0.isPubSub, let push = RedisPubSubPush(response: value) {
+                            // Unsolicited pub/sub message: no in-flight request.
+                            pubSubMessages.append(push)
                         }
                     case .push(let value):
                         // Unsolicited RESP3 push: never matches an in-flight request.
@@ -166,9 +173,12 @@ extension RedisClient {
                 if $0.isMonitoring {
                     monitorFailure = failure
                 }
+                if $0.isPubSub {
+                    pubSubMessages = []
+                }
                 protocolFailure = error
             }
-            return (completedCommands, pushedMessages, monitorLines, monitorFailure, protocolFailure)
+            return (completedCommands, pushedMessages, monitorLines, monitorFailure, pubSubMessages, protocolFailure)
         }
 
         for (completion, value) in completedCommands {
@@ -183,6 +193,13 @@ extension RedisClient {
         }
         if let monitorFailure {
             finishMonitor(with: monitorFailure)
+        }
+
+        if !pubSubMessages.isEmpty {
+            let continuation = state.withLock { $0.pubSubContinuation }
+            for message in pubSubMessages {
+                continuation?.yield(message)
+            }
         }
 
         if let protocolFailure {

@@ -11,6 +11,7 @@ struct WorkspaceView: View {
             case .keys: KeysView().transition(.opacity)
             case .functions: FunctionsView().transition(.opacity)
             case .shell: ShellView().transition(.opacity)
+            case .pubSub: PubSubView().transition(.opacity)
             case .profiler: ProfilerView().transition(.opacity)
             case .slowLog: SlowLogView().transition(.opacity)
             case .databaseAnalysis: DatabaseAnalysisView().transition(.opacity)

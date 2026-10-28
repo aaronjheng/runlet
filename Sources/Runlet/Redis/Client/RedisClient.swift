@@ -24,6 +24,11 @@ final class RedisClient: Sendable {
         /// routed to `monitorContinuation` instead of being dropped.
         var isMonitoring = false
         var monitorContinuation: AsyncThrowingStream<String, Error>.Continuation?
+        /// True once `startPubSub()` has put this dedicated connection into
+        /// subscribe mode. Unsolicited responses are then pub/sub message
+        /// arrays routed to `pubSubContinuation` instead of being dropped.
+        var isPubSub = false
+        var pubSubContinuation: AsyncThrowingStream<RedisPubSubPush, Error>.Continuation?
     }
 
     let state = Mutex(State())
