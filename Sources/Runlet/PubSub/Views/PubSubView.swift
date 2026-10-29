@@ -203,7 +203,6 @@ private struct SubscriptionBarView: View {
                 selection: $mode,
                 options: PubSubSubscriptionMode.allCases
             ) { $0.title }
-            .frame(width: 118)
             .disabled(isInputDisabled)
             .help("Channel subscribes to exact names; Pattern matches with globs (PSUBSCRIBE)")
 
