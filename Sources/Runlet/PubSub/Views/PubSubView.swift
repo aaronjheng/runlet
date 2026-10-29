@@ -90,7 +90,6 @@ struct PubSubView: View {
             PublishStripView(
                 channel: $publishChannel,
                 message: $publishMessage,
-                feedback: publishFeedback,
                 isPublishing: isPublishing,
                 canPublish: tab.activeSession?.isConnected == true,
                 onPublish: publish
@@ -108,7 +107,16 @@ struct PubSubView: View {
                     sizeText: "Received \(tab.pubSubReceivedCount)"
                 )
                 Spacer()
+                // Publish result lives after the spacer: width changes are
+                // absorbed by the spacer, so the footer's leading status
+                // never reflows when the confirmation fades in and out.
+                if let publishFeedback {
+                    Label(publishFeedback, systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(AppColor.success)
+                        .transition(.opacity)
+                }
             }
+            .animation(AppAnimation.quick, value: publishFeedback)
         }
         .onAppear {
             if topicInput.isEmpty, isSubscribed {
@@ -155,6 +163,8 @@ struct PubSubView: View {
         let channel = publishChannel.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !channel.isEmpty, !publishMessage.isEmpty, !isPublishing else { return }
         isPublishing = true
+        publishFeedback = nil
+        publishFeedbackTask?.cancel()
         let message = publishMessage
         Task {
             let receivers = await tab.publishPubSubMessage(channel: channel, message: message)
@@ -498,7 +508,6 @@ private struct SelectedMessagePreview: View {
 private struct PublishStripView: View {
     @Binding var channel: String
     @Binding var message: String
-    let feedback: String?
     let isPublishing: Bool
     let canPublish: Bool
     let onPublish: () -> Void
@@ -531,18 +540,9 @@ private struct PublishStripView: View {
             .buttonStyle(PrimaryButtonStyle())
             .disabled(!canPublish || isPublishing || channel.trimmingCharacters(in: .whitespaces).isEmpty || message.isEmpty)
             .help("Publish the message with PUBLISH (Return)")
-
-            if let feedback {
-                Label(feedback, systemImage: "checkmark.circle.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(AppColor.success)
-                    .lineLimit(1)
-                    .transition(.opacity)
-            }
         }
         .padding(.horizontal, AppSpacing.small)
         .padding(.vertical, AppSpacing.small)
-        .animation(AppAnimation.quick, value: feedback)
     }
 }
 
