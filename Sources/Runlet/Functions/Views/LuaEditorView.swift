@@ -192,11 +192,13 @@ struct LuaEditorView: View {
             onStatsChange: { editorStats = $0 }
         )
         // fillsContainer: the editor takes the sheet's leftover height and
-        // scrolls past the end while editing. (The old collapse-to-invisible
+        // scrolls when content overflows. (The old collapse-to-invisible
         // defect here was Plume's internal auto-grow cap + lazy-layout
-        // under-reporting, both fixed in the package.)
-        .background(AppColor.codeBackground)
+        // under-reporting, both fixed in the package.) The background sits
+        // OUTSIDE the padding, so the pane reads edge-to-edge down to the
+        // status bar instead of floating on gray margins.
         .padding(AppSpacing.medium)
+        .background(AppColor.codeBackground)
     }
 
     // MARK: Status bar
