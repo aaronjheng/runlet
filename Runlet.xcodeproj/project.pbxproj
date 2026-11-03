@@ -8800,9 +8800,16 @@
 		<key>C0DEE1000000000000000001</key>
 		<dict>
 			<key>isa</key>
-			<string>XCLocalSwiftPackageReference</string>
-			<key>relativePath</key>
-			<string>../plume</string>
+			<string>XCRemoteSwiftPackageReference</string>
+			<key>repositoryURL</key>
+			<string>https://github.com/aaronjheng/plume.git</string>
+			<key>requirement</key>
+			<dict>
+				<key>branch</key>
+				<string>master</string>
+				<key>kind</key>
+				<string>branch</string>
+			</dict>
 		</dict>
 		<key>C0DEE1000000000000000002</key>
 		<dict>

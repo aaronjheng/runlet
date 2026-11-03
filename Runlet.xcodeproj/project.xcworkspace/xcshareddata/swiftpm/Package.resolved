@@ -1,6 +1,15 @@
 {
-  "originHash" : "73d0ba09eae6dccc645e1a62474d003e14ea86b01f76be1739ed66e4671fb23c",
+  "originHash" : "18cbe226344417e6c47330aa205ab109250926f14d794d56c20aa3ac964b85d2",
   "pins" : [
+    {
+      "identity" : "plume",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aaronjheng/plume.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "97b98b9ecb4b9a646433d0b55da97e4ac1b4348f"
+      }
+    },
     {
       "identity" : "swift-asn1",
       "kind" : "remoteSourceControl",
