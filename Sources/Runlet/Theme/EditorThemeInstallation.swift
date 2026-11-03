@@ -11,10 +11,6 @@ import SwiftUI
 /// after startup.
 enum EditorThemeInstallation {
     static func install() {
-        // IME self-diagnostic: every CJK commit dumps storage, attributes,
-        // geometry, and pixel samples to this file (temporary, debug-only).
-        EditorIMEDiagnostic.path = "/tmp/plume-ime-diag.txt"
-
         // Semantic colors
         EditorTheme.accent = .accentColor
         EditorTheme.success = AppColor.success
