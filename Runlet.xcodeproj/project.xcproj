@@ -1,0 +1,694 @@
+{
+  "default-configuration": "Debug",
+  "configurations": [
+    "Debug",
+    "Release",
+  ],
+  "localizations": {
+    "development": "en",
+    "supported": [
+      "Base",
+    ],
+  },
+  "packages": [
+    {
+      "kind": "local",
+      "path": "Vendor/swift-nio-ssh",
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/tree-sitter-grammars/tree-sitter-lua.git",
+      "version": {
+        "revision": "591977fe1e8e24cdf9d94d3bfe2593e06b90c973",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/apple/swift-nio-transport-services.git",
+      "version": {
+        "up-to-next-major-version": "1.28.0",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/tree-sitter/tree-sitter-json.git",
+      "version": {
+        "up-to-next-major-version": "0.24.0",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/tree-sitter/tree-sitter-bash.git",
+      "version": {
+        "up-to-next-major-version": "0.25.1",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/tree-sitter/tree-sitter.git",
+      "version": {
+        "up-to-next-minor-version": "0.25.10",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/tree-sitter/swift-tree-sitter.git",
+      "version": {
+        "up-to-next-major-version": "0.10.0",
+      },
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/aaronjheng/plume.git",
+      "version": {
+        "branch": "master",
+      },
+    }, {
+      "kind": "local",
+      "path": "Vendor/StyLua",
+    },
+  ],
+  "files": [
+    { "path": "<PROJECT>/Assets.xcassets", "target-membership": [ "Runlet/resources" ] },
+    { "path": "<PROJECT>/LICENSE", "target-membership": [ "Runlet/resources" ] },
+    {
+      "kind": "group",
+      "name": "Packages",
+      "children": [
+        { "path": "<PROJECT>/Vendor/swift-nio-ssh" },
+      ],
+    }, {
+      "kind": "group",
+      "path": "Sources",
+      "children": [
+        {
+          "kind": "group",
+          "path": "Runlet",
+          "children": [
+            {
+              "kind": "group",
+              "path": "About",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "AppLicense.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "AboutView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "LicenseView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Analysis",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "DatabaseAnalysisModels.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+DatabaseAnalysis.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "DatabaseAnalysisView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Keys",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "RedisKeyModels.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+                { "kind": "group", "path": "Services" },
+                {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+KeyDetailLoad.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "TabState+KeyMutations.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "TabState+KeyScan.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "KeysView+AddKey.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeysView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyEditSheets.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyLists.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyRow.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Components",
+              "children": [
+                { "path": "Buttons.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "ListRows.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "FullWidthTable.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "PanelChrome.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "Pasteboard.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "PersistentSplitView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "PickersAndFields.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "ProductionConfirm.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "StatusViews.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "TextExportDocument.swift", "target-membership": [ "Runlet/compile-sources" ] },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Concurrency",
+              "children": [
+                { "path": "AsyncTimeout.swift", "target-membership": [ "Runlet/compile-sources" ] },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Connection",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "ConnectionEnvironment.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisConnectionConfig.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SSHConfig.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "TLSConfig.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "ConnectionProbe.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "TabState+Connection.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "ConnectingView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ConnectionDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ConnectionEnvironment+Presentation.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ConnectionHubSidebarView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ConnectionHubView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ConnectionRow.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ConnectionTransfer.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisConnectionMode+Presentation.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "WelcomeView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Editor",
+              "children": [
+                { "path": "SyntaxProfiles.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "LuaCompletionBridge.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "LuaFormatter.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "SelectableText.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "SyntaxHighlighting.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "SyntaxTextView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "TreeSitterBashHighlighter.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "TreeSitterJsonHighlighter.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "TreeSitterLuaHighlighter.swift", "target-membership": [ "Runlet/compile-sources" ] },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Functions",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "FunctionModels.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+Functions.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "FunctionCallView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "FunctionLibraryDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "FunctionsView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "LuaEditorView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "KeyDetail",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "HashDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyDetailContent.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyDetailCounts.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyDetailHeader.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "KeyDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ListDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SetDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "StringDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ZSetDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ArrayDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "MemberValueViewerSheet.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "BulkMemberDeleteConfirmation.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "StringValueFormatter.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "MessagePackDecoder.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Profiler",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "ProfilerModels.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+Profiler.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "ProfilerView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Redis",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Client",
+                  "children": [
+                    { "path": "ClientIdentityLoader.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClient+Connect.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClient+RESP3.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClient+Receive.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClient+Send.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClient.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClientPending.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClusterClient+Send.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClusterClient+Topology.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClusterClient.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClusterState.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisClusterSupport.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "RedisSession.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Monitor",
+                  "children": [
+                    { "path": "RedisClient+Monitor.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "PubSub",
+                  "children": [
+                    { "path": "RedisClient+PubSub.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "RESP",
+                  "children": [
+                    { "path": "RESPParser.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "SSH",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "BuiltIn",
+                  "children": [
+                    { "path": "SSHHandlers.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SSHKeyParsing.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Cluster",
+                  "children": [
+                    { "path": "SSHClusterTunnelManager.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "System",
+                  "children": [
+                    { "path": "SystemSSHConnectionPool.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SystemSSHTunnel.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+                { "path": "SSHTunnel+Connect.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "SSHTunnel.swift", "target-membership": [ "Runlet/compile-sources" ] },
+              ],
+            }, {
+              "kind": "group",
+              "path": "ServerInfo",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+ServerInfo.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "ClusterTopologyView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ServerInfoView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Session",
+              "children": [
+                { "path": "ConnectionStore.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "TabManager.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "TabState.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "AppDatabase.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "AppSupportDirectory.swift", "target-membership": [ "Runlet/compile-sources" ] },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Shell",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "RedisCommandCatalog.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "ShellHistoryEntry.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+Shell.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "ShellView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "PubSub",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "PubSubModels.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+PubSub.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "PubSubView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "SlowLog",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "SlowLogModels.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+                { "kind": "group", "path": "Services" },
+                {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "TabState+SlowLog.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "SlowLogView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Theme",
+              "children": [
+                { "path": "EditorThemeInstallation.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "AppAppearance.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "AppColor.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "Palette.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "AppFont.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                { "path": "AppMetrics.swift", "target-membership": [ "Runlet/compile-sources" ] },
+              ],
+            }, {
+              "kind": "group",
+              "path": "Workspace",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "Navigation.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "TabContentView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "WorkspaceSidebarView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "WorkspaceView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            },
+            { "path": "AppDelegate.swift", "target-membership": [ "Runlet/compile-sources" ] },
+            { "path": "AppLogger.swift", "target-membership": [ "Runlet/compile-sources" ] },
+            { "path": "AppMenu.swift", "target-membership": [ "Runlet/compile-sources" ] },
+            { "path": "RunletApp.swift", "target-membership": [ "Runlet/compile-sources" ] },
+            {
+              "kind": "group",
+              "path": "Settings",
+              "children": [
+                {
+                  "kind": "group",
+                  "path": "Models",
+                  "children": [
+                    { "path": "AppSettings.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SettingsPane.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Services",
+                  "children": [
+                    { "path": "SettingsStore.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "Views",
+                  "children": [
+                    { "path": "SettingsView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SettingsSidebarView.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SettingsSplitViewController.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                    { "path": "SettingsToolbarController.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                }, {
+                  "kind": "group",
+                  "path": "State",
+                  "children": [
+                    { "path": "SettingsNavigationState.swift", "target-membership": [ "Runlet/compile-sources" ] },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }, {
+      "kind": "group",
+      "name": "Products",
+      "children": [
+        { "path": "<PRODUCTS>/Runlet.app", "id": "34157211EC112A834E4073C9", "type": "wrapper.application", "index": false },
+      ],
+    },
+  ],
+  "targets": [
+    {
+      "name": "Runlet",
+      "id": "BB93DA1DE052699890633FD1",
+      "product": "Products/Runlet.app",
+      "product-type": "application",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+        "resources",
+      ],
+      "package-product-members": [
+        {
+          "product-name": "NIOSSH",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "StyLua",
+          "product-name": "StyLua",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "plume",
+          "product-name": "Plume",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "swift-nio-transport-services",
+          "product-name": "NIOTransportServices",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "swift-tree-sitter",
+          "product-name": "SwiftTreeSitter",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "tree-sitter",
+          "product-name": "TreeSitter",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "tree-sitter-bash",
+          "product-name": "TreeSitterBash",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "tree-sitter-json",
+          "product-name": "TreeSitterJSON",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "tree-sitter-lua",
+          "product-name": "TreeSitterLua",
+          "build-phase": { "build-phase": "frameworks" },
+        },
+      ],
+      "build-settings": {
+        "ARCHS": "arm64",
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "Runlet",
+        "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "YES",
+        "COMBINE_HIDPI_IMAGES": "YES",
+        "INFOPLIST_FILE": "Resources/Runlet-Info.plist",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "$(inherited)",
+          "@executable_path/../Frameworks",
+        ],
+        "SDKROOT": "macosx",
+      },
+    },
+  ],
+  "build-settings": {
+    "ALWAYS_SEARCH_USER_PATHS": "NO",
+    "CLANG_ANALYZER_NONNULL": "YES",
+    "CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION": "YES_AGGRESSIVE",
+    "CLANG_CXX_LANGUAGE_STANDARD": "gnu++14",
+    "CLANG_CXX_LIBRARY": "libc++",
+    "CLANG_ENABLE_MODULES": "YES",
+    "CLANG_ENABLE_OBJC_ARC": "YES",
+    "CLANG_ENABLE_OBJC_WEAK": "YES",
+    "CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING": "YES",
+    "CLANG_WARN_BOOL_CONVERSION": "YES",
+    "CLANG_WARN_COMMA": "YES",
+    "CLANG_WARN_CONSTANT_CONVERSION": "YES",
+    "CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS": "YES",
+    "CLANG_WARN_DIRECT_OBJC_ISA_USAGE": "YES_ERROR",
+    "CLANG_WARN_DOCUMENTATION_COMMENTS": "YES",
+    "CLANG_WARN_EMPTY_BODY": "YES",
+    "CLANG_WARN_ENUM_CONVERSION": "YES",
+    "CLANG_WARN_INFINITE_RECURSION": "YES",
+    "CLANG_WARN_INT_CONVERSION": "YES",
+    "CLANG_WARN_NON_LITERAL_NULL_CONVERSION": "YES",
+    "CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF": "YES",
+    "CLANG_WARN_OBJC_LITERAL_CONVERSION": "YES",
+    "CLANG_WARN_OBJC_ROOT_CLASS": "YES_ERROR",
+    "CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER": "YES",
+    "CLANG_WARN_RANGE_LOOP_ANALYSIS": "YES",
+    "CLANG_WARN_STRICT_PROTOTYPES": "YES",
+    "CLANG_WARN_SUSPICIOUS_MOVE": "YES",
+    "CLANG_WARN_UNGUARDED_AVAILABILITY": "YES_AGGRESSIVE",
+    "CLANG_WARN_UNREACHABLE_CODE": "YES",
+    "CLANG_WARN__DUPLICATE_METHOD_MATCH": "YES",
+    "COPY_PHASE_STRIP": "NO",
+    "DEBUG_INFORMATION_FORMAT[config=Debug]": "dwarf",
+    "DEBUG_INFORMATION_FORMAT[config=Release]": "dwarf-with-dsym",
+    "ENABLE_NS_ASSERTIONS[config=Release]": "NO",
+    "ENABLE_STRICT_OBJC_MSGSEND": "YES",
+    "ENABLE_TESTABILITY[config=Debug]": "YES",
+    "EXCLUDED_ARCHS": "x86_64",
+    "GCC_C_LANGUAGE_STANDARD": "gnu11",
+    "GCC_DYNAMIC_NO_PIC[config=Debug]": "NO",
+    "GCC_NO_COMMON_BLOCKS": "YES",
+    "GCC_OPTIMIZATION_LEVEL[config=Debug]": "0",
+    "GCC_PREPROCESSOR_DEFINITIONS[config=Debug]": [
+      "$(inherited)",
+      "DEBUG=1",
+    ],
+    "GCC_WARN_64_TO_32_BIT_CONVERSION": "YES",
+    "GCC_WARN_ABOUT_RETURN_TYPE": "YES_ERROR",
+    "GCC_WARN_UNDECLARED_SELECTOR": "YES",
+    "GCC_WARN_UNINITIALIZED_AUTOS": "YES_AGGRESSIVE",
+    "GCC_WARN_UNUSED_FUNCTION": "YES",
+    "GCC_WARN_UNUSED_VARIABLE": "YES",
+    "MACOSX_DEPLOYMENT_TARGET": "27.0",
+    "MTL_ENABLE_DEBUG_INFO[config=Debug]": "INCLUDE_SOURCE",
+    "MTL_ENABLE_DEBUG_INFO[config=Release]": "NO",
+    "MTL_FAST_MATH": "YES",
+    "ONLY_ACTIVE_ARCH[config=Debug]": "YES",
+    "PRODUCT_BUNDLE_IDENTIFIER": "app.runlet",
+    "PRODUCT_NAME": "$(TARGET_NAME)",
+    "SDKROOT": "macosx",
+    "SWIFT_ACTIVE_COMPILATION_CONDITIONS[config=Debug]": "DEBUG",
+    "SWIFT_COMPILATION_MODE[config=Release]": "wholemodule",
+    "SWIFT_OPTIMIZATION_LEVEL[config=Debug]": "-Onone",
+    "SWIFT_OPTIMIZATION_LEVEL[config=Release]": "-O",
+    "SWIFT_VERSION": "6.4",
+  },
+  "last-upgrade": "27.0",
+}
