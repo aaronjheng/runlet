@@ -186,16 +186,15 @@ struct LuaEditorView: View {
             text: $code,
             syntax: .lua,
             font: .monoBody,
+            fillsContainer: true,
             placeholder: "local lib = {}\n\nfunction lib.handler(keys, args)\n  return redis.call('ping')\nend",
             suggestFactory: { completionBridge },
             onStatsChange: { editorStats = $0 }
         )
-        // Explicit height: the fillsContainer sizing inside a sheet has a
-        // layout defect (editor collapses to invisibility) - use the same
-        // explicit-frame pattern as Canoe's ImportCURLSheet until the
-        // sheet-context sizing is fixed in Plume.
-        .frame(maxWidth: .infinity)
-        .frame(height: 320)
+        // fillsContainer: the editor takes the sheet's leftover height and
+        // scrolls past the end while editing. (The old collapse-to-invisible
+        // defect here was Plume's internal auto-grow cap + lazy-layout
+        // under-reporting, both fixed in the package.)
         .background(AppColor.codeBackground)
         .padding(AppSpacing.medium)
     }
