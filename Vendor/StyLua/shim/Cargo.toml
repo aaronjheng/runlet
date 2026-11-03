@@ -1,0 +1,28 @@
+[package]
+name = "runlet_stylua_shim"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "runlet_stylua_shim"
+crate-type = ["staticlib"]
+
+[dependencies]
+# StyLua ships releases on crates.io, but the app pins the exact formatter
+# revision it was verified against; cargo fetches it into `~/.cargo` like
+# any git dependency. The key is the PACKAGE name (`stylua`); its lib
+# target - what the code imports - is `stylua_lib`. default-features =
+# false drops editorconfig, the LSP crates, and the wasm bindings - none
+# of them belong in a static archive.
+stylua = { git = "https://github.com/JohnnyMorganz/StyLua", rev = "56f9630407f6bf6ee524fb1d7fe71f005a570478", default-features = false }
+
+# Mirrors the shim release profile Canoe's Oxfmt uses: a stripped,
+# fat-LTO'd archive instead of one shipping debug sections.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"

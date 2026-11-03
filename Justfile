@@ -17,6 +17,10 @@ format-check:
     swift format lint --recursive Sources
 
 build:
+    @if [ ! -d Vendor/StyLua/lib/librunlet_stylua.xcframework ]; then \
+        echo 'Vendor/StyLua/lib/librunlet_stylua.xcframework missing - building stylua' >&2; \
+        sh Vendor/StyLua/build.sh; \
+    fi
     xcodebuild -project Runlet.xcodeproj \
         -scheme Runlet \
         -configuration '{{ build_configuration }}' \

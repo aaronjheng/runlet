@@ -63,6 +63,8 @@ struct LuaEditorView: View {
             statusBar
             if let error {
                 ErrorBanner(message: error, dismissAction: { self.error = nil })
+            } else if let formatError {
+                ErrorBanner(message: formatError, dismissAction: { self.formatError = nil })
             }
             Divider()
             actions
@@ -180,6 +182,9 @@ struct LuaEditorView: View {
     /// `lua` syntax profile, with the `redis.`-aware completion bridge.
     @State private var completionBridge = LuaCompletionBridge()
     @State private var editorStats: Editor.Stats?
+    /// A formatting diagnostic from ⌥⇧F (the library did not parse); shown
+    /// in the same banner as save/dry-run errors until dismissed.
+    @State private var formatError: String?
 
     private var editor: some View {
         Editor(
@@ -188,6 +193,15 @@ struct LuaEditorView: View {
             fillsContainer: true,
             font: .monoBody,
             placeholder: "local lib = {}\n\nfunction lib.handler(keys, args)\n  return redis.call('ping')\nend",
+            formatHandler: { source in
+                do {
+                    return try LuaFormatter.format(source)
+                } catch let error as LuaFormatter.LuaFormatError {
+                    throw TextFormatError(message: error.message)
+                }
+            },
+            formatActionName: "Format Script",
+            onFormatError: { formatError = $0 },
             suggestFactory: { completionBridge },
             onStatsChange: { editorStats = $0 }
         )

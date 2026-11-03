@@ -539,6 +539,7 @@
 			<array>
 				<string>C0DEE1000000000000000006</string>
 				<string>C0DEE1000000000000000008</string>
+				<string>C0DEE1000000000000000010</string>
 				<string>30154E03B5DE5970A72B3E24</string>
 				<string>DDAEA26E1EB44856A4E40CE9</string>
 				<string>E7DAE39125644185BA5CBBCC</string>
@@ -7922,6 +7923,7 @@
 				<string>B9C592A7C9F4F9D39812897B</string>
 				<string>AA6247D13C0E48B4BDC866E0</string>
 				<string>C0DEE1000000000000000003</string>
+				<string>C0DEE1000000000000000014</string>
 			</array>
 			<key>isa</key>
 			<string>PBXFrameworksBuildPhase</string>
@@ -8762,6 +8764,7 @@
 				<string>C0DEE1000000000000000005</string>
 				<string>C0DEE1000000000000000007</string>
 				<string>C0DEE1000000000000000009</string>
+				<string>C0DEE1000000000000000011</string>
 			</array>
 			<key>isa</key>
 			<string>PBXSourcesBuildPhase</string>
@@ -8847,6 +8850,47 @@
 			<string>PBXBuildFile</string>
 			<key>fileRef</key>
 			<string>C0DEE1000000000000000008</string>
+		</dict>
+		<key>C0DEE1000000000000000010</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>LuaFormatter.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>C0DEE1000000000000000011</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>C0DEE1000000000000000010</string>
+		</dict>
+		<key>C0DEE1000000000000000012</key>
+		<dict>
+			<key>isa</key>
+			<string>XCLocalSwiftPackageReference</string>
+			<key>relativePath</key>
+			<string>Vendor/StyLua</string>
+		</dict>
+		<key>C0DEE1000000000000000013</key>
+		<dict>
+			<key>isa</key>
+			<string>XCSwiftPackageProductDependency</string>
+			<key>package</key>
+			<string>C0DEE1000000000000000012</string>
+			<key>productName</key>
+			<string>StyLua</string>
+		</dict>
+		<key>C0DEE1000000000000000014</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>productRef</key>
+			<string>C0DEE1000000000000000013</string>
 		</dict>
 		<key>632DFD3F34E11FDFE84232FA</key>
 		<dict>
@@ -9575,6 +9619,7 @@
 				<string>217D16D1D5454047A9B4BD7E</string>
 				<string>0995007D9541490192CC214B</string>
 				<string>C0DEE1000000000000000001</string>
+				<string>C0DEE1000000000000000012</string>
 			</array>
 			<key>preferredProjectObjectVersion</key>
 			<string>77</string>
