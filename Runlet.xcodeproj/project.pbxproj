@@ -537,6 +537,8 @@
 		<dict>
 			<key>children</key>
 			<array>
+				<string>C0DEE1000000000000000006</string>
+				<string>C0DEE1000000000000000008</string>
 				<string>30154E03B5DE5970A72B3E24</string>
 				<string>DDAEA26E1EB44856A4E40CE9</string>
 				<string>E7DAE39125644185BA5CBBCC</string>
@@ -1148,6 +1150,7 @@
 		<dict>
 			<key>children</key>
 			<array>
+				<string>C0DEE1000000000000000004</string>
 				<string>85B4BE09415F4F448B2457DE</string>
 				<string>34814B30A7A652152BAEBF3C</string>
 				<string>4769B990B342320F01D9B885</string>
@@ -7918,6 +7921,7 @@
 				<string>2F89872A44134B4492EBA433</string>
 				<string>B9C592A7C9F4F9D39812897B</string>
 				<string>AA6247D13C0E48B4BDC866E0</string>
+				<string>C0DEE1000000000000000003</string>
 			</array>
 			<key>isa</key>
 			<string>PBXFrameworksBuildPhase</string>
@@ -8408,6 +8412,39 @@
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
 		</dict>
+		<key>C0DEE1000000000000000004</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>EditorThemeInstallation.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>C0DEE1000000000000000006</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>SyntaxProfiles.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>C0DEE1000000000000000008</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>LuaCompletionBridge.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
 		<key>351CFE6BEDC3FBBEF81093D2</key>
 		<dict>
 			<key>fileRef</key>
@@ -8722,6 +8759,9 @@
 			<string>F1E2A3B4C5D6E7F8A9B0C1D3</string>
 			<string>F1E2A3B4C5D6E7F8A9B0C2D3</string>
 			<string>F1E2A3B4C5D6E7F8A9B0C3D3</string>
+				<string>C0DEE1000000000000000005</string>
+				<string>C0DEE1000000000000000007</string>
+				<string>C0DEE1000000000000000009</string>
 			</array>
 			<key>isa</key>
 			<string>PBXSourcesBuildPhase</string>
@@ -8756,6 +8796,50 @@
 			<string>XCLocalSwiftPackageReference</string>
 			<key>relativePath</key>
 			<string>Vendor/swift-nio-ssh</string>
+		</dict>
+		<key>C0DEE1000000000000000001</key>
+		<dict>
+			<key>isa</key>
+			<string>XCLocalSwiftPackageReference</string>
+			<key>relativePath</key>
+			<string>../plume</string>
+		</dict>
+		<key>C0DEE1000000000000000002</key>
+		<dict>
+			<key>isa</key>
+			<string>XCSwiftPackageProductDependency</string>
+			<key>package</key>
+			<string>C0DEE1000000000000000001</string>
+			<key>productName</key>
+			<string>Plume</string>
+		</dict>
+		<key>C0DEE1000000000000000003</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>productRef</key>
+			<string>C0DEE1000000000000000002</string>
+		</dict>
+		<key>C0DEE1000000000000000005</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>C0DEE1000000000000000004</string>
+		</dict>
+		<key>C0DEE1000000000000000007</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>C0DEE1000000000000000006</string>
+		</dict>
+		<key>C0DEE1000000000000000009</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+			<key>fileRef</key>
+			<string>C0DEE1000000000000000008</string>
 		</dict>
 		<key>632DFD3F34E11FDFE84232FA</key>
 		<dict>
@@ -9483,6 +9567,7 @@
 				<string>A7B2C4D6E8F0A1B2C3D4E5F7</string>
 				<string>217D16D1D5454047A9B4BD7E</string>
 				<string>0995007D9541490192CC214B</string>
+				<string>C0DEE1000000000000000001</string>
 			</array>
 			<key>preferredProjectObjectVersion</key>
 			<string>77</string>

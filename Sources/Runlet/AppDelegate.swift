@@ -44,6 +44,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        EditorThemeInstallation.install()
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
         currentAppearance.apply()

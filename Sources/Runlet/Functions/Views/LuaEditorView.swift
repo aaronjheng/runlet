@@ -1,3 +1,4 @@
+import Plume
 import SwiftUI
 
 // MARK: - Lua Editor View
@@ -175,12 +176,26 @@ struct LuaEditorView: View {
 
     // MARK: Editor
 
+    /// The Lua editing surface: Plume's generic editor over the host-defined
+    /// `lua` syntax profile, with the `redis.`-aware completion bridge.
+    @State private var completionBridge = LuaCompletionBridge()
+    @State private var editorStats: Editor.Stats?
+
     private var editor: some View {
-        SyntaxTextEditor(
+        Editor(
             text: $code,
-            tokenizer: TreeSitterLuaHighlighter.shared,
-            completionProvider: LuaCompletionProvider()
+            syntax: .lua,
+            font: .monoBody,
+            placeholder: "local lib = {}\n\nfunction lib.handler(keys, args)\n  return redis.call('ping')\nend",
+            suggestFactory: { completionBridge },
+            onStatsChange: { editorStats = $0 }
         )
+        // Explicit height: the fillsContainer sizing inside a sheet has a
+        // layout defect (editor collapses to invisibility) - use the same
+        // explicit-frame pattern as Canoe's ImportCURLSheet until the
+        // sheet-context sizing is fixed in Plume.
+        .frame(maxWidth: .infinity)
+        .frame(height: 320)
         .background(AppColor.codeBackground)
         .padding(AppSpacing.medium)
     }
@@ -189,7 +204,7 @@ struct LuaEditorView: View {
 
     private var statusBar: some View {
         HStack(spacing: AppSpacing.small) {
-            Text("\(code.count) chars")
+            Text(editorStats.map { "\($0.characters) chars · line \($0.line), col \($0.column)" } ?? "")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()

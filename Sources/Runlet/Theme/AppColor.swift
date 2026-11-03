@@ -157,6 +157,15 @@ enum AppColor {
     static let shellError: Color = .red
     static let shellOutputBackground = paletteWash(\.shellOutputBackground)
 
+    // MARK: - Editor
+
+    /// Primary text for the embedded editor (Plume's textPrimaryNS):
+    /// resolved through the SAME palette machinery as the backgrounds, so
+    /// an appearance mismatch (window effectiveAppearance vs the
+    /// app-managed Palette) can never yield invisible text.
+    static let editorTextPrimaryNS = paletteNSColor(\.editorTextPrimary)
+    static let editorTextPrimary = paletteColor(\.editorTextPrimary)
+
     // MARK: - Syntax highlighting
 
     /// Keywords: `local`, `function`, `return`, `if`

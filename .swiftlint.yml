@@ -10,6 +10,9 @@ opt_in_rules:
   - redundant_nil_coalescing
 
 disabled_rules:
+  # swift-format (the style authority) places a multiline
+  # condition's brace on its own line; the two tools disagree, formatter wins.
+  - opening_brace
   - trailing_comma
   - nesting
   - function_body_length
