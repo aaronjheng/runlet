@@ -185,8 +185,8 @@ struct LuaEditorView: View {
         Editor(
             text: $code,
             syntax: .lua,
-            font: .monoBody,
             fillsContainer: true,
+            font: .monoBody,
             placeholder: "local lib = {}\n\nfunction lib.handler(keys, args)\n  return redis.call('ping')\nend",
             suggestFactory: { completionBridge },
             onStatsChange: { editorStats = $0 }
