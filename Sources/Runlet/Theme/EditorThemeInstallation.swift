@@ -1,6 +1,5 @@
 import AppKit
 import Plume
-
 // DEBUG access to the internal switch
 import SwiftUI
 
