@@ -186,6 +186,61 @@ struct LuaEditorView: View {
     /// in the same banner as save/dry-run errors until dismissed.
     @State private var formatError: String?
 
+    /// Diagnostics pushed into the editor (Monaco: `setModelMarkers`): the
+    /// dry-run result and the formatting error, each placed on the line its
+    /// message names. Rendered as squiggles, gutter dots, and an overview
+    /// ruler tick alongside the grammar's own syntax errors.
+    private var editorMarkers: [EditorMarker] {
+        var markers: [EditorMarker] = []
+        if case .failed(let message) = dryRunState {
+            markers.append(editorMarker(for: message))
+        }
+        if let formatError {
+            markers.append(editorMarker(for: formatError))
+        }
+        return markers
+    }
+
+    /// One error marker on the line the message names, falling back to the
+    /// first line when it carries no position.
+    private func editorMarker(for message: String) -> EditorMarker {
+        EditorMarker(
+            severity: .error,
+            range: Self.lineRange(Self.errorLine(in: message) ?? 1, in: code),
+            message: message)
+    }
+
+    /// Redis Lua diagnostics name a position as `<script>:<line>: message`;
+    /// the first such number is the offending line (best-effort - a message
+    /// without one falls back to the first line).
+    private static func errorLine(in message: String) -> Int? {
+        guard let regex = try? NSRegularExpression(pattern: ":([0-9]+):") else { return nil }
+        let ns = message as NSString
+        let matches = regex.matches(in: message, range: NSRange(location: 0, length: ns.length))
+        guard let first = matches.first, first.numberOfRanges > 1 else { return nil }
+        return Int(ns.substring(with: first.range(at: 1)))
+    }
+
+    /// The UTF-16 range of `line` (1-based) in `text`, clamped to the
+    /// document; an empty line yields a zero-length range (no squiggle, but
+    /// the marker still counts).
+    private static func lineRange(_ line: Int, in text: String) -> NSRange {
+        let ns = text as NSString
+        var current = 1
+        var index = 0
+        while index < ns.length, current < line {
+            if ns.character(at: index) == 0x0A { current += 1 }
+            index += 1
+        }
+        guard current == line, index <= ns.length else {
+            let start = max(ns.length - 1, 0)
+            return NSRange(location: start, length: min(1, ns.length))
+        }
+        var end = index
+        while end < ns.length, ns.character(at: end) != 0x0A { end += 1 }
+        return NSRange(location: index, length: end - index)
+    }
+
     private var editor: some View {
         Editor(
             text: $code,
@@ -203,7 +258,10 @@ struct LuaEditorView: View {
             formatActionName: "Format Script",
             onFormatError: { formatError = $0 },
             suggestFactory: { completionBridge },
-            onStatsChange: { editorStats = $0 }
+            onStatsChange: { editorStats = $0 },
+            markers: editorMarkers,
+            showsOverviewRuler: true,
+            tabSize: 4
         )
         // fillsContainer: the editor takes the sheet's leftover height and
         // scrolls when content overflows. (The old collapse-to-invisible
