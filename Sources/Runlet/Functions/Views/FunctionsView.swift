@@ -6,9 +6,17 @@ struct FunctionsView: View {
     @Environment(TabState.self) private var tab
     @State private var searchText = ""
     @State private var typeFilter = ""
-    @State private var showingLoadSheet = false
+    @State private var isCreating = false
+    @State private var editorIsDirty = false
+    @State private var pendingDiscard: PendingDiscard?
     @State private var libraryPendingDeletion: RedisFunctionLibrary?
     @State private var productionConfirmText = ""
+
+    /// A navigation that would abandon a dirty draft; confirmed explicitly.
+    private enum PendingDiscard {
+        case selectLibrary(RedisFunctionLibrary)
+        case startCreate
+    }
 
     private var isProduction: Bool {
         tab.selectedConnection?.environment == .production
@@ -50,8 +58,33 @@ struct FunctionsView: View {
             if tab.serverInfo.isEmpty { await tab.loadServerInfo() }
             if tab.supportsFunctions { await tab.fetchFunctionLibraries() }
         }
-        .sheet(isPresented: $showingLoadSheet) {
-            LuaEditorView(mode: .create)
+        .confirmationDialog(
+            "Discard unsaved changes?",
+            isPresented: Binding(
+                get: { pendingDiscard != nil },
+                set: { isPresented in
+                    if !isPresented { pendingDiscard = nil }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let pending = pendingDiscard {
+                switch pending {
+                case .selectLibrary(let library):
+                    Button("Discard & Switch", role: .destructive) {
+                        applySelectLibrary(library)
+                        self.pendingDiscard = nil
+                    }
+                case .startCreate:
+                    Button("Discard & New", role: .destructive) {
+                        applyStartCreate()
+                        self.pendingDiscard = nil
+                    }
+                }
+            }
+            Button("Keep Editing", role: .cancel) { self.pendingDiscard = nil }
+        } message: {
+            Text("You have unsaved changes to the Lua code. Discarding will lose them.")
         }
         .confirmationDialog(
             "Delete library \"\(libraryPendingDeletion?.name ?? "")\"",
@@ -136,7 +169,7 @@ struct FunctionsView: View {
                 .frame(maxWidth: .infinity)
 
             Button {
-                showingLoadSheet = true
+                requestStartCreate()
             } label: {
                 Label("Load", systemImage: "plus")
             }
@@ -176,8 +209,29 @@ struct FunctionsView: View {
             ) {
                 libraryList
             } right: {
-                if let library = displayedLibrary {
-                    FunctionLibraryDetailView(library: library)
+                if isCreating {
+                    FunctionLibraryDetailView(
+                        mode: .new,
+                        onDirtyChanged: { editorIsDirty = $0 },
+                        onSaved: { savedName in
+                            isCreating = false
+                            editorIsDirty = false
+                            if let created = tab.functionLibraries.first(where: { $0.name == savedName }) {
+                                tab.selectedFunctionLibrary = created
+                            }
+                        },
+                        onCancel: {
+                            isCreating = false
+                            editorIsDirty = false
+                        }
+                    )
+                    .id("new-library")
+                } else if let library = displayedLibrary {
+                    FunctionLibraryDetailView(
+                        mode: .existing(library),
+                        onDirtyChanged: { editorIsDirty = $0 }
+                    )
+                    .id(library.name)
                 } else {
                     Spacer()
                     ContentUnavailableView(
@@ -251,7 +305,7 @@ struct FunctionsView: View {
                                     .clickCursor()
                                     .id(library.name)
                                     .contentShape(Rectangle())
-                                    .onTapGesture { tab.selectedFunctionLibrary = library }
+                                    .onTapGesture { requestSelectLibrary(library) }
                                     .contextMenu {
                                         Button("Delete", role: .destructive) {
                                             libraryPendingDeletion = library
@@ -273,6 +327,33 @@ struct FunctionsView: View {
     }
 
     // MARK: Helpers
+
+    private func requestSelectLibrary(_ library: RedisFunctionLibrary) {
+        if editorIsDirty {
+            pendingDiscard = .selectLibrary(library)
+        } else {
+            applySelectLibrary(library)
+        }
+    }
+
+    private func applySelectLibrary(_ library: RedisFunctionLibrary) {
+        isCreating = false
+        editorIsDirty = false
+        tab.selectedFunctionLibrary = library
+    }
+
+    private func requestStartCreate() {
+        if editorIsDirty {
+            pendingDiscard = .startCreate
+        } else {
+            applyStartCreate()
+        }
+    }
+
+    private func applyStartCreate() {
+        isCreating = true
+        editorIsDirty = false
+    }
 
     private var footerCountText: String {
         let total = tab.functionLibraries.count

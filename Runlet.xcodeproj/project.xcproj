@@ -247,7 +247,6 @@
                     { "path": "FunctionCallView.swift", "target-membership": [ "Runlet/compile-sources" ] },
                     { "path": "FunctionLibraryDetailView.swift", "target-membership": [ "Runlet/compile-sources" ] },
                     { "path": "FunctionsView.swift", "target-membership": [ "Runlet/compile-sources" ] },
-                    { "path": "LuaEditorView.swift", "target-membership": [ "Runlet/compile-sources" ] },
                   ],
                 },
               ],
