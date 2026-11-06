@@ -266,7 +266,8 @@ struct LuaEditorView: View {
             scrollBeyondLastLine: true,
             occurrencesHighlight: true,
             colorDecorators: true,
-            bracketPairColorization: true
+            bracketPairColorization: true,
+            renderFinalNewline: .boundary
         )
         // fillsContainer: the editor takes the sheet's leftover height and
         // scrolls when content overflows. (The old collapse-to-invisible
