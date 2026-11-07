@@ -70,6 +70,17 @@ enum AppColor {
     /// Light fill for badges and secondary chrome.
     static let subtleBackground = paletteWash(\.subtleBackground)
 
+    /// Current-line highlight in code editors (Plume's line band): the
+    /// palette's `lineHighlightBackground` wash over `labelColor`.
+    /// Runlet uses a pure-border style, so the palette wash is zero
+    /// and `lineHighlightBorderNS` carries the highlight.
+    static let lineHighlightBackgroundNS = paletteWashNS(\.lineHighlightBackground)
+
+    /// Current-line highlight border in code editors (Monaco's
+    /// `editor.lineHighlightBorder`): the palette's
+    /// `lineHighlightBorder` wash over `labelColor`.
+    static let lineHighlightBorderNS = paletteWashNS(\.lineHighlightBorder)
+
     /// Standard semi-transparent badge background for a given accent color.
     static func badgeBackground(_ color: Color) -> Color {
         color.opacity(0.12)
@@ -226,6 +237,21 @@ enum AppColor {
             base,
             light: Palette.systemLight[keyPath: slot],
             dark: Palette.neutralDark[keyPath: slot])
+    }
+
+    /// AppKit counterpart of `paletteWash` for fills that take `NSColor`
+    /// directly (Plume's `lineHighlightBackgroundNS` token).
+    private static func paletteWashNS(
+        _ slot: KeyPath<Palette, Double>,
+        base: NSColor = .labelColor
+    ) -> NSColor {
+        NSColor(
+            name: nil,
+            dynamicProvider: { appearance in
+                let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                let alpha = isDark ? Palette.neutralDark[keyPath: slot] : Palette.systemLight[keyPath: slot]
+                return base.withAlphaComponent(CGFloat(alpha))
+            })
     }
 
     /// `NSColor` twin of `dynamicColor` for AppKit surfaces that take

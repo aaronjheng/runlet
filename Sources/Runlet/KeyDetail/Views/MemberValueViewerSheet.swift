@@ -1,3 +1,5 @@
+import Plume
+import PlumeLanguages
 import SwiftUI
 
 // MARK: - Member Value Viewer
@@ -71,7 +73,7 @@ struct MemberValueViewerSheet: View {
                     SelectableText(
                         text: jsonPretty,
                         font: AppFont.dataCellNSFont,
-                        tokenizer: TreeSitterJsonHighlighter.shared
+                        syntax: .json
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(AppSpacing.large)

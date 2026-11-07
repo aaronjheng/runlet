@@ -1,4 +1,5 @@
 import Plume
+import PlumeLanguages
 import SwiftUI
 
 // MARK: - Function Library Detail View

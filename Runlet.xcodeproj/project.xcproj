@@ -16,39 +16,9 @@
       "path": "Vendor/swift-nio-ssh",
     }, {
       "kind": "remote",
-      "repository": "https://github.com/tree-sitter-grammars/tree-sitter-lua.git",
-      "version": {
-        "revision": "591977fe1e8e24cdf9d94d3bfe2593e06b90c973",
-      },
-    }, {
-      "kind": "remote",
       "repository": "https://github.com/apple/swift-nio-transport-services.git",
       "version": {
         "up-to-next-major-version": "1.28.0",
-      },
-    }, {
-      "kind": "remote",
-      "repository": "https://github.com/tree-sitter/tree-sitter-json.git",
-      "version": {
-        "up-to-next-major-version": "0.24.0",
-      },
-    }, {
-      "kind": "remote",
-      "repository": "https://github.com/tree-sitter/tree-sitter-bash.git",
-      "version": {
-        "up-to-next-major-version": "0.25.1",
-      },
-    }, {
-      "kind": "remote",
-      "repository": "https://github.com/tree-sitter/tree-sitter.git",
-      "version": {
-        "up-to-next-minor-version": "0.25.10",
-      },
-    }, {
-      "kind": "remote",
-      "repository": "https://github.com/tree-sitter/swift-tree-sitter.git",
-      "version": {
-        "version": "0.10.0",
       },
     }, {
       "kind": "remote",
@@ -214,15 +184,9 @@
               "kind": "group",
               "path": "Editor",
               "children": [
-                { "path": "SyntaxProfiles.swift", "target-membership": [ "Runlet/compile-sources" ] },
                 { "path": "LuaCompletionBridge.swift", "target-membership": [ "Runlet/compile-sources" ] },
                 { "path": "LuaFormatter.swift", "target-membership": [ "Runlet/compile-sources" ] },
                 { "path": "SelectableText.swift", "target-membership": [ "Runlet/compile-sources" ] },
-                { "path": "SyntaxHighlighting.swift", "target-membership": [ "Runlet/compile-sources" ] },
-                { "path": "SyntaxTextView.swift", "target-membership": [ "Runlet/compile-sources" ] },
-                { "path": "TreeSitterBashHighlighter.swift", "target-membership": [ "Runlet/compile-sources" ] },
-                { "path": "TreeSitterJsonHighlighter.swift", "target-membership": [ "Runlet/compile-sources" ] },
-                { "path": "TreeSitterLuaHighlighter.swift", "target-membership": [ "Runlet/compile-sources" ] },
               ],
             }, {
               "kind": "group",
@@ -584,28 +548,12 @@
           "product-name": "Plume",
           "build-phase": { "build-phase": "frameworks" },
         }, {
+          "package": "plume",
+          "product-name": "PlumeLanguages",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
           "package": "swift-nio-transport-services",
           "product-name": "NIOTransportServices",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "package": "swift-tree-sitter",
-          "product-name": "SwiftTreeSitter",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "package": "tree-sitter",
-          "product-name": "TreeSitter",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "package": "tree-sitter-bash",
-          "product-name": "TreeSitterBash",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "package": "tree-sitter-json",
-          "product-name": "TreeSitterJSON",
-          "build-phase": { "build-phase": "frameworks" },
-        }, {
-          "package": "tree-sitter-lua",
-          "product-name": "TreeSitterLua",
           "build-phase": { "build-phase": "frameworks" },
         },
       ],

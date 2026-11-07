@@ -1,4 +1,5 @@
 import AppKit
+import PlumeLanguages
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -62,7 +63,7 @@ struct StringDetailView: View {
                             SelectableText(
                                 text: jsonPretty,
                                 font: AppFont.dataCellNSFont,
-                                tokenizer: TreeSitterJsonHighlighter.shared
+                                syntax: .json
                             )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(AppSpacing.large)

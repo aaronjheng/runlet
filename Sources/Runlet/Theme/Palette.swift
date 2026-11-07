@@ -109,6 +109,15 @@ struct Palette {
     let sidebarTint: Double
     /// Hover wash for custom rows (over `labelColor`).
     let hoverBackground: Double
+    /// Current-line highlight in code editors (Monaco's
+    /// `editor.lineHighlightBackground`). Runlet uses a pure-border
+    /// style, so the wash is zero and `lineHighlightBorder` carries
+    /// the highlight.
+    let lineHighlightBackground: Double
+    /// Current-line highlight border in code editors (Monaco's
+    /// `editor.lineHighlightBorder`): a stronger `labelColor` wash so
+    /// the border reads even where the background wash barely registers.
+    let lineHighlightBorder: Double
     /// Hover wash for icon buttons — stronger than `hoverBackground` so small
     /// hit areas read clearly (over `labelColor`).
     let iconHoverBackground: Double
@@ -162,6 +171,8 @@ extension Palette {
         subtleBorder: 0.12,
         sidebarTint: 0.05,
         hoverBackground: 0.06,
+        lineHighlightBackground: 0,
+        lineHighlightBorder: 0.16,
         iconHoverBackground: 0.08,
         controlFillBackground: 0.12,
         shellOutputBackground: 0.08,
@@ -196,6 +207,8 @@ extension Palette {
         // sidebar sits two points below the pill too.
         sidebarTint: 0.05,
         hoverBackground: 0.10,
+        lineHighlightBackground: 0,
+        lineHighlightBorder: 0.22,
         iconHoverBackground: 0.13,
         controlFillBackground: 0.16,
         shellOutputBackground: 0.12,

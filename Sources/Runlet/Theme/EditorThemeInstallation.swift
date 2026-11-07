@@ -31,6 +31,8 @@ enum EditorThemeInstallation {
         // AppKit fills
         EditorTheme.textPrimaryNS = AppColor.editorTextPrimaryNS
         EditorTheme.codeBackgroundNS = NSColor(AppColor.codeBackground)
+        EditorTheme.lineHighlightBackgroundNS = AppColor.lineHighlightBackgroundNS
+        EditorTheme.lineHighlightBorderNS = AppColor.lineHighlightBorderNS
 
         // Syntax palette: map Runlet's Lua-oriented token colors onto
         // Plume's five slots. The walks color by ROLE, so builtin/type
@@ -59,6 +61,14 @@ enum EditorThemeInstallation {
         EditorTheme.radiusMedium = AppRadius.medium
         EditorTheme.lineField = AppBorderWidth.regular
         EditorTheme.lineFocusedField = AppBorderWidth.focused
+        EditorTheme.lineHighlightBorderWidth = 1
+        // Airier code lines: the natural monospaced leading reads cramped
+        // in the multi-line editors.
+        EditorTheme.lineHeightMultiple = 1.35
+        // Derive the metrics-balanced monospaced family so the extra
+        // leading splits around the ink (Monaco's half-leading look)
+        // instead of piling above it. Must precede the first editor.
+        EditorFontBalancing.install(lineHeightMultiple: EditorTheme.lineHeightMultiple)
         EditorTheme.toggleControlSize = 26
         EditorTheme.opacityDisabled = 0.45
         EditorTheme.motionQuick = AppAnimation.quick

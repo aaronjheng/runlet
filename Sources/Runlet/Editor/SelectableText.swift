@@ -1,4 +1,5 @@
 import AppKit
+import Plume
 import SwiftUI
 
 /// A read-only, selectable text view backed by `NSTextView`.
@@ -12,18 +13,18 @@ import SwiftUI
 struct SelectableText: NSViewRepresentable {
     let text: String
     var font: NSFont = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-    /// Optional syntax tokenizer. When provided, the text is colored according
-    /// to the tokenizer's token types; otherwise it renders as plain text.
-    var tokenizer: (any SyntaxTokenizer)?
+    /// Optional syntax profile. When provided, the text is colored by
+    /// Plume's one-shot colorize pass; otherwise it renders as plain text.
+    var syntax: SyntaxProfile?
 
     init(
         text: String,
         font: NSFont = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular),
-        tokenizer: (any SyntaxTokenizer)? = nil
+        syntax: SyntaxProfile? = nil
     ) {
         self.text = text
         self.font = font
-        self.tokenizer = tokenizer
+        self.syntax = syntax
     }
 
     func makeNSView(context: Context) -> AutoSizingTextView {
@@ -32,7 +33,7 @@ struct SelectableText: NSViewRepresentable {
         textView.isSelectable = true
         // Rich text is required to carry per-range foreground colors; turning
         // it on does not affect selectability or copy behavior.
-        textView.isRichText = tokenizer != nil
+        textView.isRichText = syntax != nil
         textView.drawsBackground = false
         textView.textColor = .labelColor
         textView.font = font
@@ -44,8 +45,8 @@ struct SelectableText: NSViewRepresentable {
         textView.isHorizontallyResizable = false
         textView.autoresizingMask = [.width]
         textView.string = text
-        if let tokenizer {
-            applyHighlighting(to: textView, tokenizer: tokenizer)
+        if let syntax {
+            applyHighlighting(to: textView, profile: syntax)
         }
         return textView
     }
@@ -61,21 +62,22 @@ struct SelectableText: NSViewRepresentable {
             didMutate = true
         }
         // Re-apply highlighting whenever the text or font changed.
-        if didMutate, let tokenizer {
-            applyHighlighting(to: nsView, tokenizer: tokenizer)
+        if didMutate, let syntax {
+            applyHighlighting(to: nsView, profile: syntax)
         }
     }
 
-    private func applyHighlighting(to textView: NSTextView, tokenizer: any SyntaxTokenizer) {
-        guard let storage = textView.textStorage else { return }
-        let source = textView.string
+    private func applyHighlighting(to textView: NSTextView, profile: SyntaxProfile) {
+        guard let storage = textView.textStorage,
+            let runs = SyntaxHighlight.foregroundRuns(in: textView.string, profile: profile)
+        else { return }
         let whole = NSRange(location: 0, length: storage.length)
         storage.beginEditing()
         storage.removeAttribute(.foregroundColor, range: whole)
         storage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: whole)
-        for token in tokenizer.tokens(in: source) where token.range.length > 0 {
-            guard token.range.location + token.range.length <= whole.length else { continue }
-            storage.addAttribute(.foregroundColor, value: token.type.color, range: token.range)
+        for (range, color) in runs where range.length > 0 {
+            guard range.location + range.length <= whole.length else { continue }
+            storage.addAttribute(.foregroundColor, value: color, range: range)
         }
         storage.endEditing()
     }

@@ -1,4 +1,6 @@
 import AppKit
+import Plume
+import PlumeLanguages
 import SwiftUI
 
 struct ShellView: View {
@@ -473,7 +475,7 @@ struct ShellHistoryRow: View, Equatable {
                         .fontWeight(.bold)
                         .foregroundStyle(AppColor.shellPrompt)
 
-                    Text(TreeSitterBashHighlighter.shared.highlight(entry.command))
+                    Text(ShellCommandColorizer.colorized(entry.command))
                         .font(AppFont.dataCell)
                         .lineLimit(nil)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -521,5 +523,25 @@ struct ShellHistoryRow: View, Equatable {
         .foregroundStyle(didCopyResult ? AppColor.success : .primary)
         .disabled(entry.result.isEmpty)
         .help(entry.result.isEmpty ? "No output to copy" : "Copy result")
+    }
+}
+
+/// Shell history rows re-create on every keystroke in the input field and
+/// whenever a `LazyVStack` row scrolls back into view, so colorized commands
+/// are cached per command text (repeated commands share one parse). Access
+/// is main-actor only, matching the rest of the view.
+@MainActor
+private enum ShellCommandColorizer {
+    private static var cache: [String: AttributedString] = [:]
+    private static let cacheLimit = 512
+
+    static func colorized(_ text: String) -> AttributedString {
+        if let cached = cache[text] { return cached }
+        let rendered = SyntaxHighlight.attributedText(text, profile: .bash)
+        cache[text] = rendered
+        if cache.count > cacheLimit {
+            cache.removeAll(keepingCapacity: true)
+        }
+        return rendered
     }
 }
