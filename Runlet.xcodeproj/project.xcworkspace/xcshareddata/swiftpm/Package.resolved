@@ -7,7 +7,7 @@
       "location" : "https://github.com/aaronjheng/plume.git",
       "state" : {
         "branch" : "master",
-        "revision" : "3d3bda2171949d74f4103f9a1388d0fc1693ff77"
+        "revision" : "0a84e725045efda4ed4be58c1941c85fcd6ad2d3"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter/swift-tree-sitter.git",
       "state" : {
-        "revision" : "08ef81eb8620617b55b08868126707ad72bf754f",
-        "version" : "0.25.0"
+        "revision" : "f97df585296977d8fcaf644cbde567151d1367b8",
+        "version" : "0.10.0"
       }
     },
     {
