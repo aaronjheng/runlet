@@ -1,11 +1,11 @@
 [package]
-name = "runlet_stylua_shim"
-version = "0.1.0"
-edition = "2021"
+name = "stylua_shim"
+version = "1.0.0"
+edition = "2024"
 publish = false
 
 [lib]
-name = "runlet_stylua_shim"
+name = "stylua_shim"
 crate-type = ["staticlib"]
 
 [dependencies]

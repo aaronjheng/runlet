@@ -24,7 +24,7 @@ cargo build --release
 mkdir -p ../lib
 rm -rf "$out"
 xcodebuild -create-xcframework \
-    -library target/release/librunlet_stylua_shim.a \
+    -library target/release/libstylua_shim.a \
     -output "$out" >/dev/null
 
 echo "Built $out"

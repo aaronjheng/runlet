@@ -31,6 +31,6 @@ Lua runtime; the formatter is native Rust.
   line width), `AutoPreferSingle` quotes (the function template and most
   Redis Lua samples use single quotes), call parentheses always, output
   verified by reparse (`OutputVerification::Full`)
-- Toolchain: `shim/rust-toolchain.toml` pins 1.99.1 (same archive profile
+- Toolchain: `shim/rust-toolchain.toml` pins stable (same archive profile
   as Canoe's Oxfmt shim)
 - Upstream license: MPL-2.0 (`LICENSE-stylua.md`)
