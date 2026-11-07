@@ -440,13 +440,15 @@ struct FunctionLibraryDetailView: View {
                 onStatsChange: { editorStats = $0 },
                 markers: editorMarkers,
                 showsOverviewRuler: true,
-                tabSize: 4,
+                tabSize: 2,
+                detectIndentation: true,
                 renderLineHighlight: .all,
                 scrollBeyondLastLine: true,
                 occurrencesHighlight: true,
                 colorDecorators: true,
                 bracketPairColorization: true,
-                renderFinalNewline: .boundary
+                renderFinalNewline: .boundary,
+                indentGuides: true
             )
             .frame(maxHeight: .infinity)
             // Leading breathing only: Plume already insets text 6pt from its
