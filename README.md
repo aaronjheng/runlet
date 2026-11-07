@@ -24,6 +24,7 @@ Native macOS Redis GUI client built with Swift and SwiftUI.
 - macOS 27+
 - Xcode 27+ (Swift 6.4)
 - [Just](https://github.com/casey/just)
+- [Rust](https://rustup.rs)
 
 ## Build & Run
 
