@@ -4,10 +4,10 @@ The Functions tab's native formatter: JohnnyMorganz's StyLua backend as a
 statically linked Rust archive behind a C-ABI shim. Nothing here runs a
 Lua runtime; the formatter is native Rust.
 
-- Built by `build.sh` (`sh Vendor/StyLua/build.sh`): compiles the in-repo
+- Built by `build.sh` (`sh Sources/StyLua/build.sh`): compiles the in-repo
   shim crate (`shim/`, a standalone Cargo project) for arm64 - Runlet
   targets macOS 27+, which shipped no Intel release - and writes
-  `Vendor/StyLua/lib/librunlet_stylua.xcframework`, which is
+  `Sources/StyLua/lib/librunlet_stylua.xcframework`, which is
   git-ignored - `just build` refuses to run without it.
 - Dependency: `shim/Cargo.toml` pins `stylua_lib` to one upstream revision
   by `rev` (cargo fetches it like any git dependency, first build only,

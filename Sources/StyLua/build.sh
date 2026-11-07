@@ -6,7 +6,7 @@
 # the SPM package links against. arm64 only: Runlet targets macOS 27+,
 # which shipped no Intel release.
 #
-# Usage: sh Vendor/StyLua/build.sh   (the Justfile recipe `just build`
+# Usage: sh Sources/StyLua/build.sh   (the Justfile recipe `just build`
 # runs it automatically when the framework is missing)
 set -eu
 

@@ -8,5 +8,5 @@ DS_Store
 .DS_Store
 .env
 ui-inventory/
-Vendor/StyLua/lib/
-Vendor/StyLua/shim/target/
+Sources/StyLua/lib/
+Sources/StyLua/shim/target/

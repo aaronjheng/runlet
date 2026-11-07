@@ -1,7 +1,7 @@
 import Foundation
 
 /// Native Lua formatting behind the Functions editor's ⌥⇧F: StyLua
-/// statically linked into the app from `Vendor/StyLua` (see BUILD-INFO.md -
+/// statically linked into the app from `Sources/StyLua` (see BUILD-INFO.md -
 /// no Lua runtime is involved). The shim crate exports this one C ABI
 /// pair, and the bindings below pin its exact shape for Swift. Input and
 /// output are plain UTF-8 text; a library that does not parse throws

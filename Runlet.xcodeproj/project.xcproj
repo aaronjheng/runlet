@@ -58,7 +58,7 @@
       },
     }, {
       "kind": "local",
-      "path": "Vendor/StyLua",
+      "path": "Sources/StyLua",
     },
   ],
   "files": [
