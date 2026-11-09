@@ -206,6 +206,9 @@ enum AppColor {
     /// Punctuation — inherits system secondary
     static let syntaxPunctuation: Color = .secondary
 
+    /// Comments — one tier quieter than punctuation
+    static let syntaxComment: Color = Color(nsColor: .tertiaryLabelColor)
+
     // MARK: - Palette resolution
 
     // These three helpers are the seam from step one of the theming refactor:
