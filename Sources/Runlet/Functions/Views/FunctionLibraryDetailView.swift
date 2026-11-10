@@ -426,7 +426,7 @@ struct FunctionLibraryDetailView: View {
                 text: $draftCode,
                 syntax: .lua,
                 fillsContainer: true,
-                font: .monoBody,
+                font: .monoSubheadline,
                 lineHeightMultiple: 1.35,
                 placeholder: "local lib = {}\n\nfunction lib.handler(keys, args)\n  return redis.call('ping')\nend",
                 formatHandler: { source in

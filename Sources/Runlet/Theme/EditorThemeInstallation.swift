@@ -31,7 +31,9 @@ enum EditorThemeInstallation {
         // AppKit fills
         EditorTheme.textPrimaryNS = AppColor.editorTextPrimaryNS
         EditorTheme.codeBackgroundNS = NSColor(AppColor.codeBackground)
-        EditorTheme.lineHighlightBackgroundNS = AppColor.lineHighlightBackgroundNS
+        // Monaco default: no fill — the highlight is a transparent line
+        // with just the border.
+        EditorTheme.lineHighlightBackgroundNS = .clear
         EditorTheme.lineHighlightBorderNS = AppColor.lineHighlightBorderNS
 
         // Syntax palette: map Runlet's Lua-oriented token colors onto
@@ -65,7 +67,7 @@ enum EditorThemeInstallation {
         EditorTheme.radiusMedium = AppRadius.medium
         EditorTheme.lineField = AppBorderWidth.regular
         EditorTheme.lineFocusedField = AppBorderWidth.focused
-        EditorTheme.lineHighlightBorderWidth = 1
+        EditorTheme.lineHighlightBorderWidth = 2
         // Airier code lines: the natural monospaced leading reads cramped
         // in the multi-line editors.
         EditorTheme.lineHeightMultiple = 1.35
