@@ -6,9 +6,9 @@ import Plume
 /// general globals), and the popup is Plume's word-mode session (bare word
 /// at the caret → suggestion panel → replace the word).
 ///
-/// Trigger: Plume's editor has no per-language trigger prompts beyond the
-/// declared trigger characters, so the bridge relies on the `.` trigger to
-/// auto-open and keeps word-mode tracking in step on every text change.
+/// Triggers: the `.` trigger character auto-opens the panel, and ⌥⎋
+/// (`triggerSuggest`) opens it explicitly; word-mode tracking stays in
+/// step on every text change.
 @MainActor
 final class LuaCompletionBridge: EditorSuggestControlling {
     /// The `.` after `redis.` auto-opens the suggest panel (the declared
@@ -39,6 +39,13 @@ final class LuaCompletionBridge: EditorSuggestControlling {
 
     func hide() {
         engine.hide()
+    }
+
+    func triggerSuggest(in textView: NSTextView) -> Bool {  // ⌥⎋
+        // Monaco `triggerSuggest`: explicit open of the word-mode panel
+        // (the universe is already synced by the last textChanged).
+        engine.showSuggestions(at: textView)
+        return true
     }
 
     /// Recomputes the word-mode universe from the current text + caret.
