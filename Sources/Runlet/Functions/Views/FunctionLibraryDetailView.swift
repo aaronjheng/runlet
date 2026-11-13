@@ -440,6 +440,7 @@ struct FunctionLibraryDetailView: View {
                 onFormatError: { formatError = $0 },
                 suggestFactory: { completionBridge },
                 onStatsChange: { editorStats = $0 },
+                renderWhitespace: .selection,
                 markers: editorMarkers,
                 showsOverviewRuler: true,
                 tabSize: 2,
