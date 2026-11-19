@@ -7,7 +7,7 @@
       "location" : "https://github.com/aaronjheng/plume.git",
       "state" : {
         "branch" : "master",
-        "revision" : "7f7cd45d3dcd416e26bc21dfc93e483faee7d965"
+        "revision" : "d695231f8d4079a75f092d2765f78eb8531f2750"
       }
     },
     {
@@ -98,6 +98,15 @@
       "state" : {
         "revision" : "a06c2e4415e9bc0346c6b86d401879ffb44058f7",
         "version" : "0.25.1"
+      }
+    },
+    {
+      "identity" : "tree-sitter-html",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tree-sitter/tree-sitter-html",
+      "state" : {
+        "revision" : "5a5ca8551a179998360b4a4ca2c0f366a35acc03",
+        "version" : "0.23.2"
       }
     },
     {
