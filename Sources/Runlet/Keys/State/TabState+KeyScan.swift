@@ -167,7 +167,7 @@ extension TabState {
             keyTotalCount = try await client.totalKeyCount()
         } catch {
             keyTotalCount = nil
-            AppLogger.debug("failed to load key total: \(error)", category: "Keys")
+            AppLogger.keys.debug("failed to load key total: \(error)")
         }
     }
 

@@ -56,7 +56,7 @@ extension TabState {
             try await client.connect()
             shellSession = client
         } catch {
-            AppLogger.error("shell client connect failed error=\(error)", category: "Shell")
+            AppLogger.shell.error("shell client connect failed error=\(error)")
         }
     }
 

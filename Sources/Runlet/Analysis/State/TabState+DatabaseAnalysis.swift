@@ -166,7 +166,7 @@ extension TabState {
                 memory = 0
                 memoryFailures += 1
                 if memoryFailures <= 3 {
-                    AppLogger.info("MEMORY USAGE failed for key: \(message)", category: "Analysis")
+                    AppLogger.analysis.info("MEMORY USAGE failed for key: \(message)")
                 }
             } else {
                 memory = rawMemory?.intValue ?? 0

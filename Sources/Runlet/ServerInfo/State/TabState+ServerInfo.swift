@@ -57,7 +57,7 @@ extension TabState {
                 ?? infoCapabilities
         } catch {
             serverInfoError = error.localizedDescription
-            AppLogger.error("Failed to load server info: \(error)", category: "ServerInfo")
+            AppLogger.serverInfo.error("Failed to load server info: \(error)")
         }
     }
 
@@ -86,7 +86,7 @@ extension TabState {
             serverCapabilities = parseInfoModuleCapabilities(infoStr)
         } catch {
             serverInfoError = error.localizedDescription
-            AppLogger.error("Failed to load server info for node: \(error)", category: "ServerInfo")
+            AppLogger.serverInfo.error("Failed to load server info for node: \(error)")
         }
     }
 

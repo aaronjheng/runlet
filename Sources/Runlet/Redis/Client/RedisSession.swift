@@ -225,7 +225,7 @@ func fetchRedisTotalKeyCount(
             return count
         }
     } catch {
-        AppLogger.debug("DBSIZE failed while counting keys: \(error)", category: "Redis")
+        AppLogger.redis.debug("DBSIZE failed while counting keys: \(error)")
     }
 
     let infoResponse = try await sendCommand(["INFO", "keyspace"])

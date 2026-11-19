@@ -7,17 +7,21 @@ extension TabState {
     /// falling back to the selected (possibly edited) connection.
     func reconnect() async {
         guard let config = connectedConfig ?? selectedConnection else { return }
-        AppLogger.info("reconnect requested name=\(config.name)", category: "Connection")
+        AppLogger.connection.info("reconnect requested name=\(config.name)")
         await connect(to: config)
     }
 
     func connect(to config: RedisConnectionConfig) async {
         let resolvedConfig = config
-        AppLogger.info(
-            "connect requested name=\(resolvedConfig.name) "
-                + "mode=\(resolvedConfig.mode.rawValue) redis=\(resolvedConfig.address) "
-                + "sshEnabled=\(resolvedConfig.ssh.enabled) tlsEnabled=\(resolvedConfig.tls.enabled)",
-            category: "Connection"
+        AppLogger.connection.info(
+            "connect requested",
+            metadata: [
+                "name": "\(resolvedConfig.name)",
+                "mode": "\(resolvedConfig.mode.rawValue)",
+                "redis": "\(resolvedConfig.address)",
+                "sshEnabled": "\(resolvedConfig.ssh.enabled)",
+                "tlsEnabled": "\(resolvedConfig.tls.enabled)",
+            ]
         )
         stopProfiler(clearEntries: true)
         stopPubSub(clearEntries: true)
@@ -56,10 +60,13 @@ extension TabState {
 
                     switch resolvedConfig.mode {
                     case .standalone:
-                        AppLogger.info(
-                            "starting ssh tunnel ssh=\(sshHost):\(resolvedConfig.ssh.port) "
-                                + "user=\(effectiveSSHUser) remote=\(resolvedConfig.host):\(resolvedConfig.port)",
-                            category: "Connection"
+                        AppLogger.connection.info(
+                            "starting ssh tunnel",
+                            metadata: [
+                                "ssh": "\(sshHost):\(resolvedConfig.ssh.port)",
+                                "user": "\(effectiveSSHUser)",
+                                "remote": "\(resolvedConfig.host):\(resolvedConfig.port)",
+                            ]
                         )
                         let tunnel = try await SSHTunnel.connect(
                             config: resolvedConfig.ssh,
@@ -69,20 +76,14 @@ extension TabState {
                         sshTunnel = tunnel
                         connectHost = "127.0.0.1"
                         connectPort = tunnel.localPort
-                        AppLogger.info(
-                            "ssh tunnel ready mode=\(tunnel.mode.rawValue) local=127.0.0.1:\(connectPort)",
-                            category: "Connection"
-                        )
+                        AppLogger.connection.info("ssh tunnel ready mode=\(tunnel.mode.rawValue) local=127.0.0.1:\(connectPort)")
                     case .cluster:
                         let manager = SSHClusterTunnelManager(ssh: resolvedConfig.ssh)
                         clusterTunnelManager = manager
                         sshClusterTunnelManager = manager
                         clusterEndpointResolver = manager
-                        AppLogger.info(
-                            "cluster ssh tunnel manager ready ssh=\(sshHost):\(resolvedConfig.ssh.port) "
-                                + "user=\(effectiveSSHUser)",
-                            category: "Connection"
-                        )
+                        AppLogger.connection.info(
+                            "cluster ssh tunnel manager ready ssh=\(sshHost):\(resolvedConfig.ssh.port) user=\(effectiveSSHUser)")
                     }
                 }
 
@@ -100,7 +101,7 @@ extension TabState {
                 try await withTimeout(resolvedConfig.connectionTimeout, context: "Redis connection") {
                     try await redis.connect()
                 }
-                AppLogger.info("redis connected mode=\(resolvedConfig.mode.rawValue) \(resolvedConfig.address)", category: "Connection")
+                AppLogger.connection.info("redis connected mode=\(resolvedConfig.mode.rawValue) \(resolvedConfig.address)")
 
                 try Task.checkCancellation()
 
@@ -113,7 +114,7 @@ extension TabState {
                 await loadServerInfo()
                 await scanKeys(reset: true)
                 await connectShellClient()
-                AppLogger.info("connect completed name=\(resolvedConfig.name)", category: "Connection")
+                AppLogger.connection.info("connect completed name=\(resolvedConfig.name)")
             } catch is CancellationError {
                 client?.disconnect()
                 // Only tear down shared state when this task is still the
@@ -125,7 +126,7 @@ extension TabState {
                 if let clusterTunnelManager {
                     await clusterTunnelManager.disconnect()
                 }
-                AppLogger.info("connect cancelled name=\(resolvedConfig.name)", category: "Connection")
+                AppLogger.connection.info("connect cancelled name=\(resolvedConfig.name)")
             } catch {
                 client?.disconnect()
                 if generation == self.connectGeneration {
@@ -142,10 +143,8 @@ extension TabState {
                 }
                 let stage = (client == nil) ? "ssh-tunnel" : "redis-connect"
                 let errorType = type(of: error)
-                AppLogger.error(
-                    "connect failed name=\(resolvedConfig.name) stage=\(stage) errorType=\(errorType) error=\(error)",
-                    category: "Connection"
-                )
+                AppLogger.connection.error(
+                    "connect failed name=\(resolvedConfig.name) stage=\(stage) errorType=\(errorType) error=\(error)")
             }
         }
 
@@ -160,7 +159,7 @@ extension TabState {
     }
 
     func cancelConnection() {
-        AppLogger.info("cancel connection", category: "Connection")
+        AppLogger.connection.info("cancel connection")
         stopProfiler(clearEntries: true)
         stopPubSub(clearEntries: true)
         connectTask?.cancel()
@@ -180,7 +179,7 @@ extension TabState {
     }
 
     func disconnect() {
-        AppLogger.info("disconnect current connection", category: "Connection")
+        AppLogger.connection.info("disconnect current connection")
         stopProfiler(clearEntries: true)
         stopPubSub(clearEntries: true)
         disconnectShellClient()

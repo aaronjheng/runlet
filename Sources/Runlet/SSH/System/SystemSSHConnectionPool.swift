@@ -147,10 +147,13 @@ actor SystemSSHConnectionPool {
             }
             connections[key]?.refcount += 1
             let reused = (connections[key]?.refcount ?? 1) > 1
-            AppLogger.info(
-                "system ssh forwarding ready \(reused ? "reused master" : "new master") "
-                    + "ssh=\(key.host):\(key.port) local=127.0.0.1:\(localPort) remote=\(remoteHost):\(remotePort)",
-                category: "SSHTunnel"
+            AppLogger.sshTunnel.info(
+                "system ssh forwarding ready \(reused ? "reused master" : "new master")",
+                metadata: [
+                    "ssh": "\(key.host):\(key.port)",
+                    "local": "127.0.0.1:\(localPort)",
+                    "remote": "\(remoteHost):\(remotePort)",
+                ]
             )
             return Lease(key: key, connectionID: connectionID, localPort: localPort, forwardingSpec: spec)
         } catch {
@@ -165,10 +168,7 @@ actor SystemSSHConnectionPool {
     /// itself is exited only when the last lease ends.
     func close(_ lease: Lease) async {
         guard var entry = connections[lease.key], entry.id == lease.connectionID else {
-            AppLogger.info(
-                "system ssh forwarding already gone local=127.0.0.1:\(lease.localPort)",
-                category: "SSHTunnel"
-            )
+            AppLogger.sshTunnel.info("system ssh forwarding already gone local=127.0.0.1:\(lease.localPort)")
             return
         }
 
@@ -177,11 +177,8 @@ actor SystemSSHConnectionPool {
 
         guard entry.refcount == 0 else {
             connections[lease.key] = entry
-            AppLogger.info(
-                "system ssh forwarding closed local=127.0.0.1:\(lease.localPort) "
-                    + "master retained (\(entry.refcount) user(s))",
-                category: "SSHTunnel"
-            )
+            AppLogger.sshTunnel.info(
+                "system ssh forwarding closed local=127.0.0.1:\(lease.localPort) master retained (\(entry.refcount) user(s))")
             return
         }
 
@@ -192,7 +189,7 @@ actor SystemSSHConnectionPool {
         }
         try? entry.errorHandle?.close()
         try? FileManager.default.removeItem(atPath: entry.logPath)
-        AppLogger.info("system ssh master stopped ssh=\(lease.key.host):\(lease.key.port)", category: "SSHTunnel")
+        AppLogger.sshTunnel.info("system ssh master stopped ssh=\(lease.key.host):\(lease.key.port)")
     }
 
     // MARK: - Master lifecycle
@@ -269,10 +266,14 @@ actor SystemSSHConnectionPool {
             throw SSHTunnelError.connectionFailed("Failed to launch system ssh: \(error.localizedDescription)")
         }
         let agentState = ProcessInfo.processInfo.environment["SSH_AUTH_SOCK"] == nil ? "unset" : "set"
-        AppLogger.info(
-            "system ssh master starting ssh=\(key.host):\(key.port) user=\(key.user.isEmpty ? "(from ssh config)" : key.user) "
-                + "socket=\(controlPath) agent=\(agentState)",
-            category: "SSHTunnel"
+        AppLogger.sshTunnel.info(
+            "system ssh master starting",
+            metadata: [
+                "ssh": "\(key.host):\(key.port)",
+                "user": "\(key.user.isEmpty ? "(from ssh config)" : key.user)",
+                "socket": "\(controlPath)",
+                "agent": "\(agentState)",
+            ]
         )
     }
 
@@ -295,10 +296,7 @@ actor SystemSSHConnectionPool {
                     )
                     if adopted?.status == 0 {
                         connections[key]?.ready = true
-                        AppLogger.info(
-                            "system ssh master adopted backgrounded process ssh=\(key.host):\(key.port)",
-                            category: "SSHTunnel"
-                        )
+                        AppLogger.sshTunnel.info("system ssh master adopted backgrounded process ssh=\(key.host):\(key.port)")
                         return true
                     }
                 }
@@ -325,7 +323,7 @@ actor SystemSSHConnectionPool {
             )
             if check?.status == 0 {
                 connections[key]?.ready = true
-                AppLogger.info("system ssh master ready ssh=\(key.host):\(key.port)", category: "SSHTunnel")
+                AppLogger.sshTunnel.info("system ssh master ready ssh=\(key.host):\(key.port)")
                 return true
             }
             try await Task.sleep(for: .milliseconds(100))
@@ -376,7 +374,7 @@ actor SystemSSHConnectionPool {
             try? FileManager.default.removeItem(atPath: socketDir)
             self.socketDir = nil
         }
-        AppLogger.info("system ssh pool shut down", category: "SSHTunnel")
+        AppLogger.sshTunnel.info("system ssh pool shut down")
     }
 
     private func connectionFailureMessage(key: Key, status: Int32, tail: String) -> String {
@@ -401,7 +399,7 @@ actor SystemSSHConnectionPool {
             timeoutSeconds: 5
         )
         if result?.status != 0, let output = result?.errorOutput, !redactedTail(output).isEmpty {
-            AppLogger.warn("system ssh cancel forwarding notice: \(redactedTail(output))", category: "SSHTunnel")
+            AppLogger.sshTunnel.warning("system ssh cancel forwarding notice: \(redactedTail(output))")
         }
     }
 
@@ -418,7 +416,7 @@ actor SystemSSHConnectionPool {
         let fingerprint = String(stableHash("\(key.user)@\(key.host):\(key.port)#\(key.keyPath)").prefix(12))
         let socket = "\(dir)/\(fingerprint).sock"
         if FileManager.default.fileExists(atPath: socket) {
-            AppLogger.debug("system ssh removing leftover control socket \(socket)", category: "SSHTunnel")
+            AppLogger.sshTunnel.debug("system ssh removing leftover control socket \(socket)")
             try? FileManager.default.removeItem(atPath: socket)
         }
         let log = "\(dir)/\(fingerprint).log"

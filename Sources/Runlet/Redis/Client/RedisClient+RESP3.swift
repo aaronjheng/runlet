@@ -1,4 +1,4 @@
-import Foundation
+import Logging
 
 // MARK: - RESP3 Handshake
 
@@ -24,14 +24,14 @@ extension RedisClient {
 
         case .error(let message):
             // HELLO command failed, fall back to RESP2
-            AppLogger.debug("RESP3 handshake failed: \(message), falling back to RESP2")
+            AppLogger.app.debug("RESP3 handshake failed: \(message), falling back to RESP2")
             negotiatedProtocolVersion = .resp2
             protocolFallbackReason = "resp3_handshake_failed"
             return false
 
         default:
             // Unexpected response, fall back to RESP2
-            AppLogger.debug("Unexpected HELLO response, falling back to RESP2")
+            AppLogger.app.debug("Unexpected HELLO response, falling back to RESP2")
             negotiatedProtocolVersion = .resp2
             protocolFallbackReason = "unexpected_hello_response"
             return false
@@ -126,32 +126,28 @@ extension RedisClient {
     }
 
     func logNegotiatedProtocol(authenticatedByHello: Bool) {
-        var fields = [
+        var metadata: Logger.Metadata = [
             "auth_via_hello": "\(authenticatedByHello)",
-            "host": host,
-            "negotiated_protocol": negotiatedProtocolVersion.logName,
+            "host": "\(host)",
+            "negotiated_protocol": "\(negotiatedProtocolVersion.logName)",
             "port": "\(port)",
-            "preferred_protocol": preferredProtocolVersion.logName,
+            "preferred_protocol": "\(preferredProtocolVersion.logName)",
             "tls_enabled": "\(tlsEnabled)",
         ]
         if let serverVersion {
-            fields["server_version"] = serverVersion
+            metadata["server_version"] = "\(serverVersion)"
         }
         if serverVersion == nil, !serverCapabilities.isEmpty {
-            fields["hello_keys"] = serverCapabilities.keys.sorted().joined(separator: ",")
+            metadata["hello_keys"] = "\(serverCapabilities.keys.sorted().joined(separator: ","))"
         }
         if let serverProtocol = serverCapabilities["proto"]?.intValue {
-            fields["server_protocol"] = "\(serverProtocol)"
+            metadata["server_protocol"] = "\(serverProtocol)"
         }
         if let protocolFallbackReason {
-            fields["fallback_reason"] = protocolFallbackReason
+            metadata["fallback_reason"] = "\(protocolFallbackReason)"
         }
 
-        AppLogger.info(
-            "redis protocol negotiated",
-            category: "Connection",
-            fields: fields
-        )
+        AppLogger.connection.info("redis protocol negotiated", metadata: metadata)
     }
 
 }

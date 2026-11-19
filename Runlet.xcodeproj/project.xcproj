@@ -29,6 +29,12 @@
     }, {
       "kind": "local",
       "path": "Sources/StyLua",
+    }, {
+      "kind": "remote",
+      "repository": "https://github.com/apple/swift-log-oslog.git",
+      "version": {
+        "up-to-next-major-version": "0.1.0",
+      },
     },
   ],
   "files": [
@@ -554,6 +560,10 @@
         }, {
           "package": "swift-nio-transport-services",
           "product-name": "NIOTransportServices",
+          "build-phase": { "build-phase": "frameworks" },
+        }, {
+          "package": "swift-log-oslog",
+          "product-name": "OSLogHandler",
           "build-phase": { "build-phase": "frameworks" },
         },
       ],

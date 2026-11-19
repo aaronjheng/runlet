@@ -101,7 +101,7 @@ extension RedisClusterClient {
                 return
             } catch {
                 lastError = error
-                AppLogger.debug("cluster topology refresh failed endpoint=\(endpoint.address) error=\(error)")
+                AppLogger.app.debug("cluster topology refresh failed endpoint=\(endpoint.address) error=\(error)")
             }
         }
 
@@ -133,7 +133,7 @@ extension RedisClusterClient {
                 let end = entry[1]?.intValue,
                 let primaryNode = entry[2]?.arrayValues
             else {
-                AppLogger.error("Skipping malformed CLUSTER SLOTS entry", category: "Cluster")
+                AppLogger.cluster.error("Skipping malformed CLUSTER SLOTS entry")
                 continue
             }
 
@@ -141,13 +141,13 @@ extension RedisClusterClient {
             var replicas: [RedisEndpoint] = []
             for node in entry.dropFirst(3) {
                 guard let values = node?.arrayValues else {
-                    AppLogger.error("Skipping malformed replica entry in CLUSTER SLOTS", category: "Cluster")
+                    AppLogger.cluster.error("Skipping malformed replica entry in CLUSTER SLOTS")
                     continue
                 }
                 if let replica = try? parseNodeEndpoint(values, fallbackHost: fallbackHost) {
                     replicas.append(replica)
                 } else {
-                    AppLogger.error("Skipping unparseable replica endpoint in CLUSTER SLOTS", category: "Cluster")
+                    AppLogger.cluster.error("Skipping unparseable replica endpoint in CLUSTER SLOTS")
                 }
             }
             ranges.append(RedisClusterSlotRange(start: start, end: end, primary: primary, replicas: replicas))

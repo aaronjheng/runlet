@@ -94,10 +94,15 @@ class SSHTunnel: @unchecked Sendable {
         eventLoopGroup: NIOTSEventLoopGroup? = nil
     ) async throws {
         let effectiveUser = sshUser.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? NSUserName() : sshUser
-        AppLogger.info(
-            "start requested ssh=\(sshHost):\(sshPort) user=\(effectiveUser) "
-                + "remote=\(remoteHost):\(remotePort) hasPassword=\(!(sshPassword ?? "").isEmpty) " + "keyPath=\(privateKeyPath ?? "")",
-            category: "SSHTunnel"
+        AppLogger.sshTunnel.info(
+            "start requested",
+            metadata: [
+                "ssh": "\(sshHost):\(sshPort)",
+                "user": "\(effectiveUser)",
+                "remote": "\(remoteHost):\(remotePort)",
+                "hasPassword": "\(!(sshPassword ?? "").isEmpty)",
+                "keyPath": "\(privateKeyPath ?? "")",
+            ]
         )
         self.sshHost = sshHost
         self.sshPort = sshPort
@@ -134,7 +139,7 @@ class SSHTunnel: @unchecked Sendable {
         }
 
         do {
-            AppLogger.info("starting tunnel mode=nioSSH", category: "SSHTunnel")
+            AppLogger.sshTunnel.info("starting tunnel mode=nioSSH")
             // Connect SSH channel
             let sshChannel = try await connectSSHWithRetry(group: group)
             state.withLock { $0.channel = sshChannel }
@@ -147,9 +152,9 @@ class SSHTunnel: @unchecked Sendable {
                 $0.mode = .nioSSH
                 $0.isRunning = true
             }
-            AppLogger.info("tunnel mode=nioSSH ready local=127.0.0.1:\(localPort)", category: "SSHTunnel")
+            AppLogger.sshTunnel.info("tunnel mode=nioSSH ready local=127.0.0.1:\(localPort)")
         } catch {
-            AppLogger.error("start failed error=\(error)", category: "SSHTunnel")
+            AppLogger.sshTunnel.error("start failed error=\(error)")
             let ownedGroup = state.withLock { state -> NIOTSEventLoopGroup? in
                 defer { state.group = nil }
                 return state.ownsGroup ? state.group : nil
@@ -179,7 +184,7 @@ class SSHTunnel: @unchecked Sendable {
                 systemTunnel: systemTunnel
             )
         }
-        AppLogger.info("stop tunnel mode=\(mode.rawValue)", category: "SSHTunnel")
+        AppLogger.sshTunnel.info("stop tunnel mode=\(mode.rawValue)")
 
         // Release the system-ssh forwarding (the shared master survives
         // while other tunnels still use it).
@@ -225,7 +230,7 @@ class SSHTunnel: @unchecked Sendable {
                 remotePort: remotePort
             )
         } catch {
-            AppLogger.error("start via system ssh failed error=\(error)", category: "SSHTunnel")
+            AppLogger.sshTunnel.error("start via system ssh failed error=\(error)")
             throw error
         }
         state.withLock {
@@ -234,7 +239,7 @@ class SSHTunnel: @unchecked Sendable {
             $0.mode = .systemSSH
             $0.isRunning = true
         }
-        AppLogger.info("tunnel mode=systemSSH ready local=127.0.0.1:\(systemTunnel.localPort)", category: "SSHTunnel")
+        AppLogger.sshTunnel.info("tunnel mode=systemSSH ready local=127.0.0.1:\(systemTunnel.localPort)")
     }
 
     private func connectSSHWithRetry(group: NIOTSEventLoopGroup) async throws -> Channel {
@@ -256,11 +261,14 @@ class SSHTunnel: @unchecked Sendable {
                 }
 
                 let retryDelay = connectionRetryDelayNanoseconds(after: attempt)
-                AppLogger.warn(
-                    "ssh connect attempt failed ssh=\(sshHost):\(sshPort) "
-                        + "attempt=\(attempt)/\(maxConnectionAttempts) "
-                        + "retryInMs=\(retryDelay / 1_000_000) error=\(mappedError)",
-                    category: "SSHTunnel"
+                AppLogger.sshTunnel.warning(
+                    "ssh connect attempt failed",
+                    metadata: [
+                        "ssh": "\(sshHost):\(sshPort)",
+                        "attempt": "\(attempt)/\(maxConnectionAttempts)",
+                        "retryInMs": "\(retryDelay / 1_000_000)",
+                        "error": "\(mappedError)",
+                    ]
                 )
                 try await Task.sleep(for: .nanoseconds(Int64(retryDelay)))
             }
@@ -310,7 +318,7 @@ class SSHTunnel: @unchecked Sendable {
                 }
             } catch {
                 channel.close(promise: nil)
-                AppLogger.error("ssh auth failed error=\(error)", category: "SSHTunnel")
+                AppLogger.sshTunnel.error("ssh auth failed error=\(error)")
                 throw mappedSSHError(error)
             }
 

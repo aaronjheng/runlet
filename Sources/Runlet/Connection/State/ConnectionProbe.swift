@@ -21,11 +21,16 @@ struct ConnectionProbe {
     let config: RedisConnectionConfig
 
     func run() async -> ConnectionProbeOutcome {
-        AppLogger.info(
-            "test connection requested mode=\(config.mode.rawValue) redis=\(config.address) "
-                + "sshEnabled=\(config.ssh.enabled) tlsEnabled=\(config.tls.enabled) "
-                + "ssh=\(config.ssh.host):\(config.ssh.port) user=\(config.ssh.user)",
-            category: "ConnectionTest"
+        AppLogger.connectionTest.info(
+            "test connection requested",
+            metadata: [
+                "mode": "\(config.mode.rawValue)",
+                "redis": "\(config.address)",
+                "sshEnabled": "\(config.ssh.enabled)",
+                "tlsEnabled": "\(config.tls.enabled)",
+                "ssh": "\(config.ssh.host):\(config.ssh.port)",
+                "user": "\(config.ssh.user)",
+            ]
         )
         var client: (any RedisSession)?
         var tunnel: SSHTunnel?
@@ -49,7 +54,7 @@ struct ConnectionProbe {
                 let trimmedSSHUser = config.ssh.user.trimmingCharacters(in: .whitespacesAndNewlines)
                 let effectiveSSHUser = trimmedSSHUser.isEmpty ? NSUserName() : trimmedSSHUser
                 guard !trimmedSSHHost.isEmpty else {
-                    AppLogger.error("test failed: empty ssh host", category: "ConnectionTest")
+                    AppLogger.connectionTest.error("test failed: empty ssh host")
                     return .failure(message: "SSH host is required")
                 }
 
@@ -64,24 +69,20 @@ struct ConnectionProbe {
                         tunnel = createdTunnel
                         connectHost = "127.0.0.1"
                         connectPort = createdTunnel.localPort
-                        AppLogger.info(
-                            "test ssh tunnel ready mode=\(createdTunnel.mode.rawValue) local=127.0.0.1:\(connectPort)",
-                            category: "ConnectionTest"
-                        )
+                        AppLogger.connectionTest.info(
+                            "test ssh tunnel ready mode=\(createdTunnel.mode.rawValue) local=127.0.0.1:\(connectPort)")
                     } catch is CancellationError {
                         throw CancellationError()
                     } catch {
-                        AppLogger.error("test ssh tunnel failed error=\(error)", category: "ConnectionTest")
+                        AppLogger.connectionTest.error("test ssh tunnel failed error=\(error)")
                         return .failure(message: "SSH tunnel: \(error.localizedDescription)")
                     }
                 case .cluster:
                     let manager = SSHClusterTunnelManager(ssh: config.ssh)
                     clusterTunnelManager = manager
                     clusterEndpointResolver = manager
-                    AppLogger.info(
-                        "test cluster ssh tunnel manager ready ssh=\(trimmedSSHHost):\(config.ssh.port) user=\(effectiveSSHUser)",
-                        category: "ConnectionTest"
-                    )
+                    AppLogger.connectionTest.info(
+                        "test cluster ssh tunnel manager ready ssh=\(trimmedSSHHost):\(config.ssh.port) user=\(effectiveSSHUser)")
                 }
             }
 
@@ -109,13 +110,13 @@ struct ConnectionProbe {
                 throw RedisError.commandError(message)
             }
             let elapsed = Date().timeIntervalSince(start) * 1000
-            AppLogger.info("test succeeded result=\(pong.string ?? "PONG") elapsed=\(elapsed)ms", category: "ConnectionTest")
+            AppLogger.connectionTest.info("test succeeded result=\(pong.string ?? "PONG") elapsed=\(elapsed)ms")
             return .success(latencyMs: elapsed, reply: pong.string)
         } catch is CancellationError {
-            AppLogger.info("test cancelled", category: "ConnectionTest")
+            AppLogger.connectionTest.info("test cancelled")
             return .cancelled
         } catch {
-            AppLogger.error("test redis failed error=\(error)", category: "ConnectionTest")
+            AppLogger.connectionTest.error("test redis failed error=\(error)")
             return .failure(message: error.localizedDescription)
         }
     }

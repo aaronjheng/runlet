@@ -14,15 +14,13 @@ extension TabState {
             profilerError = "Connect to a Redis server before starting the profiler."
             return
         }
-        AppLogger.info(
+        AppLogger.profiler.info(
             "profiler starting",
-            category: "Profiler",
-            fields: [
-                "redis": config.address,
+            metadata: [
+                "redis": "\(config.address)",
                 "auth_configured": "\(!config.password.isEmpty)",
                 "live_session": "\(connectedConfig != nil)",
-            ]
-        )
+            ])
 
         profilerGeneration += 1
         let generation = profilerGeneration
@@ -140,21 +138,21 @@ extension TabState {
             if let nodeWarning = stream.nodeWarning {
                 profilerError = nodeWarning
             }
-            AppLogger.info("profiler started redis=\(config.address)", category: "Profiler")
+            AppLogger.profiler.info("profiler started redis=\(config.address)")
 
             for try await capture in stream.stream {
                 try Task.checkCancellation()
                 appendProfilerCapture(capture)
             }
 
-            AppLogger.info("profiler stopped redis=\(config.address)", category: "Profiler")
+            AppLogger.profiler.info("profiler stopped redis=\(config.address)")
         } catch is CancellationError {
-            AppLogger.info("profiler cancelled redis=\(config.address)", category: "Profiler")
+            AppLogger.profiler.info("profiler cancelled redis=\(config.address)")
         } catch {
             if profilerGeneration == generation {
                 profilerError = error.localizedDescription
             }
-            AppLogger.error("profiler failed redis=\(config.address) error=\(error)", category: "Profiler")
+            AppLogger.profiler.error("profiler failed redis=\(config.address) error=\(error)")
         }
     }
 
@@ -303,9 +301,7 @@ extension TabState {
                     throw error
                 }
                 nodeFailures.append((endpoint: endpoint, error: error))
-                AppLogger.error(
-                    "profiler node failed endpoint=\(endpoint.address) error=\(error)",
-                    category: "Profiler")
+                AppLogger.profiler.error("profiler node failed endpoint=\(endpoint.address) error=\(error)")
             }
         }
 
@@ -384,11 +380,8 @@ extension TabState {
             guard sendsProfilerAuth(config), isNoPasswordConfiguredError(error) else {
                 throw error
             }
-            AppLogger.info(
-                "profiler retrying without AUTH; server has no password configured",
-                category: "Profiler",
-                fields: ["context": context]
-            )
+            AppLogger.profiler.info(
+                "profiler retrying without AUTH; server has no password configured", metadata: ["context": "\(context)"])
             var anonymousConfig = config
             anonymousConfig.username = ""
             anonymousConfig.password = ""

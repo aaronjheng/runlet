@@ -33,15 +33,12 @@ extension TabState {
         // matches literal channels too.
         let topics = subscriptions.map { $0.topic }
 
-        AppLogger.info(
+        AppLogger.pubSub.info(
             "pubsub starting",
-            category: "PubSub",
-            fields: [
-                "redis": config.address,
-                "mode": isPattern ? "psubscribe" : "subscribe",
-                "topics": topics.joined(separator: ","),
-            ]
-        )
+            metadata: [
+                "redis": "\(config.address)", "mode": "\(isPattern ? "psubscribe" : "subscribe")",
+                "topics": "\(topics.joined(separator: ","))",
+            ])
 
         pubSubGeneration += 1
         let generation = pubSubGeneration
@@ -106,7 +103,7 @@ extension TabState {
             return result.intValue
         } catch {
             pubSubError = error.localizedDescription
-            AppLogger.error("pubsub publish failed error=\(error)", category: "PubSub")
+            AppLogger.pubSub.error("pubsub publish failed error=\(error)")
             return nil
         }
     }
@@ -195,10 +192,7 @@ extension TabState {
             isPubSubSubscribing = false
             isPubSubSubscribed = true
             pubSubSubscriptions = subscriptions
-            AppLogger.info(
-                "pubsub started redis=\(config.address)",
-                category: "PubSub"
-            )
+            AppLogger.pubSub.info("pubsub started redis=\(config.address)")
 
             for try await push in resources.stream {
                 try Task.checkCancellation()
@@ -213,9 +207,9 @@ extension TabState {
                 isPubSubSubscribing = false
                 pubSubSubscriptions = []
             }
-            AppLogger.info("pubsub stream ended redis=\(config.address)", category: "PubSub")
+            AppLogger.pubSub.info("pubsub stream ended redis=\(config.address)")
         } catch is CancellationError {
-            AppLogger.info("pubsub cancelled redis=\(config.address)", category: "PubSub")
+            AppLogger.pubSub.info("pubsub cancelled redis=\(config.address)")
         } catch {
             if pubSubGeneration == generation {
                 pubSubError = error.localizedDescription
@@ -223,8 +217,7 @@ extension TabState {
                 isPubSubSubscribing = false
                 pubSubSubscriptions = []
             }
-            AppLogger.error(
-                "pubsub failed redis=\(config.address) error=\(error)", category: "PubSub")
+            AppLogger.pubSub.error("pubsub failed redis=\(config.address) error=\(error)")
         }
     }
 

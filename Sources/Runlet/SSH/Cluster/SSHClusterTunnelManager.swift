@@ -47,10 +47,14 @@ actor SSHClusterTunnelManager: RedisClusterEndpointResolver {
         let configuredSSHPassword = sshPassword
         let configuredPrivateKeyPath = privateKeyPath
         let configuredMode = sshMode
-        AppLogger.info(
-            "starting cluster ssh tunnel mode=\(configuredMode) ssh=\(configuredSSHHost):\(configuredSSHPort) "
-                + "user=\(configuredSSHUser.isEmpty ? "(from ssh config)" : configuredSSHUser) remote=\(endpoint.address)",
-            category: "SSHTunnel"
+        AppLogger.sshTunnel.info(
+            "starting cluster ssh tunnel",
+            metadata: [
+                "mode": "\(configuredMode)",
+                "ssh": "\(configuredSSHHost):\(configuredSSHPort)",
+                "user": "\(configuredSSHUser.isEmpty ? "(from ssh config)" : configuredSSHUser)",
+                "remote": "\(endpoint.address)",
+            ]
         )
 
         do {
@@ -85,10 +89,7 @@ actor SSHClusterTunnelManager: RedisClusterEndpointResolver {
 
         tunnels[endpoint] = tunnel
         let localEndpoint = localEndpoint(for: tunnel)
-        AppLogger.info(
-            "cluster ssh tunnel ready remote=\(endpoint.address) local=\(localEndpoint.address)",
-            category: "SSHTunnel"
-        )
+        AppLogger.sshTunnel.info("cluster ssh tunnel ready remote=\(endpoint.address) local=\(localEndpoint.address)")
         return localEndpoint
     }
 

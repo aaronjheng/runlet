@@ -334,7 +334,7 @@ struct InlineTextField: NSViewRepresentable {
                     // recognise): edit in place instead, where the row clips
                     // the focus border. Keeps the cell editable rather than
                     // blank.
-                    AppLogger.warn("Inline text field found no enclosing table", category: "Keys")
+                    AppLogger.keys.warning("Inline text field found no enclosing table")
                     field.frame = anchorView.bounds
                     anchorView.addSubview(field)
                     claimFocus()

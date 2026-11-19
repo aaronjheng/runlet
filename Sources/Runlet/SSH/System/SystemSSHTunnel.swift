@@ -44,16 +44,17 @@ final class SystemSSHTunnel: @unchecked Sendable {
         remotePort: UInt16
     ) async throws {
         if let password = sshPassword, !password.isEmpty {
-            AppLogger.warn(
-                "system ssh ignores the configured password; using keys/certificates, ssh-agent and ~/.ssh/config",
-                category: "SSHTunnel"
-            )
+            AppLogger.sshTunnel.warning("system ssh ignores the configured password; using keys/certificates, ssh-agent and ~/.ssh/config")
         }
         let effectiveUser = sshUser.trimmingCharacters(in: .whitespacesAndNewlines)
-        AppLogger.info(
-            "start requested mode=systemSSH ssh=\(sshHost):\(sshPort) user=\(effectiveUser.isEmpty ? "(from ssh config)" : effectiveUser) "
-                + "remote=\(remoteHost):\(remotePort)",
-            category: "SSHTunnel"
+        AppLogger.sshTunnel.info(
+            "start requested",
+            metadata: [
+                "mode": "systemSSH",
+                "ssh": "\(sshHost):\(sshPort)",
+                "user": "\(effectiveUser.isEmpty ? "(from ssh config)" : effectiveUser)",
+                "remote": "\(remoteHost):\(remotePort)",
+            ]
         )
 
         let lease = try await SystemSSHConnectionPool.shared.openForwarding(
@@ -67,7 +68,7 @@ final class SystemSSHTunnel: @unchecked Sendable {
             $0.localPort = lease.localPort
             $0.isRunning = true
         }
-        AppLogger.info("tunnel mode=systemSSH ready local=127.0.0.1:\(lease.localPort)", category: "SSHTunnel")
+        AppLogger.sshTunnel.info("tunnel mode=systemSSH ready local=127.0.0.1:\(lease.localPort)")
     }
 
     func stop() {
@@ -78,7 +79,7 @@ final class SystemSSHTunnel: @unchecked Sendable {
             return taken
         }
         guard let lease else { return }
-        AppLogger.info("stop tunnel mode=systemSSH local=127.0.0.1:\(lease.localPort)", category: "SSHTunnel")
+        AppLogger.sshTunnel.info("stop tunnel mode=systemSSH local=127.0.0.1:\(lease.localPort)")
         // `close()` only runs fast multiplex control commands, but it is an
         // actor call, so release asynchronously like the NIO group shutdown.
         Task {

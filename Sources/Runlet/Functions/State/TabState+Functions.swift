@@ -62,13 +62,10 @@ extension TabState {
         args.append(code)
         do {
             try await sendToAllPrimaries(args)
-            AppLogger.info(
-                "function load ok replace=\(replace) bytes=\(code.utf8.count)",
-                category: "Functions"
-            )
+            AppLogger.functions.info("function load ok replace=\(replace) bytes=\(code.utf8.count)")
             await fetchFunctionLibraries()
         } catch {
-            AppLogger.error("function load failed replace=\(replace) error=\(error)", category: "Functions")
+            AppLogger.functions.error("function load failed replace=\(replace) error=\(error)")
             throw error
         }
     }
@@ -77,13 +74,13 @@ extension TabState {
     func deleteFunctionLibrary(name: String) async throws {
         do {
             try await sendToAllPrimaries(["FUNCTION", "DELETE", name])
-            AppLogger.info("function delete ok library=\(name)", category: "Functions")
+            AppLogger.functions.info("function delete ok library=\(name)")
             if selectedFunctionLibrary?.name == name {
                 selectedFunctionLibrary = nil
             }
             await fetchFunctionLibraries()
         } catch {
-            AppLogger.error("function delete failed library=\(name) error=\(error)", category: "Functions")
+            AppLogger.functions.error("function delete failed library=\(name) error=\(error)")
             throw error
         }
     }
@@ -174,21 +171,21 @@ extension TabState {
                         ["FUNCTION", "DRYRUN", code], to: endpoint
                     )
                     if case .error(let message) = result {
-                        AppLogger.warn("function dryrun failed endpoint=\(endpoint.address) error=\(message)", category: "Functions")
+                        AppLogger.functions.warning("function dryrun failed endpoint=\(endpoint.address) error=\(message)")
                         return message
                     }
                 }
             } else {
                 let result = try await client.send("FUNCTION", "DRYRUN", code)
                 if case .error(let message) = result {
-                    AppLogger.warn("function dryrun failed error=\(message)", category: "Functions")
+                    AppLogger.functions.warning("function dryrun failed error=\(message)")
                     return message
                 }
             }
-            AppLogger.info("function dryrun ok bytes=\(code.utf8.count)", category: "Functions")
+            AppLogger.functions.info("function dryrun ok bytes=\(code.utf8.count)")
             return nil
         } catch {
-            AppLogger.warn("function dryrun failed error=\(error)", category: "Functions")
+            AppLogger.functions.warning("function dryrun failed error=\(error)")
             return error.localizedDescription
         }
     }
@@ -212,24 +209,15 @@ extension TabState {
             response = try await client.send(command)
             if case .error(let message) = response {
                 errorMessage = message
-                AppLogger.error(
-                    "fcall failed name=\(name) keys=\(keys.count) args=\(args.count) error=\(message)",
-                    category: "Functions"
-                )
+                AppLogger.functions.error("fcall failed name=\(name) keys=\(keys.count) args=\(args.count) error=\(message)")
             } else {
                 errorMessage = nil
-                AppLogger.info(
-                    "fcall ok name=\(name) keys=\(keys.count) args=\(args.count)",
-                    category: "Functions"
-                )
+                AppLogger.functions.info("fcall ok name=\(name) keys=\(keys.count) args=\(args.count)")
             }
         } catch {
             response = .null
             errorMessage = error.localizedDescription
-            AppLogger.error(
-                "fcall failed name=\(name) keys=\(keys.count) args=\(args.count) error=\(error)",
-                category: "Functions"
-            )
+            AppLogger.functions.error("fcall failed name=\(name) keys=\(keys.count) args=\(args.count) error=\(error)")
         }
 
         let result = RedisFunctionCallResult(

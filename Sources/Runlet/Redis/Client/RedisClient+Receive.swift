@@ -213,7 +213,7 @@ extension RedisClient {
             if let handler {
                 handler(message)
             } else {
-                AppLogger.debug("received unsolicited RESP3 push message", category: "Redis")
+                AppLogger.redis.debug("received unsolicited RESP3 push message")
             }
         }
     }

@@ -133,22 +133,18 @@ final class AppDatabase: Sendable {
         guard let payload = try? JSONEncoder().encode(config),
             let json = String(data: payload, encoding: .utf8)
         else {
-            AppLogger.error("connection write failed: encoding error name=\(config.name)", category: "Database")
+            AppLogger.database.error("connection write failed: encoding error name=\(config.name)")
             return false
         }
         return db.withLock { handle in
             guard let handle else {
-                AppLogger.error(
-                    "connection write failed: database unavailable name=\(config.name)", category: "Database"
-                )
+                AppLogger.database.error("connection write failed: database unavailable name=\(config.name)")
                 return false
             }
             var stmt: OpaquePointer?
             guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
-                AppLogger.error(
-                    "connection write failed: prepare name=\(config.name) error=\(String(cString: sqlite3_errmsg(handle)))",
-                    category: "Database"
-                )
+                AppLogger.database.error(
+                    "connection write failed: prepare name=\(config.name) error=\(String(cString: sqlite3_errmsg(handle)))")
                 return false
             }
             defer { sqlite3_finalize(stmt) }
@@ -158,11 +154,8 @@ final class AppDatabase: Sendable {
             sqlite3_bind_text(stmt, 4, config.id.uuidString, -1, Self.sqliteTransient)
             let rc = sqlite3_step(stmt)
             if rc != SQLITE_DONE {
-                AppLogger.error(
-                    "connection write failed: step rc=\(rc) name=\(config.name) "
-                        + "error=\(String(cString: sqlite3_errmsg(handle)))",
-                    category: "Database"
-                )
+                AppLogger.database.error(
+                    "connection write failed: step rc=\(rc) name=\(config.name) error=\(String(cString: sqlite3_errmsg(handle)))")
                 return false
             }
             return true
